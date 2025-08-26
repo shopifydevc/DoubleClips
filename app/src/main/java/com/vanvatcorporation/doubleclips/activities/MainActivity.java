@@ -44,6 +44,9 @@ import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
 import com.vanvatcorporation.doubleclips.helper.StringFormatHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
+import com.vanvatcorporation.doubleclips.impl.NavigationIconLayout;
+import com.vanvatcorporation.doubleclips.impl.ViewPagerImpl;
+import com.vanvatcorporation.doubleclips.impl.java.RunnableImpl2;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 
 import java.io.File;
@@ -58,10 +61,14 @@ public class MainActivity extends AppCompatActivityImpl {
 
 
 
+    ViewPagerImpl viewPager;
+
+
+
     List<ProjectData> projectList;
     RecyclerView projectListView;
     ProjectDataAdapter projectAdapter;
-    SwipeRefreshLayout projectSwipeRefreshLayout;
+    SwipeRefreshLayout projectSwipeRefreshLayout, profileSwipeRefreshLayout;
 
 
     ProjectData currentExportingProject;
@@ -101,22 +108,87 @@ public class MainActivity extends AppCompatActivityImpl {
 
 
 
-        findViewById(R.id.title).setOnClickListener(v -> {
+        // Start initializing critical modules ----------------------------------------------------------
+
+
+        findViewById(R.id.navigationElement1).setOnClickListener(v -> {
+            viewPager.setCurrentItem(0, true);
+        });
+        findViewById(R.id.navigationElement2).setOnClickListener(v -> {
+            viewPager.setCurrentItem(1, true);
+        });
+        findViewById(R.id.navigationElement3).setOnClickListener(v -> {
+            viewPager.setCurrentItem(2, true);
+        });
+        findViewById(R.id.navigationElement4).setOnClickListener(v -> {
+            viewPager.setCurrentItem(3, true);
+        });
+        findViewById(R.id.navigationElement5).setOnClickListener(v -> {
+            viewPager.setCurrentItem(4, true);
+        });
+
+
+
+
+        View homepageView = getLayoutInflater().inflate(R.layout.pager_main_homepage, null);
+        View templateView = getLayoutInflater().inflate(R.layout.pager_main_template, null);
+        View View3 = getLayoutInflater().inflate(R.layout.pager_main_template, null);
+        View View4 = getLayoutInflater().inflate(R.layout.pager_main_template, null);
+        View profileView = getLayoutInflater().inflate(R.layout.pager_main_profile, null);
+
+
+        View belowNavigationBar = findViewById(R.id.belowNavigationBar);
+
+        View navigationButton1 = belowNavigationBar.findViewById(R.id.navigationElement1);
+        View navigationButton2 = belowNavigationBar.findViewById(R.id.navigationElement2);
+        View navigationButton3 = belowNavigationBar.findViewById(R.id.navigationElement3);
+        View navigationButton4 = belowNavigationBar.findViewById(R.id.navigationElement4);
+        View navigationButton5 = belowNavigationBar.findViewById(R.id.navigationElement5);
+
+        View[] navigationButtons = {navigationButton1, navigationButton2, navigationButton3, navigationButton4, navigationButton5};
+
+
+
+
+
+        ((NavigationIconLayout)navigationButton1).runAnimation(NavigationIconLayout.AnimationType.SELECTED);
+
+
+        viewPager = findViewById(R.id.mainViewPager);
+        viewPager.insertView(homepageView, templateView, View3, View4, profileView);
+        viewPager.setupActions(
+                new RunnableImpl2() {
+                    @Override
+                    public <T, T2> void runWithParam(T param, T2 param2) {
+                        int lastPosition = (int) param;
+                        int position = (int) param2;
+
+
+                        ((NavigationIconLayout)navigationButtons[position]).runAnimation(NavigationIconLayout.AnimationType.SELECTED);
+                        ((NavigationIconLayout)navigationButtons[lastPosition]).runAnimation(NavigationIconLayout.AnimationType.UNSELECTED);
+
+                    }
+                }
+        );
+
+        // ---------------------------------------------------------- End initializing critical modules
+
+
+
+
+        // Start initializing Homepage module ----------------------------------------------------------
+        homepageView.findViewById(R.id.title).setOnClickListener(v -> {
             Intent intent = new Intent(this, DebugActivity.class);
             startActivity(intent);
         });
 
-        findViewById(R.id.title).setOnLongClickListener(v -> {
+        homepageView.findViewById(R.id.title).setOnLongClickListener(v -> {
             Intent intent = new Intent(this, RajawaliExample.class);
             startActivity(intent);
             return true;
         });
 
-
-
-
-
-        addNewProjectButton = findViewById(R.id.addProjectButton);
+        addNewProjectButton = homepageView.findViewById(R.id.addProjectButton);
         addNewProjectButton.setOnClickListener(v -> {
             //pickingContent();
 
@@ -155,9 +227,9 @@ public class MainActivity extends AppCompatActivityImpl {
 
 
         //Main View
-        projectListView = findViewById(R.id.projectList);
+        projectListView = homepageView.findViewById(R.id.projectList);
         //progressBarFetchingBook = view.findViewById(R.id.progressBarFetchingBook);
-        projectSwipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        projectSwipeRefreshLayout = homepageView.findViewById(R.id.swipeRefreshLayout);
         projectListView.setLayoutManager(new LinearLayoutManager(this));
 
         projectList = new ArrayList<>();
@@ -165,8 +237,21 @@ public class MainActivity extends AppCompatActivityImpl {
         projectListView.setAdapter(projectAdapter);
 
         projectSwipeRefreshLayout.setOnRefreshListener(this::reloadingProject);
+        // ---------------------------------------------------------- End initializing Homepage module
 
 
+        // Start initializing Profile module ----------------------------------------------------------
+
+        profileSwipeRefreshLayout = profileView.findViewById(R.id.swipeRefreshLayout);
+
+
+        Button settingButton = profileView.findViewById(R.id.settingsButton);
+        settingButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
+        });
+
+        // ---------------------------------------------------------- End initializing Profile module
         reloadingProject();
     }
 
@@ -177,8 +262,6 @@ public class MainActivity extends AppCompatActivityImpl {
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
-                    String inputPath = getPath(this, uri); // Use your helper
-
                     CompressionHelper.unzipFolder(this, getContentResolver(), uri, Constants.DEFAULT_PROJECT_DIRECTORY(this));
                 }
             }

@@ -21,4 +21,13 @@
     <string name="menu_cpn_project_element_clone">Clone project</string>
     <string name="add_project_choice_new">New</string>
     <string name="add_project_choice_import">Import</string>
+    <string name="settings_group_general">General</string>
+    <string name="settings_general_enable_dark_mode">Enable Dark Mode</string>
+    <string name="main_homepage">Home</string>
+    <string name="main_template">Template</string>
+    <string name="main_search">Search</string>
+    <string name="main_storage">Storage</string>
+    <string name="main_profile">Profile</string>
+    <string name="template_recommended">Recommended</string>
+    <string name="main_settings">Settings</string>
 </resources>

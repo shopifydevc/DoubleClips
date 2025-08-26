@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="NavigationIconLayout">
+        <attr name="navIcon" format="reference" />
+        <attr name="navText" format="string" />
+    </declare-styleable>
+</resources>
