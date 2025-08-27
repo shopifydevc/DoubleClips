@@ -12,40 +12,62 @@
 
 
     <RelativeLayout
-        android:id="@+id/titlePanel"
+        android:id="@+id/titleFrame"
         android:layout_width="match_parent"
-        android:layout_height="50dp">
+        android:layout_height="150dp">
 
-        <TextView
-            android:id="@+id/title"
+
+        <com.google.android.material.imageview.ShapeableImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="25dp"
-            android:layout_marginTop="0dp"
-            android:layout_marginEnd="25dp"
-            android:layout_marginBottom="0dp"
-            android:gravity="start|center"
-            android:text="@string/welcome"
-            android:textSize="24sp" />
 
-    </RelativeLayout>
-    <RelativeLayout
-        android:id="@+id/addProjectPanel"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_below="@id/titlePanel">
 
-        <Button
-            android:id="@+id/addProjectButton"
+
+            android:background="@color/colorSoftBlueBackground"
+
+            app:strokeColor="@color/colorSoftBackground"
+            app:strokeWidth="1dp"
+            app:shapeAppearanceOverlay="@style/upperRoundedImageView"/>
+
+
+        <RelativeLayout
+            android:id="@+id/titlePanel"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginStart="25dp"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="25dp"
-            android:layout_marginBottom="5dp"
-            android:gravity="center"
-            android:text="@string/add_project"
-            android:textSize="24sp" />
+            android:layout_height="50dp">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="25dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="25dp"
+                android:layout_marginBottom="0dp"
+                android:gravity="start|center"
+                android:text="@string/welcome"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+        <RelativeLayout
+            android:id="@+id/addProjectPanel"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_below="@id/titlePanel">
+
+            <Button
+                android:id="@+id/addProjectButton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="25dp"
+                android:layout_marginTop="5dp"
+                android:layout_marginEnd="25dp"
+                android:layout_marginBottom="5dp"
+                android:gravity="center"
+                android:text="@string/add_project"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
 
     </RelativeLayout>
 
@@ -59,12 +81,33 @@
         android:layout_marginEnd="5dp"
         android:layout_marginBottom="5dp"
 
-        android:layout_below="@id/addProjectPanel">
+        android:layout_below="@id/titleFrame">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/projectList"
+
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+
+
+
+                android:background="@color/colorGlassBackground"
+
+                app:strokeColor="@color/colorSoftBlueBackground"
+                app:strokeWidth="1dp"
+                app:shapeAppearanceOverlay="@style/roundedImageView"/>
+
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/projectList"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+        </RelativeLayout>
+
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
