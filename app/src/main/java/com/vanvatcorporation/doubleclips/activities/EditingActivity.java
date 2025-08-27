@@ -137,6 +137,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
+    private HorizontalScrollView toolbarDefault, toolbarClips, toolbarTrack;
 
 
 
@@ -484,143 +485,13 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-
-
-        // Bottom Navigation Bar
-        ImageView addVideoButton = findViewById(R.id.addMediaButton);
-        addVideoButton.setOnClickListener(v -> {
-            if(selectedTrack != null)
-                pickingContent();
-            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
-        });
-        ImageView deleteMediaButton = findViewById(R.id.deleteMediaButton);
-        deleteMediaButton.setOnClickListener(v -> {
-            if(selectedClip != null) {
-                selectedClip.deleteClip(timeline);
-                updateCurrentClipEnd();
-            }
-            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
-
-        });
-        ImageView splitMediaButton = findViewById(R.id.splitMediaButton);
-        splitMediaButton.setOnClickListener(v -> {
-            List<Clip> affectedClips = timeline.getClipAtCurrentTime(currentTime);
-            if(selectedClip != null && affectedClips.contains(selectedClip)) {
-                    selectedClip.splitClip(this, timeline, currentTime);
-            }
-            else {
-                for (Clip clip : affectedClips) {
-                    clip.splitClip(this, timeline, currentTime);
-                }
-
-            }
-        });
-        ImageView addTextButton = findViewById(R.id.addTextButton);
-        addTextButton.setOnClickListener(v -> {
-
-            if(selectedTrack == null) {
-                new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
-                return;
-            }
-
-            float duration = 3f; // fallback default if needed
-            ClipType type = ClipType.TEXT; // if effect or unknown
-
-
-
-            Clip newClip = new Clip("TEXT", currentTime, duration, selectedTrack.trackIndex, type);
-            newClip.textContent = "Simple text";
-            newClip.fontSize = 30;
-            addClipToTrack(selectedTrack, newClip);
-        });
-        ImageView addEffectButton = findViewById(R.id.addEffectButton);
-        addEffectButton.setOnClickListener(v -> {
-
-            if(selectedTrack == null) {
-                new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
-                return;
-            }
-
-            float duration = 3f; // fallback default if needed
-            ClipType type = ClipType.EFFECT; // if effect or unknown
-
-            Clip newClip = new Clip("EFFECT", currentTime, duration, selectedTrack.trackIndex, type);
-            newClip.effect = new EffectTemplate("glitch-pulse", 1.2, 4.0);
-
-            addClipToTrack(selectedTrack, newClip);
-        });
-        ImageView editMediaButton = findViewById(R.id.editMediaButton);
-        editMediaButton.setOnClickListener(v -> {
-            if(selectedClip != null) {
-                editingSpecific(selectedClip.type);
-            }
-            else if(!selectedClips.isEmpty())
-            {
-                editingMultiple();
-            }
-            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
-        });
-        ImageView addKeyframeButton = findViewById(R.id.addKeyframeButton);
-        addKeyframeButton.setOnClickListener(v -> {
-            if(selectedClip != null) {
-                addKeyframe(selectedClip);
-            }
-            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
-        });
-        ImageView selectMultipleButton = findViewById(R.id.selectMultipleButton);
-        selectMultipleButton.setOnClickListener(v -> {
-            // Todo: Not fully implemented yet. The idea is to remake the whole thing, get the "array" of selected clip is completed
-            // now if one clip is move then the whole array move along. Also ghost will be as well
-
-            isClipSelectMultiple = !isClipSelectMultiple;
-
-            selectMultipleButton.setColorFilter((isClipSelectMultiple ? 0xFFFF0000 : 0xFFFFFFFF), PorterDuff.Mode.SRC_ATOP);
-        });
-        ImageView selectAllButton = findViewById(R.id.selectAllButton);
-        selectAllButton.setOnClickListener(v -> {
-            // Todo: Not fully implemented yet. The idea is to remake the whole thing, get the "array" of selected clip is completed
-            // now if one clip is move then the whole array move along. Also ghost will be as well
-
-
-            if(selectedTrack != null) {
-                isClipSelectMultiple = true;
-                selectMultipleButton.setColorFilter(0xFFFF0000, PorterDuff.Mode.SRC_ATOP);
-
-                deselectingClip();
-
-                for (Clip clip : selectedTrack.clips) {
-                    selectingClip(clip);
-                }
-            }
-            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
-        });
-        ImageView autoSnapButton = findViewById(R.id.autoSnapButton);
-        autoSnapButton.setOnClickListener(v -> {
-            if(selectedTrack != null) {
-                selectedTrack.sortClips();
-                List<Clip> clips = selectedTrack.clips;
-                for (int i = 1; i < clips.size(); i++) {
-                    Clip clip = clips.get(i);
-                    Clip prevClip = clips.get(i - 1);
-
-                    clip.startTime = prevClip.startTime + prevClip.duration;
-                }
-
-                updateClipLayouts();
-                updateCurrentClipEnd();
-            }
-            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
-        });
-
-
-
-
-
         setupPreview();
 
         setupTimelinePinchAndZoom();
 
         setupSpecificEdit();
+
+        setupToolbars();
     }
     private void editingMultiple() {
         editMultipleAreaClips.setVisibility(View.VISIBLE);
@@ -648,6 +519,208 @@ public class EditingActivity extends AppCompatActivityImpl {
                 transitionModeEditContent.setSelection(selectedKnot.mode.ordinal());
                 break;
         }
+    }
+
+    // Bottom Navigation Bar
+    private void setupToolbars()
+    {
+        // ===========================       CRITICAL ZONE       ====================================
+
+        toolbarDefault = (HorizontalScrollView) LayoutInflater.from(this).inflate(R.layout.view_toolbar_default, null);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        editingZone.addView(toolbarDefault, params);
+
+        toolbarTrack = (HorizontalScrollView) LayoutInflater.from(this).inflate(R.layout.view_toolbar_track, null);
+        RelativeLayout.LayoutParams paramsTrack = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        paramsTrack.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        editingZone.addView(toolbarTrack, paramsTrack);
+        toolbarTrack.setVisibility(View.GONE);
+
+        toolbarClips = (HorizontalScrollView) LayoutInflater.from(this).inflate(R.layout.view_toolbar_clips, null);
+        RelativeLayout.LayoutParams paramsClips = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        paramsClips.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        editingZone.addView(toolbarClips, paramsClips);
+        toolbarClips.setVisibility(View.GONE);
+
+
+        // ===========================       CRITICAL ZONE       ====================================
+
+
+        // ===========================       DEFAULT ZONE       ====================================
+
+
+        toolbarDefault.findViewById(R.id.splitMediaButton).setOnClickListener(v -> {
+            List<Clip> affectedClips = timeline.getClipAtCurrentTime(currentTime);
+            if(selectedClip != null && affectedClips.contains(selectedClip)) {
+                selectedClip.splitClip(this, timeline, currentTime);
+            }
+            else {
+                for (Clip clip : affectedClips) {
+                    clip.splitClip(this, timeline, currentTime);
+                }
+
+            }
+        });
+
+
+        // ===========================       DEFAULT ZONE       ====================================
+
+
+
+        // ===========================       TRACK ZONE       ====================================
+
+
+        toolbarTrack.findViewById(R.id.addMediaButton).setOnClickListener(v -> {
+            if(selectedTrack != null)
+                pickingContent();
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+        });
+        toolbarTrack.findViewById(R.id.deleteTrackButton).setOnClickListener(v -> {
+            if(selectedTrack != null) {
+                selectedTrack.delete(timeline);
+                updateCurrentClipEnd();
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
+
+        });
+        toolbarTrack.findViewById(R.id.splitMediaButton).setOnClickListener(v -> {
+            List<Clip> affectedClips = timeline.getClipAtCurrentTime(currentTime);
+            if(selectedClip != null && affectedClips.contains(selectedClip)) {
+                selectedClip.splitClip(this, timeline, currentTime);
+            }
+            else {
+                for (Clip clip : affectedClips) {
+                    clip.splitClip(this, timeline, currentTime);
+                }
+
+            }
+        });
+
+        toolbarTrack.findViewById(R.id.addTextButton).setOnClickListener(v -> {
+
+            if(selectedTrack == null) {
+                new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+                return;
+            }
+
+            float duration = 3f; // fallback default if needed
+            ClipType type = ClipType.TEXT; // if effect or unknown
+
+
+
+            Clip newClip = new Clip("TEXT", currentTime, duration, selectedTrack.trackIndex, type);
+            newClip.textContent = "Simple text";
+            newClip.fontSize = 30;
+            addClipToTrack(selectedTrack, newClip);
+        });
+        toolbarTrack.findViewById(R.id.addEffectButton).setOnClickListener(v -> {
+
+            if(selectedTrack == null) {
+                new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+                return;
+            }
+
+            float duration = 3f; // fallback default if needed
+            ClipType type = ClipType.EFFECT; // if effect or unknown
+
+            Clip newClip = new Clip("EFFECT", currentTime, duration, selectedTrack.trackIndex, type);
+            newClip.effect = new EffectTemplate("glitch-pulse", 1.2, 4.0);
+
+            addClipToTrack(selectedTrack, newClip);
+        });
+        toolbarTrack.findViewById(R.id.selectAllButton).setOnClickListener(v -> {
+            // Todo: Not fully implemented yet. The idea is to remake the whole thing, get the "array" of selected clip is completed
+            // now if one clip is move then the whole array move along. Also ghost will be as well
+
+
+            if(selectedTrack != null) {
+                isClipSelectMultiple = true;
+                ((ImageView)toolbarClips.findViewById(R.id.selectMultipleButton)).setColorFilter(0xFFFF0000, PorterDuff.Mode.SRC_ATOP);
+
+                deselectingClip();
+
+                for (Clip clip : selectedTrack.clips) {
+                    selectingClip(clip);
+                }
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+        });
+        toolbarTrack.findViewById(R.id.autoSnapButton).setOnClickListener(v -> {
+            if(selectedTrack != null) {
+                selectedTrack.sortClips();
+                List<Clip> clips = selectedTrack.clips;
+                for (int i = 1; i < clips.size(); i++) {
+                    Clip clip = clips.get(i);
+                    Clip prevClip = clips.get(i - 1);
+
+                    clip.startTime = prevClip.startTime + prevClip.duration;
+                }
+
+                updateClipLayouts();
+                updateCurrentClipEnd();
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+        });
+
+
+        // ===========================       TRACK ZONE       ====================================
+
+
+
+
+
+        // ===========================       CLIPS ZONE       ====================================
+
+
+        toolbarClips.findViewById(R.id.deleteMediaButton).setOnClickListener(v -> {
+            if(selectedClip != null) {
+                selectedClip.deleteClip(timeline);
+                updateCurrentClipEnd();
+            }
+            if(selectedClips != null) {
+                for (Clip selectedClip : selectedClips) {
+                    selectedClip.deleteClip(timeline);
+                }
+                updateCurrentClipEnd();
+            }
+
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
+
+        });
+        toolbarClips.findViewById(R.id.splitMediaButton).setOnClickListener(v -> {
+            List<Clip> affectedClips = timeline.getClipAtCurrentTime(currentTime);
+            if(selectedClip != null && affectedClips.contains(selectedClip)) {
+                selectedClip.splitClip(this, timeline, currentTime);
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
+        });
+        toolbarClips.findViewById(R.id.editMediaButton).setOnClickListener(v -> {
+            if(selectedClip != null) {
+                editingSpecific(selectedClip.type);
+            }
+            else if(!selectedClips.isEmpty())
+            {
+                editingMultiple();
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
+        });
+        toolbarClips.findViewById(R.id.addKeyframeButton).setOnClickListener(v -> {
+            if(selectedClip != null) {
+                addKeyframe(selectedClip);
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
+        });
+        toolbarClips.findViewById(R.id.selectMultipleButton).setOnClickListener(v -> {
+            // Todo: Not fully implemented yet. The idea is to remake the whole thing, get the "array" of selected clip is completed
+            // now if one clip is move then the whole array move along. Also ghost will be as well
+
+            isClipSelectMultiple = !isClipSelectMultiple;
+
+            ((ImageView)toolbarClips.findViewById(R.id.selectMultipleButton)).setColorFilter((isClipSelectMultiple ? 0xFFFF0000 : 0xFFFFFFFF), PorterDuff.Mode.SRC_ATOP);
+        });
+
+        // ===========================       CLIPS ZONE       ====================================
     }
 
     private void setupSpecificEdit()
@@ -1564,6 +1637,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             {
                 selectedClips.add(selectedClip);
                 selectedClip.select();
+                toolbarClips.setVisibility(View.VISIBLE);
             }
         }
         else {
@@ -1571,10 +1645,14 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             if(this.selectedClip != null && this.selectedClip == selectedClip){
                 this.selectedClip = null;
+                toolbarClips.setVisibility(View.GONE);
             }
             else {
+                selectingTrack(timeline.getTrackFromClip(selectedClip));
+
                 selectedClip.select();
                 this.selectedClip = selectedClip;
+                toolbarClips.setVisibility(View.VISIBLE);
             }
             if(currentTime < selectedClip.startTime)
                 setCurrentTime(selectedClip.startTime);
@@ -1594,12 +1672,16 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.selectedTrack = null;
             deselectingClip();
             this.selectedClip = null;
+            toolbarTrack.setVisibility(View.GONE);
+            toolbarClips.setVisibility(View.GONE);
         }
         else {
             deselectingClip();
             this.selectedClip = null;
             selectedTrack.select();
             this.selectedTrack = selectedTrack;
+            toolbarTrack.setVisibility(View.VISIBLE);
+            toolbarClips.setVisibility(View.GONE);
         }
     }
     private void selectingKnot(TransitionClip selectedKnot)
@@ -1760,6 +1842,13 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
             return clips; // No clip at this time
         }
+        public Track getTrackFromClip(Clip selectedClip) {
+            for (Track track : tracks) {
+                if(track.clips.contains(selectedClip))
+                    return track;
+            }
+            return null;
+        }
 
 
 
@@ -1900,6 +1989,10 @@ public class EditingActivity extends AppCompatActivityImpl {
                 removeTransitionUi(clip2);
             }
             transitions.removeAll(removalQueue);
+        }
+
+        public void delete(Timeline timeline) {
+
         }
     }
 
@@ -2562,7 +2655,7 @@ frameRate = 60;
 
 
             try {
-                pumpDecoderInputLag(playheadTime); // Feed decoder
+                pumpDecoderInput(playheadTime); // Feed decoder
 
                 // Drain decoder and render frame
                 MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();

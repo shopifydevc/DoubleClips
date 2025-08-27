@@ -3,7 +3,8 @@
     android:id="@+id/toolbarScrollView"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_alignParentBottom="true">
+    android:layout_alignParentBottom="true"
+    android:background="@color/colorPrimaryBackground">
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

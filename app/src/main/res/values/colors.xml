@@ -11,4 +11,5 @@
 
     <color name="colorPrimaryBackground">#FFFFFFFF</color>
     <color name="colorPrimaryButton">#FF000000</color>
+    <color name="colorHighlightedButton">#FFEB5406</color>
 </resources>

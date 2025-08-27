@@ -49,9 +49,11 @@ public class NavigationIconLayout extends RelativeLayout {
 
             if (icon != null) {
                 iconView.setImageDrawable(icon);
+                iconView.setColorFilter(getContext().getColor(R.color.colorPrimaryButton), PorterDuff.Mode.SRC_ATOP);
             }
             if (text != null) {
                 textView.setText(text);
+                textView.setTextColor(getContext().getColor(R.color.colorPrimaryButton));
             }
 
             a.recycle();
@@ -63,15 +65,15 @@ public class NavigationIconLayout extends RelativeLayout {
         switch (type)
         {
             case SELECTED:
-                textView.setTextColor(0xFFEB5406);
+                textView.setTextColor(getContext().getColor(R.color.colorHighlightedButton));
                 textView.setTypeface(null, Typeface.BOLD);
-                iconView.setColorFilter(0xFFEB5406, PorterDuff.Mode.SRC_ATOP);
+                iconView.setColorFilter(getContext().getColor(R.color.colorHighlightedButton), PorterDuff.Mode.SRC_ATOP);
                 iconView.startAnimation(AnimationUtils.loadAnimation(getContext(), R.anim.anim_expand_rapidly));
                 break;
             case UNSELECTED:
-                textView.setTextColor(0xFFFFFFFF);
+                textView.setTextColor(getContext().getColor(R.color.colorPrimaryButton));
                 textView.setTypeface(null, Typeface.NORMAL);
-                iconView.setColorFilter(0xFF000000, PorterDuff.Mode.SRC_ATOP);
+                iconView.setColorFilter(R.color.colorPrimaryButton, PorterDuff.Mode.SRC_ATOP);
                 iconView.startAnimation(AnimationUtils.loadAnimation(getContext(), R.anim.anim_shrink_rapidly));
                 break;
 

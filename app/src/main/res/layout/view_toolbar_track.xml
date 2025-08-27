@@ -3,7 +3,8 @@
     android:id="@+id/toolbarScrollView"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_alignParentBottom="true">
+    android:layout_alignParentBottom="true"
+    android:background="@color/colorPrimaryBackground">
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -22,7 +23,7 @@
             android:layout_margin="5dp"
             android:src="@drawable/baseline_perm_media_24"/>
         <ImageView
-            android:id="@+id/deleteMediaButton"
+            android:id="@+id/deleteTrackButton"
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_margin="5dp"
@@ -45,12 +46,6 @@
             android:layout_height="50dp"
             android:layout_margin="5dp"
             android:src="@drawable/baseline_bubble_chart_24"/>
-        <ImageView
-            android:id="@+id/selectMultipleButton"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_margin="5dp"
-            android:src="@drawable/baseline_menu_24"/>
         <ImageView
             android:id="@+id/selectAllButton"
             android:layout_width="50dp"
