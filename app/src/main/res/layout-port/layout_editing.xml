@@ -7,12 +7,13 @@
     <RelativeLayout
         android:id="@+id/previewZone"
         android:layout_width="match_parent"
-        android:layout_height="500dp">
+        android:layout_height="match_parent"
+        android:layout_above="@id/editingZone">
 
 
 
-        <android.opengl.GLSurfaceView
-            android:id="@+id/previewView"
+        <RelativeLayout
+            android:id="@+id/previewViewGroup"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_below="@id/top_bar"
@@ -59,15 +60,14 @@
     <RelativeLayout
         android:id="@+id/editingZone"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/previewZone"
+        android:layout_height="300dp"
         android:layout_alignParentBottom="true">
 
 
         <RelativeLayout
+            android:id="@+id/editingTrackZone"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_above="@id/toolbarScrollView">
+            android:layout_height="match_parent">
             <RelativeLayout
                 android:id="@+id/timestampBar"
                 android:layout_width="match_parent"

@@ -10,32 +10,25 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
-import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
-import android.media.MediaPlayer;
 import android.net.Uri;
-import android.opengl.GLES11Ext;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.opengl.Matrix;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.OpenableColumns;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
-import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -71,25 +64,18 @@ import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
 import com.vanvatcorporation.doubleclips.impl.ImageGroupView;
 import com.vanvatcorporation.doubleclips.impl.TrackFrameLayout;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
-import com.vanvatcorporation.doubleclips.utils.ShaderUtils;
-import com.vanvatcorporation.doubleclips.utils.TimelineUtils;
+
+import net.protyposis.android.mediaplayer.FileSource;
+import net.protyposis.android.mediaplayer.MediaPlayer;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
-import java.net.URLConnection;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
 
 public class EditingActivity extends AppCompatActivityImpl {
 
@@ -99,15 +85,14 @@ public class EditingActivity extends AppCompatActivityImpl {
     VideoSettings settings;
 
     private LinearLayout timelineTracksContainer, rulerContainer, trackInfoLayout;
-    private RelativeLayout timelineWrapper, editingZone;
+    private RelativeLayout timelineWrapper, editingZone, editingTrackZone;
     private HorizontalScrollView timelineScroll, rulerScroll;
     private ScrollView timelineVerticalScroll, trackInfoVerticalScroll;
     private TextView currentTimePosText, durationTimePosText;
     private ImageButton addNewTrackButton;
-    private GLSurfaceView previewView;
+    private RelativeLayout previewViewGroup;
     private ImageButton playPauseButton, backButton;
     private Button exportButton;
-    private MediaPlayer audioRenderer;
     private TimelineRenderer timelineRenderer;
 
     private TrackFrameLayout addNewTrackBlankTrackSpacer;
@@ -335,6 +320,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
         editingZone = findViewById(R.id.editingZone);
+        editingTrackZone = findViewById(R.id.editingTrackZone);
 
         currentTimePosText = findViewById(R.id.currentTimePosText);
         durationTimePosText = findViewById(R.id.durationTimePosText);
@@ -347,7 +333,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         });
         //timelineTracksContainer.addView(addTrackButton);
 
-        previewView = findViewById(R.id.previewView);
+        previewViewGroup = findViewById(R.id.previewViewGroup);
 
         playPauseButton = findViewById(R.id.playPauseButton);
         playPauseButton.setOnClickListener(v -> {
@@ -357,28 +343,6 @@ public class EditingActivity extends AppCompatActivityImpl {
             if (isPlaying) {
                 startPlayback();
                 playPauseButton.setImageResource(R.drawable.baseline_pause_circle_24);
-
-                // TODO: Temporary processing real-time audio !
-                for(Track audioTrack : timeline.tracks)
-                {
-                    for(Clip audioClip : audioTrack.clips)
-                    {
-                        if(audioClip.type == ClipType.AUDIO)
-                        {
-                            if((currentTime - audioClip.startTime) * 1000 > 0)
-                            {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    audioRenderer.seekTo((int) ((currentTime - audioClip.startTime + audioClip.startClipTrim) * 1000), MediaPlayer.SEEK_CLOSEST);
-                                }
-                                else {
-                                    audioRenderer.seekTo((int) ((currentTime - audioClip.startTime + audioClip.startClipTrim) * 1000));
-                                }
-                                audioRenderer.start();
-                                break;
-                            }
-                        }
-                    }
-                }
             } else {
                 stopPlayback();
             }
@@ -427,8 +391,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             //float totalSeconds = (timelineScroll.getScrollX()) / (float) pixelsPerSecond;
             currentTimePosText.post(() -> currentTimePosText.setText(DateHelper.convertTimestampToMMSSFormat((long) (currentTime * 1000L)) + String.format(".%02d", ((long)((currentTime % 1) * 100)))));
 
-            timelineRenderer.updatePlayhead(currentTime);
-            previewView.requestRender(); // Only if not using CONTINUOUSLY
+            timelineRenderer.updateTime(currentTime);
         });
 
 
@@ -515,6 +478,11 @@ public class EditingActivity extends AppCompatActivityImpl {
         editingZone.addView(toolbarClips, paramsClips);
         toolbarClips.setVisibility(View.GONE);
 
+
+        RelativeLayout.LayoutParams editingTrackParams = (RelativeLayout.LayoutParams) editingTrackZone.getLayoutParams();
+        editingTrackParams.addRule(RelativeLayout.ABOVE, toolbarDefault.getId());
+        editingTrackZone.setLayoutParams(editingTrackParams);
+        editingTrackZone.requestLayout();
 
         // ===========================       CRITICAL ZONE       ====================================
 
@@ -870,14 +838,15 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
 
     private void startPlayback() {
+
+        timelineRenderer.startPlayAt(currentTime);
         playbackLoop = new Runnable() {
             @Override
             public void run() {
                 if (!isPlaying) return;
                 currentTime += frameInterval;
 
-                timelineRenderer.updatePlayhead(currentTime);
-                //previewView.requestRender();
+                timelineRenderer.updateTime(currentTime);
 
                 int newScrollX = (int) (currentTime * pixelsPerSecond);
                 timelineScroll.scrollTo(newScrollX, 0);
@@ -901,36 +870,15 @@ public class EditingActivity extends AppCompatActivityImpl {
         playbackHandler.removeCallbacks(playbackLoop);
         playPauseButton.setImageResource(R.drawable.baseline_play_circle_24);
 
-
-
+        regeneratingTimelineRenderer();
+    }
+    private void regeneratingTimelineRenderer()
+    {
 
         LoggingManager.LogToToast(this, "Begin prepare for preview!");
         //refreshPreviewClip();
 
-        // TODO: Temporary processing real-time audio !
-        for(Track audioTrack : timeline.tracks)
-        {
-            for(Clip audioClip : audioTrack.clips)
-            {
-                if(audioClip.type == ClipType.AUDIO)
-                {
-                    try {
-
-                        audioRenderer.reset();
-
-                        audioRenderer.setDataSource(audioClip.getAbsolutePath(properties));
-                        audioRenderer.prepareAsync();
-                    } catch (IOException e) {
-                        LoggingManager.LogToPersistentDataPath(this, LoggingManager.getStackTraceFromException(e));
-                    }
-                }
-            }
-        }
-        timelineRenderer.buildTimeline(timeline);
-
-        previewView.queueEvent(() -> {
-            timelineRenderer.initClips(); // safe again
-        });
+        timelineRenderer.buildTimeline(timeline, properties, previewViewGroup);
     }
     private void setCurrentTime(float value)
     {
@@ -940,13 +888,17 @@ public class EditingActivity extends AppCompatActivityImpl {
 
     void setupPreview()
     {
-        audioRenderer = new MediaPlayer();
         timelineRenderer = new TimelineRenderer(this);
 
-        previewView.setEGLContextClientVersion(2);
-        previewView.setRenderer(timelineRenderer);
-        //previewView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY); // For live playback
-        previewView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int screenHeight = metrics.heightPixels;
+        editingZone.getLayoutParams().height = (int) (screenHeight * 0.35);
+        editingZone.requestLayout();
+
+
+
+        regeneratingTimelineRenderer();
     }
     void reloadPreviewClip()
     {
@@ -987,12 +939,14 @@ public class EditingActivity extends AppCompatActivityImpl {
     public void finish() {
         super.finish();
 
+        timelineRenderer.release();
         Timeline.saveTimeline(this, timeline, properties);
     }
     @Override
     public void onPause() {
         super.onPause();
 
+        timelineRenderer.release();
         Timeline.saveTimeline(this, timeline, properties);
     }
 
@@ -2277,7 +2231,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         {
             Track currentTrack = timeline.tracks.get(trackIndex);
 
-            float translatedLocalCurrentTime = currentGlobalTime - startTime;
+            float translatedLocalCurrentTime = getLocalClipTime(currentGlobalTime);
 
             Clip secondaryClip = new Clip(clipName, currentGlobalTime, originalDuration, trackIndex, type);
 
@@ -2322,6 +2276,14 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
         public String getAbsoluteRenderPath(String projectPath) {
             return IOHelper.CombinePath(projectPath, Constants.DEFAULT_CLIP_DIRECTORY, preRenderedName);
+        }
+
+        public float getLocalClipTime(float playheadTime) {
+            return playheadTime - startTime;
+        }
+
+        public float getTrimmedLocalTime(float localClipTime) {
+            return localClipTime + startClipTrim;
         }
     }
 
@@ -2560,116 +2522,116 @@ frameRate = 60;
     }
 
 
-    public class ClipRenderer {
+    public static class ClipRenderer {
         public final Clip clip;
 
-        private MediaExtractor extractor;
-        private MediaCodec decoder;
+        public MediaPlayer videoPlayer;
+        public android.media.MediaPlayer audioPlayer;
+        public boolean isPlaying;
 
-        private MediaPlayer mediaPlayer;
-        private SurfaceTexture surfaceTexture;
-        private Surface surface;
-
-        private int textureId;
-        private float[] transformMatrix;
-
-        private FloatBuffer vertexBuffer;
-        private FloatBuffer texBuffer;
-
-        private int shaderProgram;
-        private int positionHandle;
-        private int texCoordHandle;
-        private int transformHandle;
-        private int textureHandle;
-
+        private SurfaceView surfaceView;
+        private SurfaceHolder surfaceHolder;
         private Context context;
 
-        public ClipRenderer(Context context, Clip clip) {
+        public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, RelativeLayout previewViewGroup) {
             this.context = context;
             this.clip = clip;
-        }
 
-        public void initGLResources() {
-            // Texture creation
-            int[] textures = new int[1];
-            GLES20.glGenTextures(1, textures, 0);
-            textureId = textures[0];
+            try
+            {
 
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+                switch (clip.type)
+                {
+                    case VIDEO:
+                    {
+                        surfaceView = new SurfaceView(context);
+                        RelativeLayout.LayoutParams surfaceViewLayoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+                        previewViewGroup.addView(surfaceView, surfaceViewLayoutParams);
 
-            mediaPlayer = new MediaPlayer();
-            surfaceTexture = new SurfaceTexture(textureId);
-            surface = new Surface(surfaceTexture);
+                        surfaceHolder = surfaceView.getHolder();
+                        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+                            @Override
+                            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                                try {
+                                    videoPlayer = new MediaPlayer();
+                                    videoPlayer.setSeekMode(MediaPlayer.SeekMode.FAST_EXACT);
+                                    //videoPlayer.setSeekMode(MediaPlayer.SeekMode.PRECISE);
+                                    //videoPlayer.setSeekMode(MediaPlayer.SeekMode.EXACT);
 
-            // Load shaders
-            String vertexSrc = ShaderUtils.readAssetFile(context, "shaders/vertex_shader.glsl");
-            String fragmentSrc = ShaderUtils.readAssetFile(context, "shaders/fragment_shader.glsl");
-            shaderProgram = ShaderUtils.buildShader(context, vertexSrc, fragmentSrc);
+                                    videoPlayer.setDataSource(new FileSource(new File(clip.getAbsolutePath(data))));
+                                    videoPlayer.setDisplay(surfaceHolder);
+                                    videoPlayer.setOnCompletionListener(v -> {
+                                        surfaceView.post(() -> {
+                                            if(!surfaceHolder.getSurface().isValid()) return;
+                                            Canvas canvas = surfaceHolder.lockCanvas(); // TODO: Still cant lock the canvas
+                                            if (canvas != null) {
+                                                canvas.drawColor(Color.BLACK); // Fill canvas with black
+                                                surfaceHolder.unlockCanvasAndPost(canvas);
+                                            }
+                                        });
+                                    });
+                                    videoPlayer.prepareAsync();
+                                }
+                                catch (Exception e)
+                                {
+                                    LoggingManager.LogExceptionToNoteOverlay(context, e);
+                                }
+                            }
+                            @Override
+                            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {}
+                            @Override
+                            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {}
+                        });
+                        break;
+                    }
+                    case IMAGE:
+                    {
 
-            positionHandle = GLES20.glGetAttribLocation(shaderProgram, "a_Position");
-            texCoordHandle = GLES20.glGetAttribLocation(shaderProgram, "a_TexCoord");
-            transformHandle = GLES20.glGetUniformLocation(shaderProgram, "u_Transform");
-            textureHandle = GLES20.glGetUniformLocation(shaderProgram, "u_Texture");
+                        surfaceView = new SurfaceView(context);
+                        RelativeLayout.LayoutParams surfaceViewLayoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+                        previewViewGroup.addView(surfaceView, surfaceViewLayoutParams);
 
-            initBuffers();
-            buildTransformMatrix();
-            initDecoder(); // decoder can be started now that surface is available
-        }
+                        surfaceHolder = surfaceView.getHolder();
+                        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+                            @Override
+                            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                                Bitmap image = IOImageHelper.LoadFileAsPNGImage(context, clip.getAbsolutePath(data));
 
-        private void initBuffers() {
-            // Buffers
-            float[] vertexData = {
-                    -1f,  1f, 0f,
-                    -1f, -1f, 0f,
-                    1f,  1f, 0f,
-                    1f, -1f, 0f
-            };
-            float[] texCoords = {
-                    0f, 0f,
-                    0f, 1f,
-                    1f, 0f,
-                    1f, 1f
-            };
+                                surfaceView.post(() -> {
+                                    if (!surfaceHolder.getSurface().isValid()) return;
+                                    Canvas canvas = surfaceHolder.lockCanvas();
+                                    if (canvas != null) {
+                                        canvas.drawColor(Color.BLACK); // Optional background
+                                        canvas.drawBitmap(image, 0, 0, null); // Draw image at top-left
+                                        surfaceHolder.unlockCanvasAndPost(canvas);
+                                    }
+                                });
+                            }
+                            @Override
+                            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {}
+                            @Override
+                            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {}
+                        });
 
-            vertexBuffer = ByteBuffer.allocateDirect(vertexData.length * 4)
-                    .order(ByteOrder.nativeOrder()).asFloatBuffer();
-            vertexBuffer.put(vertexData).position(0);
+                        break;
+                    }
+                    case AUDIO:
+                    {
+                        audioPlayer = new android.media.MediaPlayer();
+                        audioPlayer.setDataSource(clip.getAbsolutePath(data));
+                        audioPlayer.prepareAsync();
+                        break;
+                    }
+                }
 
-            texBuffer = ByteBuffer.allocateDirect(texCoords.length * 4)
-                    .order(ByteOrder.nativeOrder()).asFloatBuffer();
-            texBuffer.put(texCoords).position(0);
-        }
-        private void initDecoder() {
-            try {
-                String mimeType = URLConnection.guessContentTypeFromName(new File(clip.getAbsolutePath(properties)).getName());
 
-
-                if(mimeType.startsWith("image/")) return;
-                extractor = new MediaExtractor();
-                extractor.setDataSource(clip.getAbsolutePath(properties));
-                int videoTrack = TimelineUtils.findVideoTrackIndex(extractor);
-                extractor.selectTrack(videoTrack);
-                MediaFormat format = extractor.getTrackFormat(videoTrack);
-
-                decoder = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME));
-                decoder.configure(format, surface, null, 0);
-                decoder.start();
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 LoggingManager.LogExceptionToNoteOverlay(context, e);
             }
         }
 
-        private void buildTransformMatrix() {
-            transformMatrix = new float[16];
-            Matrix.setIdentityM(transformMatrix, 0);
-            Matrix.translateM(transformMatrix, 0, clip.posX, clip.posY, 0f);
-            Matrix.rotateM(transformMatrix, 0, clip.rotation, 0f, 0f, 1f);
-            Matrix.scaleM(transformMatrix, 0, clip.scaleX, clip.scaleY, 1f);
-        }
 
         public boolean isVisible(float playheadTime) {
             return playheadTime >= clip.startTime &&
@@ -2677,197 +2639,162 @@ frameRate = 60;
         }
 
         public void renderFrame(float playheadTime) {
-            if (!isVisible(playheadTime)) return;
+            if (!isVisible(playheadTime)) {
+//                if(surfaceView != null)
+//                {
+//                    Canvas canvas = surfaceHolder.lockCanvas();
+//                    if (canvas != null) {
+//                        canvas.drawColor(Color.BLACK); // Fill canvas with black
+//                        surfaceHolder.unlockCanvasAndPost(canvas);
+//                    }
+//                }
+                return;
+            }
+            if(isPlaying) return;
+
+            startPlayingAt(playheadTime);
+        }
+
+        public void startPlayingAt(float playheadTime) {
+            if (!isVisible(playheadTime)) {
+//                Canvas canvas = surfaceHolder.lockCanvas();
+//                if (canvas != null) {
+//                    canvas.drawColor(Color.BLACK); // Fill canvas with black
+//                    surfaceHolder.unlockCanvasAndPost(canvas);
+//                }
+                return;
+            }
 
 
             try {
-                pumpDecoderInputSeek(playheadTime); // Feed decoder
 
-                // Drain decoder and render frame
-                MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-                int outputIndex = decoder.dequeueOutputBuffer(bufferInfo, 0);
-                if (outputIndex >= 0) {
-                    System.err.println("Decoder output at: " + bufferInfo.presentationTimeUs);
-                    decoder.releaseOutputBuffer(outputIndex, true); // true = render to surface
+                switch (clip.type)
+                {
+                    case VIDEO:
+                    {
+
+                        if(clip.getLocalClipTime(playheadTime) * 1000 > 0 && clip.getLocalClipTime(playheadTime) * 1000 < clip.duration)
+                        {
+                            videoPlayer.seekTo((long) (clip.getTrimmedLocalTime(clip.getLocalClipTime(playheadTime)) * 1000000));
+                            System.err.println(videoPlayer.getCurrentPosition());
+                            videoPlayer.start();
+                            isPlaying = true;
+                        }
+                        break;
+                    }
+                    case AUDIO:
+                    {
+                        if(clip.getLocalClipTime(playheadTime) * 1000 > 0 && clip.getLocalClipTime(playheadTime) * 1000 < clip.duration)
+                        {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                audioPlayer.seekTo((int) (clip.getTrimmedLocalTime(clip.getLocalClipTime(playheadTime)) * 1000), android.media.MediaPlayer.SEEK_CLOSEST);
+                            }
+                            else {
+                                audioPlayer.seekTo((int) (clip.getTrimmedLocalTime(clip.getLocalClipTime(playheadTime)) * 1000));
+                            }
+                            audioPlayer.start();
+                            isPlaying = true;
+                        }
+                        break;
+                    }
+
                 }
-                System.err.println(outputIndex);
 
-                if (surfaceTexture != null) {
-                    surfaceTexture.updateTexImage(); // pulls frame into GPU texture
-                }
 
-                drawToCanvas(); // now finally drawing non-black texture
+
             } catch (Exception e) {
                 LoggingManager.LogExceptionToNoteOverlay(context, e);
             }
         }
 
-        private void drawToCanvas() {
-            GLES20.glUseProgram(shaderProgram);
-
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
-
-            GLES20.glUniformMatrix4fv(transformHandle, 1, false, transformMatrix, 0);
-            GLES20.glUniform1i(textureHandle, 0);
-
-            GLES20.glEnableVertexAttribArray(positionHandle);
-            GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer);
-
-            GLES20.glEnableVertexAttribArray(texCoordHandle);
-            GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 0, texBuffer);
-
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-
-            GLES20.glDisableVertexAttribArray(positionHandle);
-            GLES20.glDisableVertexAttribArray(texCoordHandle);
-        }
-        private void pumpDecoderInput(float playheadTime) {
-            if(decoder == null) return;
-            float clipTime = playheadTime - clip.startTime;
-            long ptsUs = (long)(clipTime * 1_000_000); // override presentation timestamp
-            int inputIndex = decoder.dequeueInputBuffer(0);
-            if (inputIndex >= 0) {
-                ByteBuffer inputBuffer = decoder.getInputBuffer(inputIndex);
-                int sampleSize = extractor.readSampleData(inputBuffer, 0);
-
-                if (sampleSize >= 0) {
-
-                    System.err.println(ptsUs + "|" + extractor.getSampleTime());
-                    if(ptsUs > extractor.getSampleTime())
-                    {
-                        extractor.advance();
-                    }
-                    else {
-                        extractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                    }
-                    decoder.queueInputBuffer(inputIndex, 0, sampleSize, ptsUs, 0);
-
-                } else {
-                    decoder.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                }
-            }
-        }
-        private void pumpDecoderInputLag(float playheadTime) {
-            if(decoder == null) return;
-            float clipTime = playheadTime - clip.startTime;
-            long ptsUs = (long)((clip.startClipTrim + clipTime) * 1_000_000); // override presentation timestamp
-            int inputIndex = decoder.dequeueInputBuffer(0);
-            if (inputIndex >= 0) {
-                ByteBuffer inputBuffer = decoder.getInputBuffer(inputIndex);
-                int sampleSize = extractor.readSampleData(inputBuffer, 0);
-
-                if (sampleSize >= 0) {
-                    extractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-                    while (true) {
-
-                        long sampleTime = extractor.getSampleTime();
-                        if (sampleTime >= ptsUs) {
-                            // Feed this frame to MediaCodec
-                            System.err.println(ptsUs + "|" + extractor.getSampleTime());
-                            break;
-                        }
-                        extractor.advance();
-                    }
-                    decoder.queueInputBuffer(inputIndex, 0, sampleSize, ptsUs, 0);
-                } else {
-                    decoder.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                }
-            }
-        }
-        private void pumpDecoderInputSeek(float playheadTime) {
-            if(decoder == null) return;
-            float clipTime = playheadTime - clip.startTime;
-            long ptsUs = (long)(clipTime * 1_000_000); // override presentation timestamp
-            int inputIndex = decoder.dequeueInputBuffer(0);
-            if (inputIndex >= 0) {
-                ByteBuffer inputBuffer = decoder.getInputBuffer(inputIndex);
-                int sampleSize = extractor.readSampleData(inputBuffer, 0);
-
-                if (sampleSize >= 0) {
-                    extractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                    decoder.queueInputBuffer(inputIndex, 0, sampleSize, ptsUs, 0);
-
-                } else {
-                    decoder.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                }
-            }
-        }
 
 
 
         public void release() {
-            if (decoder != null) {
-                decoder.stop();
-                decoder.release();
+            if (audioPlayer != null) {
+                audioPlayer.stop();
+                audioPlayer.release();
             }
-            if (extractor != null) {
-                extractor.release();
-            }
-            if (surface != null) {
-                surface.release();
+            if (videoPlayer != null) {
+                videoPlayer.stop();
+                videoPlayer.release();
             }
         }
     }
 
 
-    public class TimelineRenderer implements GLSurfaceView.Renderer {
+    public static class TimelineRenderer {
         private final Context context;
         private List<List<ClipRenderer>> trackLayers = new ArrayList<>();
-        private float playheadTime = 0f;
 
         public TimelineRenderer(Context context) {
             this.context = context;
         }
 
-        public void buildTimeline(Timeline timeline)
+        public void buildTimeline(Timeline timeline, MainActivity.ProjectData properties, RelativeLayout previewViewGroup)
         {
+            for (List<ClipRenderer> trackRenderer : trackLayers) {
+                for (ClipRenderer clipRenderer : trackRenderer) {
+                    if(clipRenderer != null)
+                    {
+                        clipRenderer.release();
+                    }
+                }
+            }
+//            for (int i = 0; i < previewViewGroup.getChildCount(); i++) {
+//                SurfaceView view = (SurfaceView) previewViewGroup.getChildAt(i);
+//                view.release?
+//            }
+
+            previewViewGroup.removeAllViews();
+
             trackLayers = new ArrayList<>();
 
             for (Track track : timeline.tracks) {
                 List<ClipRenderer> renderers = new ArrayList<>();
                 for (Clip clip : track.clips) {
-                    if(clip.type == ClipType.VIDEO)
-                        renderers.add(new ClipRenderer(context, clip));
-//                    if(clip.type == ClipType.AUDIO)
-//                        renderers.add(new ClipRenderer(context, clip));
+                    switch (clip.type)
+                    {
+                        case VIDEO:
+                        case AUDIO:
+                        case IMAGE:
+                            renderers.add(new ClipRenderer(context, clip, properties, previewViewGroup));
+                    }
                 }
                 trackLayers.add(renderers);
             }
         }
-
-        public void updatePlayhead(float timeSec) {
-            this.playheadTime = timeSec;
-        }
-
-        public void initClips()
+        public void updateTime(float time)
         {
-            for (List<ClipRenderer> track : trackLayers) {
-                for (ClipRenderer cr : track) {
-                    cr.initGLResources(); // now that context is live
+            for (List<ClipRenderer> trackRenderer : trackLayers) {
+                for (ClipRenderer clipRenderer : trackRenderer) {
+                    if(clipRenderer != null)
+                    {
+                        if(clipRenderer.isVisible(time))
+                        {
+                            if(clipRenderer.surfaceView != null)
+                                clipRenderer.surfaceView.setVisibility(View.VISIBLE);
+                        }
+                        else {
+                            if(clipRenderer.surfaceView != null)
+                                clipRenderer.surfaceView.setVisibility(View.GONE);
+                            clipRenderer.isPlaying = false;
+                        }
+                        clipRenderer.renderFrame(time);
+                    }
                 }
             }
         }
-        @Override
-        public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            GLES20.glClearColor(0f, 0f, 0f, 1f);
-        }
 
-        @Override
-        public void onSurfaceChanged(GL10 gl, int width, int height) {
-            GLES20.glViewport(0, 0, width, height);
-        }
 
-        @Override
-        public void onDrawFrame(GL10 gl) {
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        public void startPlayAt(float time) {
 
             boolean renderedAny = false;
 
             for (List<ClipRenderer> track : trackLayers) {
                 for (ClipRenderer clipRenderer : track) {
-                    if (clipRenderer.isVisible(playheadTime)) {
-                        clipRenderer.renderFrame(playheadTime);
+                    if (clipRenderer.isVisible(time)) {
+                        clipRenderer.startPlayingAt(time);
                         renderedAny = true;
                     }
                 }
@@ -2879,8 +2806,8 @@ frameRate = 60;
         }
 
         private void renderSolidBlack() {
-            GLES20.glClearColor(0f, 0f, 0f, 1f);
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+//            GLES20.glClearColor(0f, 0f, 0f, 1f);
+//            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         }
 
         public void release() {

@@ -16,4 +16,12 @@
     <color name="colorGlassBackground">#80BBDEFB</color>
     <color name="colorPrimaryButton">#FF000000</color>
     <color name="colorHighlightedButton">#FFEB5406</color>
+
+
+
+    <color name="colorPalette1_1">#003285</color>
+    <color name="colorPalette1_2">#2A629A</color>
+    <color name="colorPalette1_3">#FF7F3E</color>
+    <color name="colorPalette1_4">#FFDA78</color>
+
 </resources>

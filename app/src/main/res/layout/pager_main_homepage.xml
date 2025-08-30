@@ -23,7 +23,7 @@
 
 
 
-            android:background="@color/colorSoftBlueBackground"
+            android:background="@color/colorPalette1_4"
 
             app:strokeColor="@color/colorSoftBackground"
             app:strokeWidth="1dp"
@@ -63,6 +63,7 @@
                 android:layout_marginEnd="25dp"
                 android:layout_marginBottom="5dp"
                 android:gravity="center"
+                android:backgroundTint="@color/colorPalette1_3"
                 android:text="@string/add_project"
                 android:textSize="24sp" />
 
@@ -94,7 +95,7 @@
 
 
 
-                android:background="@color/colorGlassBackground"
+                android:background="@color/colorPalette1_2"
 
                 app:strokeColor="@color/colorSoftBlueBackground"
                 app:strokeWidth="1dp"

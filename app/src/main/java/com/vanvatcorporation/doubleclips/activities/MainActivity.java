@@ -51,9 +51,12 @@ import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 
 import java.io.File;
 import java.io.Serializable;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class MainActivity extends AppCompatActivityImpl {
@@ -501,7 +504,8 @@ public class MainActivity extends AppCompatActivityImpl {
             ProjectData projectItem = projectList.get(position);
 
             holder.projectTitle.setText(projectItem.getProjectTitle());
-            holder.projectDatetime.setText(new Date(projectItem.getProjectTimestamp()).toString());
+            //holder.projectDatetime.setText(new Date(projectItem.getProjectTimestamp()).toString());
+            holder.projectDatetime.setText(new SimpleDateFormat("dd/MM/yyyy hh:mm", Locale.getDefault()).format(new Date(projectItem.getProjectTimestamp())));
             holder.projectSize.setText(StringFormatHelper.smartRound((projectItem.getProjectSize() / 1024d / 1024d), 2, true) + "MB");
             holder.projectDuration.setText(DateHelper.convertTimestampToHHMMSSFormat(projectItem.getProjectDuration()));
 

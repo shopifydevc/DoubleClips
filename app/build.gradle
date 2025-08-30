@@ -61,6 +61,9 @@ dependencies {
     implementation 'com.arthenica:smart-exception-java:0.2.1'
 
 
+    implementation 'net.protyposis.android.mediaplayer:mediaplayer:4.5.0'
+    implementation 'net.protyposis.android.mediaplayer:mediaplayer-dash:4.5.0'
+
     implementation files('libs/rajawali-1.2.1970.aar')
 
 }
