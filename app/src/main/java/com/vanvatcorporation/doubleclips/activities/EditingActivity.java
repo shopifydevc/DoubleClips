@@ -85,7 +85,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     VideoSettings settings;
 
     private LinearLayout timelineTracksContainer, rulerContainer, trackInfoLayout;
-    private RelativeLayout timelineWrapper, editingZone, editingTrackZone;
+    private RelativeLayout timelineWrapper, editingZone, editingToolsZone;
     private HorizontalScrollView timelineScroll, rulerScroll;
     private ScrollView timelineVerticalScroll, trackInfoVerticalScroll;
     private TextView currentTimePosText, durationTimePosText;
@@ -320,7 +320,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
         editingZone = findViewById(R.id.editingZone);
-        editingTrackZone = findViewById(R.id.editingTrackZone);
+        editingToolsZone = findViewById(R.id.editingToolsZone);
 
         currentTimePosText = findViewById(R.id.currentTimePosText);
         durationTimePosText = findViewById(R.id.durationTimePosText);
@@ -464,28 +464,19 @@ public class EditingActivity extends AppCompatActivityImpl {
         toolbarDefault = (HorizontalScrollView) LayoutInflater.from(this).inflate(R.layout.view_toolbar_default, null);
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        editingZone.addView(toolbarDefault, params);
+        editingToolsZone.addView(toolbarDefault, params);
 
         toolbarTrack = (HorizontalScrollView) LayoutInflater.from(this).inflate(R.layout.view_toolbar_track, null);
         RelativeLayout.LayoutParams paramsTrack = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         paramsTrack.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        editingZone.addView(toolbarTrack, paramsTrack);
+        editingToolsZone.addView(toolbarTrack, paramsTrack);
         toolbarTrack.setVisibility(View.GONE);
 
         toolbarClips = (HorizontalScrollView) LayoutInflater.from(this).inflate(R.layout.view_toolbar_clips, null);
         RelativeLayout.LayoutParams paramsClips = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         paramsClips.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        editingZone.addView(toolbarClips, paramsClips);
+        editingToolsZone.addView(toolbarClips, paramsClips);
         toolbarClips.setVisibility(View.GONE);
-
-
-        // TODO: Doesn't work, made a temporary 'editingToolsZone' buffer at the layout xml instead
-        toolbarDefault.post(() -> {
-            RelativeLayout.LayoutParams editingTrackParams = (RelativeLayout.LayoutParams) editingTrackZone.getLayoutParams();
-            editingTrackParams.addRule(RelativeLayout.BELOW, toolbarDefault.getId());
-            editingTrackZone.setLayoutParams(editingTrackParams);
-            editingTrackZone.requestLayout();
-        });
 
         // ===========================       CRITICAL ZONE       ====================================
 

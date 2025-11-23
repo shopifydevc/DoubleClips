@@ -37,17 +37,20 @@ import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.UncaughtExceptionHandler;
 import com.vanvatcorporation.doubleclips.constants.Constants;
+import com.vanvatcorporation.doubleclips.constants.RunnableConstants;
 import com.vanvatcorporation.doubleclips.ext.rajawali.RajawaliExample;
 import com.vanvatcorporation.doubleclips.helper.CompressionHelper;
 import com.vanvatcorporation.doubleclips.helper.DateHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
+import com.vanvatcorporation.doubleclips.helper.NotificationHelper;
 import com.vanvatcorporation.doubleclips.helper.StringFormatHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
 import com.vanvatcorporation.doubleclips.impl.NavigationIconLayout;
 import com.vanvatcorporation.doubleclips.impl.ViewPagerImpl;
 import com.vanvatcorporation.doubleclips.impl.java.RunnableImpl2;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
+import com.vanvatcorporation.doubleclips.services.RunnableTaskService;
 
 import java.io.File;
 import java.io.Serializable;
@@ -58,6 +61,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivityImpl {
     Button addNewProjectButton;
@@ -83,9 +88,11 @@ public class MainActivity extends AppCompatActivityImpl {
 
         setContentView(R.layout.layout_main);
 
-
-
         Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler(), this));
+
+
+        // Notification Stuff
+        NotificationHelper.createNotificationChannel(this);
 
 
 //        pickButton = findViewById(R.id.button);
@@ -265,7 +272,16 @@ public class MainActivity extends AppCompatActivityImpl {
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
-                    CompressionHelper.unzipFolder(this, getContentResolver(), uri, Constants.DEFAULT_PROJECT_DIRECTORY(this));
+
+
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    executor.execute(() -> {
+                        CompressionHelper.unzipFolder(this, getContentResolver(), uri, Constants.DEFAULT_PROJECT_DIRECTORY(this));
+                    });
+//                    RunnableTaskService.startTaskInBackground(this,
+//                            () -> CompressionHelper.unzipFolder(this, getContentResolver(), uri, Constants.DEFAULT_PROJECT_DIRECTORY(this)),
+//                            "Extracting project...", "Please wait...");
+
                 }
             }
     );
@@ -275,9 +291,24 @@ public class MainActivity extends AppCompatActivityImpl {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
 
-                    if(currentExportingProject == null) return;
-                    CompressionHelper.zipFolder(this, currentExportingProject.projectPath, getContentResolver(), uri);
-                    currentExportingProject = null;
+
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    executor.execute(() -> {
+                        if(currentExportingProject == null) return;
+                        CompressionHelper.zipFolder(MainActivity.this, currentExportingProject.projectPath, getContentResolver(), uri);
+                        currentExportingProject = null;
+                    });
+//                    RunnableTaskService.startTaskInBackground(this,
+//                            new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    if(currentExportingProject == null) return;
+//                                    CompressionHelper.zipFolder(MainActivity.this, currentExportingProject.projectPath, getContentResolver(), uri);
+//                                    currentExportingProject = null;
+//                                }
+//                            },
+//                            "Compressing project...", "Please wait...");
+
                 }
             }
     );
@@ -321,7 +352,10 @@ public class MainActivity extends AppCompatActivityImpl {
         projectAdapter.notifyDataSetChanged();
         String projectsFolderPath = IOHelper.CombinePath(IOHelper.getPersistentDataPath(this), "projects");
         File file = new File(projectsFolderPath);
-        if(file.listFiles() == null) return;
+        if(file.listFiles() == null) {
+            projectSwipeRefreshLayout.setRefreshing(false);
+            return;
+        }
         for (File directory : Objects.requireNonNull(file.listFiles())) {
             if(directory.isDirectory())
             {
