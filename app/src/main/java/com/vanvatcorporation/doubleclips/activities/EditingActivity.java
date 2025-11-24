@@ -512,7 +512,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         });
         toolbarTrack.findViewById(R.id.deleteTrackButton).setOnClickListener(v -> {
             if(selectedTrack != null) {
-                selectedTrack.delete(timeline);
+                selectedTrack.delete(timeline, timelineTracksContainer, trackInfoLayout, this);
                 updateCurrentClipEnd();
             }
             else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
@@ -609,12 +609,12 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         toolbarClips.findViewById(R.id.deleteMediaButton).setOnClickListener(v -> {
             if(selectedClip != null) {
-                selectedClip.deleteClip(timeline);
+                selectedClip.deleteClip(timeline, this);
                 updateCurrentClipEnd();
             }
             if(selectedClips != null) {
                 for (Clip selectedClip : selectedClips) {
-                    selectedClip.deleteClip(timeline);
+                    selectedClip.deleteClip(timeline, this);
                 }
                 updateCurrentClipEnd();
             }
@@ -1632,7 +1632,6 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             if(this.selectedClip != null && this.selectedClip == selectedClip){
                 this.selectedClip = null;
-                toolbarClips.setVisibility(View.GONE);
             }
             else {
                 selectingTrack(timeline.getTrackFromClip(selectedClip));
@@ -1659,8 +1658,6 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.selectedTrack = null;
             deselectingClip();
             this.selectedClip = null;
-            toolbarTrack.setVisibility(View.GONE);
-            toolbarClips.setVisibility(View.GONE);
         }
         else {
             deselectingClip();
@@ -1668,7 +1665,6 @@ public class EditingActivity extends AppCompatActivityImpl {
             selectedTrack.select();
             this.selectedTrack = selectedTrack;
             toolbarTrack.setVisibility(View.VISIBLE);
-            toolbarClips.setVisibility(View.GONE);
         }
     }
     private void selectingKnot(TransitionClip selectedKnot)
@@ -1677,6 +1673,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     private void deselectingClip()
     {
+        toolbarClips.setVisibility(View.GONE);
         if(isClipSelectMultiple)
             selectedClips.clear();
 
@@ -1688,6 +1685,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     private void deselectingTrack()
     {
+        toolbarTrack.setVisibility(View.GONE);
         for (Track track : timeline.tracks) {
             track.deselect();
         }
@@ -1816,6 +1814,10 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         public void addTrack(Track track) {
             tracks.add(track);
+        }
+
+        public void removeTrack(Track track) {
+            tracks.remove(track);
         }
 
         public List<Clip> getClipAtCurrentTime(float playheadTime) {
@@ -1978,8 +1980,28 @@ public class EditingActivity extends AppCompatActivityImpl {
             transitions.removeAll(removalQueue);
         }
 
-        public void delete(Timeline timeline) {
+        public void delete(Timeline timeline, ViewGroup trackContainer, ViewGroup trackInfo, EditingActivity activity) {
+            activity.deselectingTrack();
 
+            timeline.removeTrack(timeline.tracks.get(trackIndex));
+
+            // Lower the higher indexes track by 1 to fill up the remove one.
+            // When removed, trackIndex element become the next element
+            List<Track> tracks = timeline.tracks;
+            for (int i = trackIndex; i < tracks.size(); i++) {
+                Track higherTrack = tracks.get(i);
+                higherTrack.trackIndex--;
+            }
+
+            trackContainer.removeView(viewRef);
+
+            // Since the track #n is following the pattern, we just need to delete the last track # text and it does the job
+            // -1 for the count to index, like count is 4 but index should be 3
+            // -1 for the index for the button
+            trackInfo.removeView(trackInfo.getChildAt(trackInfo.getChildCount() - 2));
+
+            // Decrease the trackIndex from the global scope
+            activity.trackCount--;
         }
     }
 
@@ -2226,8 +2248,10 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-        public void deleteClip(Timeline timeline)
+        public void deleteClip(Timeline timeline, EditingActivity activity)
         {
+            activity.deselectingClip();
+
             Track currentTrack = timeline.tracks.get(trackIndex);
 
             currentTrack.removeClip(this);

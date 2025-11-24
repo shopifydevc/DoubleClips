@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
+import androidx.core.content.res.ResourcesCompat;
 
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 
@@ -48,6 +49,8 @@ public class IOImageHelper extends IOHelper {
         } catch (FileNotFoundException e) {
             LoggingManager.LogExceptionToNoteOverlay(context, e);
         }
-        return null;
+        // If it failed to retrieve the image then returns the application icon instead
+        return ImageHelper.createBitmapFromDrawable(ResourcesCompat.getDrawable(context.getResources(), context.getApplicationInfo().icon, null));
     }
+
 }
