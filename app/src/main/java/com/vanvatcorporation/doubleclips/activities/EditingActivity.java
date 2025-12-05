@@ -304,14 +304,11 @@ public class EditingActivity extends AppCompatActivityImpl {
         offsetTime += duration;
 
 
-        // This will show all in one
-        processingPreview(newClip, clipPath, previewClipPath);
-        // TODO: Add processingPreview method to the queue, so that the dialog
-        //  will be show one by one
         previewRenderQueue.enqueue(new FFmpegEdit.FfmpegRenderQueue.FfmpegRenderQueueInfo("Preview Generation",
                 () -> {
-                    System.err.println("Ffff");
+                    processingPreview(newClip, clipPath, previewClipPath);
                 }));
+
 
         return offsetTime;
     }
@@ -360,10 +357,11 @@ public class EditingActivity extends AppCompatActivityImpl {
         if(clip.type == ClipType.AUDIO)
         {
             runAnyCommand(this, previewGeneratedAudioCmd, "Exporting Preview Audio",
-                    () -> {
+                    () -> EditingActivity.this.runOnUiThread(() -> {
+
                         dialog.dismiss();
                         previewRenderQueue.taskCompleted();
-                    }, () -> {
+                    }), () -> {
                         processingDescription.post(() -> {
                             processingDescription.setTextColor(0xFFFF0000);
 
@@ -399,10 +397,10 @@ public class EditingActivity extends AppCompatActivityImpl {
         else if(clip.type == ClipType.VIDEO)
         {
             runAnyCommand(this, previewGeneratedVideoCmd, "Exporting Preview Video",
-                    () -> {
+                    () -> EditingActivity.this.runOnUiThread(() -> {
                         dialog.dismiss();
                         previewRenderQueue.taskCompleted();
-                    }, () -> {
+                    }), () -> {
                         processingDescription.post(() -> {
                             processingDescription.setTextColor(0xFFFF0000);
 
@@ -2472,6 +2470,23 @@ public class EditingActivity extends AppCompatActivityImpl {
                 path = getAbsolutePath(projectPath);
             return path;
         }
+        /**
+         * Used for EditingActivity in which didn't need high quality video. Fit for real-time preview.
+         *
+         * @param properties The Project Data.
+         * @return The path for preview file.
+         */
+        public String getAbsolutePreviewPath(MainActivity.ProjectData properties, String previewExtension) {
+            return getAbsolutePreviewPath(properties.getProjectPath(), previewExtension);
+        }
+        public String getAbsolutePreviewPath(String projectPath, String previewExtension) {
+            String path = IOHelper.CombinePath(projectPath, Constants.DEFAULT_PREVIEW_CLIP_DIRECTORY, clipName.substring(0, clipName.lastIndexOf('.')) + previewExtension);
+            // Fallback if not available yet.
+            // TODO: Temporary fix for the soon preview loading. Consider block main thread for preview to have time to load first
+            if(!IOHelper.isFileExist(path))
+                path = getAbsolutePath(projectPath);
+            return path;
+        }
         public String getAbsoluteRenderPath(MainActivity.ProjectData properties) {
             return getAbsoluteRenderPath(properties.getProjectPath());
         }
@@ -2829,7 +2844,7 @@ frameRate = 60;
                     {
 
                         audioExtractor = new MediaExtractor();
-                        audioExtractor.setDataSource(clip.getAbsolutePreviewPath(data));
+                        audioExtractor.setDataSource(clip.getAbsolutePreviewPath(data, ".wav"));
 
                         int audioTrackIndex = TimelineUtils.findVideoTrackIndex(audioExtractor);
                         audioExtractor.selectTrack(audioTrackIndex);
@@ -2839,8 +2854,7 @@ frameRate = 60;
                         audioDecoder.configure(audioFormat, null, null, 0);
                         audioDecoder.start();
 
-                        int sampleRate = audioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-                        System.err.println(sampleRate);
+                        int sampleRate = audioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE); // 22050
                         int channelConfig = AudioFormat.CHANNEL_OUT_MONO;
                         int audioFormatPCM = AudioFormat.ENCODING_PCM_16BIT;
                         int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormatPCM);
