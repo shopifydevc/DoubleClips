@@ -2929,7 +2929,7 @@ frameRate = 60;
 
         private void pumpDecoderVideoSeek(float playheadTime) {
             if(videoDecoder == null) return;
-            float clipTime = playheadTime - clip.startTime - clip.startClipTrim;
+            float clipTime = playheadTime - clip.startTime + clip.startClipTrim;
             long ptsUs = (long)(clipTime * 1_000_000); // override presentation timestamp
             int inputIndex = videoDecoder.dequeueInputBuffer(0);
             if (inputIndex >= 0) {
@@ -2953,7 +2953,7 @@ frameRate = 60;
         }
         private void pumpDecoderAudioSeek(float playheadTime, boolean isSeekingOnly) {
             if (audioDecoder == null) return;
-            float clipTime = playheadTime - clip.startTime - clip.startClipTrim;
+            float clipTime = playheadTime - clip.startTime + clip.startClipTrim;
             long ptsUs = (long)(clipTime * 1_000_000); // override presentation timestamp
 
             int inputIndex = audioDecoder.dequeueInputBuffer(10000);
