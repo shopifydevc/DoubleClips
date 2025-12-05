@@ -25,6 +25,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -43,6 +44,7 @@ import com.vanvatcorporation.doubleclips.helper.CompressionHelper;
 import com.vanvatcorporation.doubleclips.helper.DateHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
+import com.vanvatcorporation.doubleclips.helper.ImageHelper;
 import com.vanvatcorporation.doubleclips.helper.NotificationHelper;
 import com.vanvatcorporation.doubleclips.helper.StringFormatHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
@@ -547,6 +549,7 @@ public class MainActivity extends AppCompatActivityImpl {
             holder.projectSize.setText(StringFormatHelper.smartRound((projectItem.getProjectSize() / 1024d / 1024d), 2, true) + "MB");
             holder.projectDuration.setText(DateHelper.convertTimestampToHHMMSSFormat(projectItem.getProjectDuration()));
 
+            IOImageHelper.SaveFileAsPNGImage(context, IOHelper.CombinePath(projectItem.getProjectPath(), "preview.png"), ImageHelper.createBitmapFromDrawable(AppCompatResources.getDrawable(context, R.drawable.logo)));
             Bitmap iconBitmap = IOImageHelper.LoadFileAsPNGImage(context, IOHelper.CombinePath(projectItem.getProjectPath(), "preview.png"));
             if(iconBitmap != null)
             {

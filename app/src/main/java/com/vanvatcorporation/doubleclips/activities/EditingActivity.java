@@ -337,6 +337,8 @@ public class EditingActivity extends AppCompatActivityImpl {
         // Create the AlertDialog
         AlertDialog dialog = builder.create();
 
+        // Already prevent using the setCancelable above
+        //dialog.setCanceledOnTouchOutside(false);
         // Show the dialog
         dialog.show();
 
@@ -2928,7 +2930,7 @@ frameRate = 60;
                 videoDecoder.releaseOutputBuffer(outputIndex, true); // true = render to surface
             }
         }
-        private void pumpDecoderAudioSeek(float playheadTime) {
+        private void pumpDecoderAudioSeek(float playheadTime, boolean isSeekingOnly) {
             if (audioDecoder == null) return;
             float clipTime = playheadTime - clip.startTime;
             long ptsUs = (long)(clipTime * 1_000_000); // override presentation timestamp
@@ -2940,7 +2942,10 @@ frameRate = 60;
 
                 if (sampleSize >= 0) {
                     // Seek extractor to desired timestamp
-                    audioExtractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                    if(isSeekingOnly)
+                        audioExtractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                    else
+                        audioExtractor.advance(); // <— move to next sample
                     audioDecoder.queueInputBuffer(inputIndex, 0, sampleSize, ptsUs, 0);
                 } else {
                     audioDecoder.queueInputBuffer(inputIndex, 0, 0, 0,
@@ -3019,7 +3024,7 @@ frameRate = 60;
 //                        }
 
 
-                        pumpDecoderAudioSeek(playheadTime);
+                        pumpDecoderAudioSeek(playheadTime, isSeekingOnly);
                         break;
                     }
 
