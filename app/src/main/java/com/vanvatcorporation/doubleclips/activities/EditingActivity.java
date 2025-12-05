@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -59,6 +60,7 @@ import com.arthenica.ffmpegkit.Statistics;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+
 import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.FXCommandEmitter;
 import com.vanvatcorporation.doubleclips.R;
@@ -73,11 +75,15 @@ import com.vanvatcorporation.doubleclips.helper.ParserHelper;
 import com.vanvatcorporation.doubleclips.helper.StringFormatHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
 import com.vanvatcorporation.doubleclips.impl.ImageGroupView;
+import com.vanvatcorporation.doubleclips.impl.PlayerVisualizerView;
 import com.vanvatcorporation.doubleclips.impl.TrackFrameLayout;
 import com.vanvatcorporation.doubleclips.impl.java.RunnableImpl;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
+import com.vanvatcorporation.doubleclips.utils.PlayerVisualizerUtils;
 import com.vanvatcorporation.doubleclips.utils.TimelineUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -86,6 +92,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class EditingActivity extends AppCompatActivityImpl {
 
@@ -1904,8 +1912,25 @@ public class EditingActivity extends AppCompatActivityImpl {
                 thumbnails.add(ImageHelper.createBitmapFromDrawable(drawable));
                 break;
             case AUDIO:
-                drawable.setColorFilter(0xAA0000FF, PorterDuff.Mode.SRC_ATOP);
-                thumbnails.add(ImageHelper.createBitmapFromDrawable(drawable));
+//                try {
+////                    WaveformView waveformView = new WaveformView(context, null);
+////                    File audioFile = new File(filePath);
+////
+////                    CheapWAV wav = new CheapWAV();
+////                    wav.ReadFile(audioFile);
+////
+////                    waveformView.setSoundFile(wav);
+////
+////                    //drawable.setColorFilter(0xAA0000FF, PorterDuff.Mode.SRC_ATOP);
+////                    thumbnails.add(ImageHelper.createBitmapFromDrawable(waveformView.getBackground()));
+//                } catch (IOException e) {
+//
+//                }
+                Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+
+                PlayerVisualizerUtils.drawVisualizer(context, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), IOHelper.readFromFileAsRaw(context, filePath), new Canvas(bitmap));
+
+                thumbnails.add(bitmap);
                 break;
             case EFFECT:
                 drawable.setColorFilter(0xAAFFFF00, PorterDuff.Mode.SRC_ATOP);
@@ -2755,6 +2780,9 @@ frameRate = 60;
         private Surface surface;
         private Context context;
 
+        private ExecutorService renderThreadExecutor = Executors.newFixedThreadPool(1);
+
+
         public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, RelativeLayout previewViewGroup) {
             this.context = context;
             this.clip = clip;
@@ -2935,7 +2963,7 @@ frameRate = 60;
             float clipTime = playheadTime - clip.startTime;
             long ptsUs = (long)(clipTime * 1_000_000); // override presentation timestamp
 
-            int inputIndex = audioDecoder.dequeueInputBuffer(0);
+            int inputIndex = audioDecoder.dequeueInputBuffer(10000);
             if (inputIndex >= 0) {
                 ByteBuffer inputBuffer = audioDecoder.getInputBuffer(inputIndex);
                 int sampleSize = audioExtractor.readSampleData(inputBuffer, 0);
@@ -2945,8 +2973,10 @@ frameRate = 60;
                     if(isSeekingOnly)
                         audioExtractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
                     else
+                    {
                         audioExtractor.advance(); // <— move to next sample
-                    audioDecoder.queueInputBuffer(inputIndex, 0, sampleSize, ptsUs, 0);
+                        audioDecoder.queueInputBuffer(inputIndex, 0, sampleSize, ptsUs, 0);
+                    }
                 } else {
                     audioDecoder.queueInputBuffer(inputIndex, 0, 0, 0,
                             MediaCodec.BUFFER_FLAG_END_OF_STREAM);
@@ -2954,7 +2984,7 @@ frameRate = 60;
             }
 
             MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-            int outputIndex = audioDecoder.dequeueOutputBuffer(bufferInfo, 0);
+            int outputIndex = audioDecoder.dequeueOutputBuffer(bufferInfo, 10000);
             if (outputIndex >= 0) {
                 ByteBuffer outputBuffer = audioDecoder.getOutputBuffer(outputIndex);
 
@@ -3003,7 +3033,7 @@ frameRate = 60;
 //                                isPlaying = true;
 //                            }
 //                        }
-                        pumpDecoderVideoSeek(playheadTime);
+                        renderThreadExecutor.execute(() -> pumpDecoderVideoSeek(playheadTime));
                         break;
                     }
                     case AUDIO:
@@ -3024,7 +3054,7 @@ frameRate = 60;
 //                        }
 
 
-                        pumpDecoderAudioSeek(playheadTime, isSeekingOnly);
+                        renderThreadExecutor.execute(() -> pumpDecoderAudioSeek(playheadTime, isSeekingOnly));
                         break;
                     }
 
@@ -3053,6 +3083,10 @@ frameRate = 60;
             if(videoExtractor != null) {
                 videoExtractor.release();
             }
+            if(renderThreadExecutor != null) {
+                renderThreadExecutor.shutdown();
+            }
+
         }
     }
 
