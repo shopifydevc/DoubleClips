@@ -914,9 +914,9 @@ public class EditingActivity extends AppCompatActivityImpl {
                         clip.effect.style = (String) FXCommandEmitter.FXRegistry.transitionFXMap.keySet().toArray()[transitionEditContent.getSelectedItemPosition()];
                         clip.effect.duration = ParserHelper.TryParse(transitionDurationContent.getText().toString(), 0.5f);
                         clip.mode = TransitionClip.TransitionMode.values()[transitionModeEditContent.getSelectedItemPosition()];
-
-                        for (TransitionClip clip2 : timeline.tracks.get(selectedKnot.trackIndex).transitions)
-                            System.err.println(clip2.duration);
+//
+//                        for (TransitionClip clip2 : timeline.tracks.get(selectedKnot.trackIndex).transitions)
+//                            System.err.println(clip2.duration);
                         selectedKnot = null;
                         break;
                     }
@@ -935,8 +935,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                     clip.effect.duration = ParserHelper.TryParse(transitionDurationContent.getText().toString(), 0.5f);
                     clip.mode = TransitionClip.TransitionMode.values()[transitionModeEditContent.getSelectedItemPosition()];
                 }
-                for (TransitionClip clip : timeline.tracks.get(selectedKnot.trackIndex).transitions)
-                    System.err.println(clip.duration);
+//                for (TransitionClip clip : timeline.tracks.get(selectedKnot.trackIndex).transitions)
+//                    System.err.println(clip.duration);
                 selectedKnot = null;
 
             }
