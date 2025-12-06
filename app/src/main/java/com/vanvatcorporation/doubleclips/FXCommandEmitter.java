@@ -56,6 +56,7 @@ public class FXCommandEmitter {
         EditingActivity.Clip clipB = tags.getValidMapKey(transition.toClip);
         if(clipA == null) return "";
         if(clipB == null) return "";
+        if(!transition.effect.style.equals("none")) return "";
         EditingActivity.Clip mergedClip = new EditingActivity.Clip("MERGED", clipA.startTime, clipA.duration + clipB.duration -
                 // Overlap mean both the overlap clip lost the transition duration amount of time
                 // (end first clip sooner than half of transition and start second clip sooner than half of transition)
@@ -130,7 +131,7 @@ public class FXCommandEmitter {
                         + outputLabel + ";\n";
             }
         }
-        else if(!transition.effect.style.equals("none")) {
+        else {
             tags.storeTag(mergedClip, outputLabel, fromTag.index);
             return fromTag.tag + toTag.tag +
                     "xfade=transition=" + transition.effect.style + ":duration=" + transition.duration + ":offset=" +

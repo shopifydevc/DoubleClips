@@ -809,7 +809,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             isClipSelectMultiple = !isClipSelectMultiple;
 
-            ((ImageView)toolbarClips.findViewById(R.id.selectMultipleButton)).setColorFilter((isClipSelectMultiple ? 0xFFFF0000 : 0xFFFFFFFF), PorterDuff.Mode.SRC_ATOP);
+            ((NavigationIconLayout)toolbarClips.findViewById(R.id.selectMultipleButton)).getIconView().setColorFilter((isClipSelectMultiple ? 0xFFFF0000 : 0xFFFFFFFF), PorterDuff.Mode.SRC_ATOP);
         });
 
         // ===========================       CLIPS ZONE       ====================================
