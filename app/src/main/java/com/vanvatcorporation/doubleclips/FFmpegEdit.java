@@ -1,3 +1,22 @@
+// TODO: CapCut transition in the way that in a 2s transition, it take 0.6s of the end of clipA and 1.4s of the start of clipB, if the clip is cut from the end
+//  in our case it's endClipTrim, then it extend to the 0.6s to match the lost clip from transition merging. If it does not have enough endClipTrim,
+//  e.g. 0.3s trim only from clipA then it just freeze the frame fro another 0.3s, if it does not have any endClipTrim at all, then the entire 0.6s
+//  will be the last frame of clipA, entirely
+//  Audio will be merged too
+//  .
+//  We using ffmpeg so it should be 1s equally for both clip. So in order to do it, we will need to get the transition duration before the FXCommandEmmiter.java.
+//  which then add the "tpad=stop_mode=clone:stop_duration=n" with n is the half of transition duration to the clipA before transition. No need to set "apad=pad_dur=2"
+//  for audio-filter-complex because it will not output anything once the sound run out
+//  .
+//  Another problem in hand is that we will have to put another variable and check whether the video have audio or not, it then transferred to this class (FFmpegEdit.java)
+//  to process. If it has audio then in the audio for video section ( (TO_DO: *1) (Remove "_" and then Ctrl + F to find) ) it does input the audio from the clip,
+//  if not then discard entirely
+//  .
+//  .
+//  .
+//  AI Link: https://copilot.microsoft.com/shares/nw39hkpxpiAxGq55Hy5xa
+
+
 package com.vanvatcorporation.doubleclips;
 
 import android.content.Context;
@@ -364,6 +383,7 @@ public class FFmpegEdit {
                 }
 
                 // 🔊 Handle embedded audio in VIDEO
+                // TODO: *1 (Add it straight to the if right here)
                 if (clip.type == EditingActivity.ClipType.VIDEO) {
                     int delayMs = (int) (clip.startTime * 1000);
                     filterComplex.append("[").append(inputIndex).append(":a]")
@@ -455,7 +475,7 @@ public class FFmpegEdit {
         // 🔁 Mix audio if present
         if (audioClipCount > 0) {
             filterComplex.append(audioInputs)
-                    .append("amix=inputs=").append(audioClipCount).append("[aout];\n");
+                    .append("amix=inputs=").append(audioClipCount).append(":dropout_transition=0").append("[aout];\n");
             audioMaps.append("-map \"[aout]\" ");
         } else {
             audioMaps.append("-an "); // 🧘 No audio at all
