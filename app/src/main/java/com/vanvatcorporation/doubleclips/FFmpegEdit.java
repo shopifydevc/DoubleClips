@@ -4,7 +4,7 @@
 //  will be the last frame of clipA, entirely
 //  Audio will be merged too
 //  .
-//  We using ffmpeg so it should be 1s equally for both clip. So in order to do it, we will need to get the transition duration before the FXCommandEmmiter.java.
+//  We uses ffmpeg so it should be 1s equally for both clip. So in order to do it, we will need to get the transition duration before the FXCommandEmmiter.java.
 //  which then add the "tpad=stop_mode=clone:stop_duration=n" with n is the half of transition duration to the clipA before transition. No need to set "apad=pad_dur=2"
 //  for audio-filter-complex because it will not output anything once the sound run out
 //  .
@@ -15,6 +15,30 @@
 //  .
 //  .
 //  AI Link: https://copilot.microsoft.com/shares/nw39hkpxpiAxGq55Hy5xa
+
+
+
+// TODO: Rewritten by AI:
+
+
+
+
+
+
+// TODO: Implement a CapCut-style transition where, in a 2s transition, 0.6s comes from the end of clipA and
+//  1.4s from the start of clipB. If the cut is at the end (endClipTrim), extend it by 0.6s to make up for
+//  what’s lost during the merge. If endClipTrim is less than 0.6s (e.g., 0.3s), freeze the last frame for
+//  the remaining 0.3s. If there’s no endClipTrim, use the last frame of clipA for the full 0.6s.
+//  Audio should be merged as well.
+//  .
+//  Using ffmpeg, the transition should be 1s from each clip. To achieve this, get the transition
+//  duration before FXCommandEmitter.java, then add "tpad=stop_mode=clone:stop_duration=n" to clipA
+//  before the transition, where n is half the transition duration. No need to use "apad=pad_dur=2"
+//  for audio-filter-complex since it won’t output anything once the sound ends.
+//  .
+//  Also, add a variable to check whether the video has audio, and pass this to FFmpegEdit.java for
+//  processing. If it has audio, in the audio-for-video section ((TO_DO: *1) — remove "_" and search),
+//  include the audio from the clip; if not, discard it entirely.
 
 
 package com.vanvatcorporation.doubleclips;
