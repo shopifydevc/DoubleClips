@@ -399,7 +399,7 @@ public class FFmpegEdit {
                         String trimFilter =
                                 clip.type == EditingActivity.ClipType.VIDEO ?
                                         "trim=start=" + clip.startClipTrim + ":end=" + (clip.startClipTrim + clip.duration + extendMediaDuration) :
-                                        "trim=duration=" + clip.duration + fillingTransitionDuration;
+                                        "trim=duration=" + (clip.duration + fillingTransitionDuration);
 
                         filterComplex.append("[").append(inputIndex).append(":v]")
                                 .append("scale=iw*").append(clip.scaleX).append(":ih*").append(clip.scaleY).append(",")
