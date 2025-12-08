@@ -271,16 +271,29 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         if(mimeType == null) return offsetTime;
 
-        if(mimeType.startsWith("video/") || mimeType.startsWith("audio/"))
+
+        ClipType type;
+
+        if (mimeType.startsWith("audio/")) type = ClipType.AUDIO;
+        else if (mimeType.startsWith("image/")) type = ClipType.IMAGE;
+        else if (mimeType.startsWith("video/")) type = ClipType.VIDEO;
+        else type = ClipType.EFFECT; // if effect or unknown
+
+
+
+        if(type == ClipType.VIDEO || type == ClipType.AUDIO)
             try {
                 MediaExtractor extractor = new MediaExtractor();
                 extractor.setDataSource(clipPath);
+
+
 
                 for (int i = 0; i < extractor.getTrackCount(); i++) {
                     MediaFormat format = extractor.getTrackFormat(i);
                     String trackMime = format.getString(MediaFormat.KEY_MIME);
                     if (trackMime != null) {
-                        mimeType = trackMime;
+                        // For MOV type, it has 2 track, so before this version, this applied to the below ClipType, which turn MOV to audio type
+                        //mimeType = trackMime;
 
                         if (format.containsKey(MediaFormat.KEY_DURATION)) {
                             long d = format.getLong(MediaFormat.KEY_DURATION);
@@ -297,17 +310,23 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-        ClipType type;
-
-        if (mimeType.startsWith("audio/")) type = ClipType.AUDIO;
-        else if (mimeType.startsWith("image/")) type = ClipType.IMAGE;
-        else if (mimeType.startsWith("video/")) type = ClipType.VIDEO;
-        else type = ClipType.EFFECT; // if effect or unknown
-
-        System.err.println(type);
-
-
         Clip newClip = new Clip(filename, currentTime + offsetTime, duration, selectedTrack.trackIndex, type);
+
+        // Video check
+        if(type == ClipType.VIDEO)
+        {
+            try {
+                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                retriever.setDataSource(clipPath);
+
+                newClip.isVideoHasAudio = "yes".equals(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
+                retriever.close();
+            } catch (IOException e) {
+                LoggingManager.LogExceptionToNoteOverlay(this, e);
+            }
+        }
+
+
         addClipToTrack(selectedTrack, newClip);
 
         offsetTime += duration;
@@ -354,7 +373,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setVisibility(View.GONE);
 
 
-        processingText.setText(getString(R.string.processing) + " " + clip.clipName);
+        processingText.setText(getString(R.string.processing) + " " + "\"" + clip.clipName + "\"");
 
 
 
@@ -2226,6 +2245,15 @@ public class EditingActivity extends AppCompatActivityImpl {
         public String textContent;    // for TEXT type
         @Expose
         public float fontSize;    // for TEXT type
+
+        /**
+         * For VIDEO type.
+         * When import, check whether the clip has audio or not
+         * When export, decide to include audio stream or not to prevent "match no stream" ffmpeg error.
+         * Can use this to mute video when export
+         */
+        @Expose
+        public boolean isVideoHasAudio;    // for VIDEO type
 
 
         //Not serializing

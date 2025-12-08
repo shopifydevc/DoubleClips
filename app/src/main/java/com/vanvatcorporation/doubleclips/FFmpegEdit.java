@@ -8,10 +8,6 @@
 //  which then add the "tpad=stop_mode=clone:stop_duration=n" with n is the half of transition duration to the clipA before transition. No need to set "apad=pad_dur=2"
 //  for audio-filter-complex because it will not output anything once the sound run out
 //  .
-//  Another problem in hand is that we will have to put another variable and check whether the video have audio or not, it then transferred to this class (FFmpegEdit.java)
-//  to process. If it has audio then in the audio for video section ( (TO_DO: *1) (Remove "_" and then Ctrl + F to find) ) it does input the audio from the clip,
-//  if not then discard entirely
-//  .
 //  .
 //  .
 //  AI Link: https://copilot.microsoft.com/shares/nw39hkpxpiAxGq55Hy5xa
@@ -35,10 +31,6 @@
 //  duration before FXCommandEmitter.java, then add "tpad=stop_mode=clone:stop_duration=n" to clipA
 //  before the transition, where n is half the transition duration. No need to use "apad=pad_dur=2"
 //  for audio-filter-complex since it won’t output anything once the sound ends.
-//  .
-//  Also, add a variable to check whether the video has audio, and pass this to FFmpegEdit.java for
-//  processing. If it has audio, in the audio-for-video section ((TO_DO: *1) — remove "_" and search),
-//  include the audio from the clip; if not, discard it entirely.
 
 
 package com.vanvatcorporation.doubleclips;
@@ -407,8 +399,7 @@ public class FFmpegEdit {
                 }
 
                 // 🔊 Handle embedded audio in VIDEO
-                // TODO: *1 (Add it straight to the if right here)
-                if (clip.type == EditingActivity.ClipType.VIDEO) {
+                if (clip.type == EditingActivity.ClipType.VIDEO && clip.isVideoHasAudio) {
                     int delayMs = (int) (clip.startTime * 1000);
                     filterComplex.append("[").append(inputIndex).append(":a]")
                             .append("atrim=start=").append(clip.startClipTrim).append(":end=").append(clip.startClipTrim + clip.duration).append(",")
@@ -505,9 +496,17 @@ public class FFmpegEdit {
             audioMaps.append("-an "); // 🧘 No audio at all
         }
 
-        cmd.append("-filter_complex \"").append(filterComplex).append("\" ")
-                .append("-map \"").append(tags.useTag(0).tag).append("\" ")
-                .append(audioMaps)
+        // Available when the track has at least 1 video
+        // Null when there are no video in the track
+        FfmpegFilterComplexTags.FilterComplexInfo mapTag = tags.useTag(0);
+
+        cmd.append("-filter_complex \"").append(filterComplex).append("\" ");
+        // If video is present
+        if(mapTag != null)
+        {
+            cmd.append("-map \"").append(mapTag.tag).append("\" ");
+        }
+        cmd.append(audioMaps)
                 .append("-t ").append(timeline.duration)
                 .append(" -c:v libx264 -preset ").append(settings.getPreset())
                 .append(" -tune ").append(settings.getTune())
