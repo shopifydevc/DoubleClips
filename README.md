@@ -58,7 +58,12 @@ And that's actually it! High-end devices render quickly, low-end devices render 
 
 Most open-source projects are nearly non-profitable, which means we rely on your support to survive this harsh reality. Instead of asking for subscriptions — no, we don’t do that here — why not consider donating so the project can develop faster?
 
-Send me a cup of coffee via https://www.paypal.me/nguyenviet163
+Send me a cup of coffee via 
+PayPal: https://www.paypal.me/nguyenviet163
+Bitcoin: bc1ql5mztnx7vaz2pw9qqv9a76pflx8lw3u68fxnxe
+Solana: GfsHviuLtKWuX6jVLh9pCup2w36bmZgTFbsN6K3RowxE
+USDT: 0x40D247A8d5a9733613BbEB857bB34Ee051e2BB22
+
 
 ## License
 
