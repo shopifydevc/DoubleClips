@@ -42,27 +42,20 @@ task prepareKotlinBuildScriptModel {
 
 }
 dependencies {
-
     implementation 'androidx.appcompat:appcompat:1.7.1'
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'com.google.android.material:material:1.13.0'
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 
-    implementation 'com.google.code.gson:gson:2.13.1'
+    implementation 'com.google.code.gson:gson:2.13.2'
     implementation 'org.jsoup:jsoup:1.21.1'
-    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-beta01"
+    implementation 'com.google.android.gms:play-services-ads:24.8.0'
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.2.0"
     implementation "androidx.preference:preference:1.2.1"
-
-
-    //implementation 'com.writingminds:FFmpegAndroid:0.3.2'
 
     implementation files('libs/ffmpeg-kit-full-gpl-6.0-2.LTS.aar')
     implementation 'com.arthenica:smart-exception-java:0.2.1'
-
-
-    implementation 'net.protyposis.android.mediaplayer:mediaplayer:4.5.0'
-    implementation 'net.protyposis.android.mediaplayer:mediaplayer-dash:4.5.0'
 
     implementation files('libs/rajawali-1.2.1970.aar')
 

@@ -6,6 +6,8 @@
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="processing">Processing</string>
+    <string name="thank_you">Thank you!</string>
+    <string name="close">Close</string>
 
 
     <string name="alert_add_new_project_title">Add/Import Project</string>
@@ -17,6 +19,18 @@
 
     <string name="alert_processing_preview">Processing Preview…</string>
     <string name="alert_processing_without_preview_confirmation">Proceed without preview</string>
+
+    <string name="alert_ask_for_showing_ads_title">Hey you, professional editor…</string>
+    <string name="alert_ask_for_showing_ads_description">I know ads is frustrating, but in order to keep this app available, I…huhu,…have to add ads to survive in this world. Without money, I can\'t promote this app further to more people. I can\'t host my web because domain soon expire. Huhu. I need your help…</string>
+
+    <string name="btn_ask_for_showing_ads_reward">Show rewarded ads (More juicy money)</string>
+    <string name="btn_ask_for_showing_ads_interstitial">I don\'t have time, show interstitial, skippable ads</string>
+    <string name="btn_ask_for_showing_ads_decline">It\'s your problem. Go bankrupt I don\'t care</string>
+
+    <string name="alert_thanks_for_showing_ads_title">💖 Thank you!</string>
+
+
+
 
     <string name="menu_cpn_project_element_edit">Edit title</string>
     <string name="menu_cpn_project_element_delete">Delete project</string>

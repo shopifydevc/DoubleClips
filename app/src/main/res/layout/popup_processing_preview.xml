@@ -22,7 +22,7 @@
 
 
         <TextView
-            android:id="@+id/processingText"
+            android:id="@+id/adsDescriptionText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/processing"/>
@@ -30,7 +30,7 @@
             android:id="@+id/processingDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/processingText"
+            android:layout_below="@id/adsDescriptionText"
             android:hint="@string/processing"/>
 
         <ProgressBar

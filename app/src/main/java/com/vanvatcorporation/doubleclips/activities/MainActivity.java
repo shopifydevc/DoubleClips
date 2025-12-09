@@ -32,7 +32,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.android.gms.ads.MobileAds;
 import com.google.gson.Gson;
+import com.vanvatcorporation.doubleclips.AdsHandler;
 import com.vanvatcorporation.doubleclips.BuildConfig;
 import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.R;
@@ -95,6 +97,12 @@ public class MainActivity extends AppCompatActivityImpl {
 
         // Notification Stuff
         NotificationHelper.createNotificationChannel(this);
+
+
+
+        // Initialize Mobile Ads SDK
+        AdsHandler.initializeAds(this, this);
+
 
 
 //        pickButton = findViewById(R.id.button);
@@ -268,6 +276,12 @@ public class MainActivity extends AppCompatActivityImpl {
     }
 
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        AdsHandler.displayThanksForShowingAds(this);
+//        AdsHandler.loadBothAds(this, this);
+    }
 
     private ActivityResultLauncher<Intent> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),

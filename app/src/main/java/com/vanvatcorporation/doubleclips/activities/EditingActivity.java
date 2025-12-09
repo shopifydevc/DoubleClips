@@ -12,7 +12,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -42,7 +41,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -76,14 +74,11 @@ import com.vanvatcorporation.doubleclips.helper.StringFormatHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
 import com.vanvatcorporation.doubleclips.impl.ImageGroupView;
 import com.vanvatcorporation.doubleclips.impl.NavigationIconLayout;
-import com.vanvatcorporation.doubleclips.impl.PlayerVisualizerView;
 import com.vanvatcorporation.doubleclips.impl.TrackFrameLayout;
 import com.vanvatcorporation.doubleclips.impl.java.RunnableImpl;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
-import com.vanvatcorporation.doubleclips.utils.PlayerVisualizerUtils;
 import com.vanvatcorporation.doubleclips.utils.TimelineUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -357,7 +352,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         });
 
         // Get references to the EditText and Buttons in your custom layout
-        TextView processingText = dialogView.findViewById(R.id.processingText);
+        TextView processingText = dialogView.findViewById(R.id.adsDescriptionText);
         TextView processingDescription = dialogView.findViewById(R.id.processingDescription);
         ProgressBar previewProgressBar = dialogView.findViewById(R.id.previewProgressBar);
         TextView processingPercent = dialogView.findViewById(R.id.processingPercent);

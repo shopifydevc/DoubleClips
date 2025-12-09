@@ -33,6 +33,12 @@
         android:theme="@style/Theme.DoubleClips"
         tools:targetApi="35">
 
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1708105276845874~2243285845" />
+
+
+
         <activity android:name=".activities.MainActivity"
             android:exported="true">
             <intent-filter>

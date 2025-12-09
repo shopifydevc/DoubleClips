@@ -30,6 +30,7 @@ import com.arthenica.ffmpegkit.LogCallback;
 import com.arthenica.ffmpegkit.MediaInformationSession;
 import com.arthenica.ffmpegkit.Statistics;
 import com.arthenica.ffmpegkit.StatisticsCallback;
+import com.vanvatcorporation.doubleclips.AdsHandler;
 import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.constants.Constants;
@@ -210,6 +211,9 @@ public class ExportActivity extends AppCompatActivityImpl {
         if(!isLogUpdateRunning)
             runLogUpdate();
 
+
+        AdsHandler.loadBothAds(this, this);
+
         runAnyCommand(this, cmd, "Exporting Video", this::exportClipTo, () -> {
                     logText.post(() -> logText.setTextIsSelectable(true));
                 }
@@ -264,5 +268,11 @@ public class ExportActivity extends AppCompatActivityImpl {
     protected void onDestroy() {
         super.onDestroy();
         FFmpegEdit.queue.cancelAllTask();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        AdsHandler.displayThanksForShowingAds(this);
     }
 }

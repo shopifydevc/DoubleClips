@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/alert_ask_for_showing_ads_title"
+        android:textSize="26sp"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="350dp"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+
+        <TextView
+            android:id="@+id/adsDescriptionText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/alert_ask_for_showing_ads_description"
+            android:gravity="center"
+            android:textSize="18sp"/>
+
+        <Button
+            android:id="@+id/rewardedAdsButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/adsDescriptionText"
+            android:layout_centerHorizontal="true"
+            android:text="@string/btn_ask_for_showing_ads_reward"/>
+        <Button
+            android:id="@+id/interstitialAdsButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/rewardedAdsButton"
+            android:layout_centerHorizontal="true"
+            android:text="@string/btn_ask_for_showing_ads_interstitial"/>
+        <Button
+            android:id="@+id/declineAdsButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/interstitialAdsButton"
+            android:layout_centerHorizontal="true"
+            android:backgroundTint="@color/colorPalette1_3"
+            android:text="@string/btn_ask_for_showing_ads_decline"/>
+
+    </RelativeLayout>
+
+
+</LinearLayout>
