@@ -61,7 +61,7 @@ public class FXCommandEmitter {
                 // Overlap mean both the overlap clip lost the transition duration amount of time
                 // (end first clip sooner than half of transition and start second clip sooner than half of transition)
                 (transition.mode == EditingActivity.TransitionClip.TransitionMode.OVERLAP ? transition.duration : 0)
-                , clipA.trackIndex, clipA.type);
+                , clipA.trackIndex, clipA.type, clipA.isVideoHasAudio || clipB.isVideoHasAudio);
 
         System.err.println(clipA.duration);
         System.err.println(clipB.duration);

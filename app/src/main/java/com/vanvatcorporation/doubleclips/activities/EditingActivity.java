@@ -304,9 +304,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
 
 
-
-        Clip newClip = new Clip(filename, currentTime + offsetTime, duration, selectedTrack.trackIndex, type);
-
+        boolean isVideoHasAudio = false;
         // Video check
         if(type == ClipType.VIDEO)
         {
@@ -314,12 +312,15 @@ public class EditingActivity extends AppCompatActivityImpl {
                 MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                 retriever.setDataSource(clipPath);
 
-                newClip.isVideoHasAudio = "yes".equals(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
+                isVideoHasAudio = "yes".equals(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
                 retriever.close();
             } catch (IOException e) {
                 LoggingManager.LogExceptionToNoteOverlay(this, e);
             }
         }
+
+
+        Clip newClip = new Clip(filename, currentTime + offsetTime, duration, selectedTrack.trackIndex, type, isVideoHasAudio);
 
 
         addClipToTrack(selectedTrack, newClip);
@@ -715,7 +716,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-            Clip newClip = new Clip("TEXT", currentTime, duration, selectedTrack.trackIndex, type);
+            Clip newClip = new Clip("TEXT", currentTime, duration, selectedTrack.trackIndex, type, false);
             newClip.textContent = "Simple text";
             newClip.fontSize = 30;
             addClipToTrack(selectedTrack, newClip);
@@ -730,7 +731,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             float duration = 3f; // fallback default if needed
             ClipType type = ClipType.EFFECT; // if effect or unknown
 
-            Clip newClip = new Clip("EFFECT", currentTime, duration, selectedTrack.trackIndex, type);
+            Clip newClip = new Clip("EFFECT", currentTime, duration, selectedTrack.trackIndex, type, false);
             newClip.effect = new EffectTemplate("glitch-pulse", 1.2, 4.0);
 
             addClipToTrack(selectedTrack, newClip);
@@ -2255,7 +2256,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public transient View leftHandle, rightHandle;
         public transient ImageGroupView viewRef;
 
-        public Clip(String clipName, float startTime, float duration, int trackIndex, ClipType type) {
+        public Clip(String clipName, float startTime, float duration, int trackIndex, ClipType type, boolean isVideoHasAudio) {
             this.clipName = clipName;
             this.startTime = startTime;
             this.startClipTrim = 0;
@@ -2264,6 +2265,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.originalDuration = duration;
             this.trackIndex = trackIndex;
             this.type = type;
+            this.isVideoHasAudio = isVideoHasAudio;
 
             this.scaleX = 1;
             this.scaleY = 1;
@@ -2460,7 +2462,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             float translatedLocalCurrentTime = getLocalClipTime(currentGlobalTime);
 
-            Clip secondaryClip = new Clip(clipName, currentGlobalTime, originalDuration, trackIndex, type);
+            Clip secondaryClip = new Clip(clipName, currentGlobalTime, originalDuration, trackIndex, type, isVideoHasAudio);
 
             float oldEndClipTrim = endClipTrim;
             float oldStartClipTrim = startClipTrim;
