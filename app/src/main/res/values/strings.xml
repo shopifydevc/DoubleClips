@@ -22,6 +22,7 @@
 
     <string name="alert_ask_for_showing_ads_title">Hey you, professional editor…</string>
     <string name="alert_ask_for_showing_ads_description">I know ads is frustrating, but in order to keep this app available, I…huhu,…have to add ads to survive in this world. Without money, I can\'t promote this app further to more people. I can\'t host my web because domain soon expire. Huhu. I need your help…</string>
+    <string name="alert_ask_for_showing_ads_disable_guide">Tip! I don\'t like ads either, you can turn off this popup in Settings. I ain\'t mad at you 😚</string>
 
     <string name="btn_ask_for_showing_ads_reward">Show rewarded ads (More juicy money)</string>
     <string name="btn_ask_for_showing_ads_interstitial">I don\'t have time, show interstitial, skippable ads</string>
@@ -39,13 +40,17 @@
     <string name="menu_cpn_project_element_clone">Clone project</string>
     <string name="add_project_choice_new">New</string>
     <string name="add_project_choice_import">Import</string>
+
     <string name="settings_group_general">General</string>
     <string name="settings_general_enable_dark_mode">Enable Dark Mode</string>
+    <string name="settings_general_ads_popup">Ads popup</string>
+
     <string name="main_homepage">Home</string>
     <string name="main_template">Template</string>
     <string name="main_search">Search</string>
     <string name="main_storage">Storage</string>
     <string name="main_profile">Profile</string>
-    <string name="template_recommended">Recommended</string>
     <string name="main_settings">Settings</string>
+
+    <string name="template_recommended">Recommended</string>
 </resources>

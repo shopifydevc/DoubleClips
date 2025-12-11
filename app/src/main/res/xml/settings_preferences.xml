@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory app:title="@string/settings_group_general">
 
@@ -10,6 +11,11 @@
             app:entries="@array/options_array"
             app:entryValues="@array/options_values"
             app:defaultValue="option1" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="ads_popup"
+            android:title="@string/settings_general_ads_popup" />
 
     </PreferenceCategory>
 

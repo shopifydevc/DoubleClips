@@ -2,8 +2,10 @@ package com.vanvatcorporation.doubleclips;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
+import androidx.preference.PreferenceManager;
 
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
@@ -117,10 +119,20 @@ public class AdsHandler {
     }
 
     public static void loadBothAds(Context context, Activity activity) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean adsAllowed = prefs.getBoolean("ads_popup", true);
+
+        if(!adsAllowed) return;
+
         AdsHandler.loadRewardedAds(context, activity);
         AdsHandler.loadInterstitialAd(context, activity);
     }
     public static void initializeAds(Context context, Activity activity) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean adsAllowed = prefs.getBoolean("ads_popup", true);
+
+        if(!adsAllowed) return;
+
         MobileAds.initialize(context, initializationStatus -> {
             loadBothAds(context, activity);
         });
