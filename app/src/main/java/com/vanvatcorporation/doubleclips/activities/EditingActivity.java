@@ -30,6 +30,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.util.DisplayMetrics;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -3092,6 +3093,8 @@ frameRate = 60;
 
                 if(textureView != null)
                 {
+                    setPivot();
+                    attachGestureControls(textureView, clip);
                     textureView.setOnClickListener(v -> {
                         clip.select();
                         EditingActivity.selectedClip = clip;
@@ -3247,7 +3250,94 @@ frameRate = 60;
 
 
 
+        private void setPivot() {
+            textureView.post(() -> {
+                textureView.setPivotX(textureView.getWidth() / 2f);
+                textureView.setPivotY(textureView.getHeight() / 2f);
+            });
 
+        }
+
+
+        private void attachGestureControls(TextureView tv, Clip clip) {
+            final GestureDetector tapDrag = new GestureDetector(tv.getContext(), new GestureDetector.SimpleOnGestureListener() {
+                @Override public boolean onDown(MotionEvent e) { return true; } // must return true to receive events
+                @Override public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
+                    // Move
+                    float newX = tv.getTranslationX() - dx;
+                    float newY = tv.getTranslationY() - dy;
+                    tv.setTranslationX(newX);
+                    tv.setTranslationY(newY);
+
+                    // Sync model
+                    clip.posX = newX;
+                    clip.posY = newY;
+                    return true;
+                }
+                @Override public boolean onSingleTapUp(MotionEvent e) {
+                    clip.select();
+                    EditingActivity.selectedClip = clip;
+                    return true;
+                }
+            });
+
+            final ScaleGestureDetector scaler = new ScaleGestureDetector(tv.getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                @Override public boolean onScale(ScaleGestureDetector detector) {
+                    float sx = tv.getScaleX() * detector.getScaleFactor();
+                    float sy = tv.getScaleY() * detector.getScaleFactor();
+                    // Optional clamp
+                    sx = Math.max(0.1f, Math.min(sx, 10f));
+                    sy = Math.max(0.1f, Math.min(sy, 10f));
+                    tv.setScaleX(sx);
+                    tv.setScaleY(sy);
+
+                    // Sync model
+                    clip.scaleX = sx;
+                    clip.scaleY = sy;
+                    return true;
+                }
+            });
+
+            // Simple rotation detector
+            final float[] lastAngle = { Float.NaN };
+            tv.setOnTouchListener((v, event) -> {
+                tapDrag.onTouchEvent(event);
+                scaler.onTouchEvent(event);
+
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_POINTER_DOWN:
+                    case MotionEvent.ACTION_MOVE:
+                        if (event.getPointerCount() >= 2) {
+                            float ax = event.getX(0), ay = event.getY(0);
+                            float bx = event.getX(1), by = event.getY(1);
+                            float angle = (float) Math.toDegrees(Math.atan2(by - ay, bx - ax)); // [-180,180]
+                            if (Float.isNaN(lastAngle[0])) {
+                                lastAngle[0] = angle;
+                            } else {
+                                float delta = normalizeAngle(angle - lastAngle[0]);
+                                float newRot = tv.getRotation() + delta;
+                                tv.setRotation(newRot);
+                                clip.rotation = newRot;
+                                lastAngle[0] = angle;
+                            }
+                        }
+                        break;
+                    case MotionEvent.ACTION_POINTER_UP:
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        lastAngle[0] = Float.NaN;
+                        break;
+                }
+                return true;
+            });
+        }
+
+        private float normalizeAngle(float a) {
+            // Map to [-180, 180] to avoid jump
+            while (a > 180f) a -= 360f;
+            while (a < -180f) a += 360f;
+            return a;
+        }
 
 
 
