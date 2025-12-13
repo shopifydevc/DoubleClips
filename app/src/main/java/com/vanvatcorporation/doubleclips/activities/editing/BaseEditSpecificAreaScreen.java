@@ -43,8 +43,6 @@ public class BaseEditSpecificAreaScreen extends RelativeLayout {
     public void init() {
         windowBackground = findViewById(R.id.windowBackground);
         closeWindowButton = findViewById(R.id.closeWindowButton);
-        windowBackground.setVisibility(GONE);
-        setVisibility(View.GONE);
 
         // Only visible that we gonna block the view
         windowBackground.setOnLongClickListener(v -> false);
@@ -85,8 +83,8 @@ public class BaseEditSpecificAreaScreen extends RelativeLayout {
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
-                    windowBackground.setVisibility(GONE);
-                    setVisibility(GONE);
+                    setVisibility(View.GONE);
+
                 }
 
                 @Override
@@ -96,8 +94,6 @@ public class BaseEditSpecificAreaScreen extends RelativeLayout {
             });
         }
         else {
-
-            windowBackground.setVisibility(VISIBLE);
             setVisibility(VISIBLE);
             animation = AnimationUtils.loadAnimation(getContext(),
                     animationScreen == AnimationScreen.ToTop ?
