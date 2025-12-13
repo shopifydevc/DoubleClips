@@ -402,7 +402,7 @@ public class FFmpegEdit {
                                         "trim=duration=" + (clip.duration + fillingTransitionDuration);
 
                         filterComplex.append("[").append(inputIndex).append(":v]")
-                                .append("scale=iw*").append(clip.scaleX).append(":ih*").append(clip.scaleY).append(",")
+                                .append("scale=iw*").append(clip.width).append(":*").append(clip.height).append(",")
                                 .append("rotate=").append(clip.rotation).append(":ow=rotw(").append(clip.rotation).append("):oh=roth(").append(clip.rotation).append(")")
                                 .append(":fillcolor=0x00000000").append(",")
                                 .append(trimFilter).append(",")

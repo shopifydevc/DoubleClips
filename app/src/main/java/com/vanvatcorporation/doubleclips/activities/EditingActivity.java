@@ -12,7 +12,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.PorterDuff;
+import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -35,11 +37,13 @@ import android.view.ScaleGestureDetector;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -111,7 +115,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     private ScrollView timelineVerticalScroll, trackInfoVerticalScroll;
     private TextView currentTimePosText, durationTimePosText;
     private ImageButton addNewTrackButton;
-    private RelativeLayout previewViewGroup;
+    private FrameLayout previewViewGroup;
     private ImageButton playPauseButton, backButton, settingsButton;
     private Button exportButton;
     private TimelineRenderer timelineRenderer;
@@ -142,11 +146,11 @@ public class EditingActivity extends AppCompatActivityImpl {
     float currentTime = 0f; // seconds
 
 
-    TransitionClip selectedKnot = null;
-    Clip selectedClip = null;
-    Track selectedTrack = null;
+    static TransitionClip selectedKnot = null;
+    static Clip selectedClip = null;
+    static Track selectedTrack = null;
 
-    ArrayList<Clip> selectedClips = new ArrayList<>();
+    static ArrayList<Clip> selectedClips = new ArrayList<>();
     boolean isClipSelectMultiple;
 
 
@@ -2876,15 +2880,14 @@ frameRate = 60;
         private AudioTrack audioTrack;
         public boolean isPlaying;
 
-        private SurfaceView surfaceView;
-        private Surface surface;
+        private TextureView textureView;
         private Context context;
 
         private ExecutorService renderThreadExecutorAudio = Executors.newFixedThreadPool(1);
         private ExecutorService renderThreadExecutorVideo = Executors.newFixedThreadPool(1);
 
 
-        public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, RelativeLayout previewViewGroup) {
+        public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, FrameLayout previewViewGroup) {
             this.context = context;
             this.clip = clip;
 
@@ -2898,17 +2901,23 @@ frameRate = 60;
 
                         // VIDEO
 
-                        surfaceView = new SurfaceView(context);
-                        RelativeLayout.LayoutParams surfaceViewLayoutParams = new RelativeLayout.LayoutParams(clip.width, clip.height);
-                        surfaceView.getHolder().setFixedSize(clip.width, clip.height);
-                        previewViewGroup.addView(surfaceView, surfaceViewLayoutParams);
 
-                        surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+
+
+
+
+                        textureView = new TextureView(context);
+                        RelativeLayout.LayoutParams textureViewLayoutParams =
+                                new RelativeLayout.LayoutParams(clip.width, clip.height);
+                        previewViewGroup.addView(textureView, textureViewLayoutParams);
+
+
+                        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                             @Override
-                            public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                                try
-                                {
-                                    surface = surfaceView.getHolder().getSurface();
+                            public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
+                                try {
+                                    Surface surface = new Surface(surfaceTexture);
+
                                     // Step 1: Extractor setup
                                     videoExtractor = new MediaExtractor();
                                     videoExtractor.setDataSource(clip.getAbsolutePreviewPath(data));
@@ -2922,23 +2931,54 @@ frameRate = 60;
                                     videoDecoder = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME));
                                     videoDecoder.configure(format, surface, null, 0);
                                     videoDecoder.start();
-                                }
-                                catch (Exception e)
-                                {
+
+
+                                    surfaceTexture.setDefaultBufferSize(clip.width, clip.height); // or your target resolution
+
+
+                                    // Apply transform to avoid scaling
+                                    Matrix matrix = new Matrix();
+                                    matrix.reset();
+
+                                    // Keep original size (no scaling)
+                                    float scaleX = 1f;
+                                    float scaleY = 1f;
+                                    matrix.setScale(scaleX, scaleY);
+
+                                    //matrix.postScale(0.5f, 0.5f);
+//                                    matrix.postTranslate(posX, posY);
+
+                                    textureView.setTransform(matrix);
+                                    textureView.invalidate();
+
+                                    // Optionally center the video inside the smaller TextureView
+//                                    float dx = (width - 700) / 2f;  // negative if video is larger
+//                                    float dy = (height - 700) / 2f;
+//                                    matrix.postTranslate(dx, dy);
+
+
+
+                                } catch (Exception e) {
                                     LoggingManager.LogExceptionToNoteOverlay(context, e);
                                 }
                             }
 
                             @Override
-                            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-
+                            public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
+                                // Handle resize if needed
                             }
 
                             @Override
-                            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+                            public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
+                                return true; // release resources if needed
+                            }
 
+                            @Override
+                            public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
+                                // Called every frame
                             }
                         });
+
 
 
 
@@ -2981,33 +3021,40 @@ frameRate = 60;
                     }
                     case IMAGE:
                     {
+                        textureView = new TextureView(context);
+                        RelativeLayout.LayoutParams textureViewLayoutParams =
+                                new RelativeLayout.LayoutParams(clip.width, clip.height);
+                        previewViewGroup.addView(textureView, textureViewLayoutParams);
 
-                        surfaceView = new SurfaceView(context);
-                        RelativeLayout.LayoutParams surfaceViewLayoutParams = new RelativeLayout.LayoutParams(clip.width, clip.height);
-                        previewViewGroup.addView(surfaceView, surfaceViewLayoutParams);
-
-                        SurfaceHolder surfaceHolder = surfaceView.getHolder();
-                        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+                        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                             @Override
-                            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                            public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
+                                // Create a Surface from the TextureView
+
+                                // For IMAGE rendering
                                 Bitmap image = IOImageHelper.LoadFileAsPNGImage(context, clip.getAbsolutePreviewPath(data), 8);
 
-                                surfaceView.post(() -> {
-                                    if (!surfaceHolder.getSurface().isValid()) return;
-                                    Canvas canvas = surfaceHolder.lockCanvas();
-                                    if (canvas != null) {
-                                        canvas.drawColor(Color.BLACK); // Optional background
-                                        canvas.drawBitmap(image, 0, 0, null); // Draw image at top-left
-                                        surfaceHolder.unlockCanvasAndPost(canvas);
-                                    }
-                                });
-
+                                // Draw the bitmap onto the TextureView’s canvas
+                                Canvas canvas = textureView.lockCanvas();
+                                if (canvas != null) {
+                                    canvas.drawColor(Color.BLACK); // optional background
+                                    canvas.drawBitmap(image, 0, 0, null); // draw at top-left
+                                    textureView.unlockCanvasAndPost(canvas);
+                                }
                             }
+
                             @Override
-                            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {}
+                            public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {}
+
                             @Override
-                            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {}
+                            public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
+                                return true;
+                            }
+
+                            @Override
+                            public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {}
                         });
+
 
                         break;
                     }
@@ -3043,6 +3090,15 @@ frameRate = 60;
                 }
 
 
+                if(textureView != null)
+                {
+                    textureView.setOnClickListener(v -> {
+                        clip.select();
+                        EditingActivity.selectedClip = clip;
+                    });
+                }
+
+
             }
             catch (Exception e)
             {
@@ -3075,8 +3131,8 @@ frameRate = 60;
 
         private void pumpDecoderVideoSeek(float playheadTime) {
             if(videoDecoder == null) return;
-            if(surfaceView == null) return;
-            if(surface == null) return;
+            if(textureView == null) return;
+            if(textureView.getVisibility() == View.GONE) return;
             float clipTime = playheadTime - clip.startTime + clip.startClipTrim;
             long ptsUs = (long)(clipTime * 1_000_000); // override presentation timestamp
             int inputIndex = videoDecoder.dequeueInputBuffer(0);
@@ -3085,7 +3141,7 @@ frameRate = 60;
                 int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
 
                 if (sampleSize >= 0) {
-                    videoExtractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                    videoExtractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
                     videoDecoder.queueInputBuffer(inputIndex, 0, sampleSize, ptsUs, 0);
 
                 } else {
@@ -3103,7 +3159,7 @@ frameRate = 60;
 
             float clipTime = playheadTime - clip.startTime + clip.startClipTrim;
             long ptsUs = (long)(clipTime * 1_000_000); // override presentation timestamp
-            audioExtractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+            audioExtractor.seekTo(ptsUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 
             ByteBuffer buffer = ByteBuffer.allocate(32768);
 
@@ -3190,6 +3246,22 @@ frameRate = 60;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         public void release() {
             if (audioExtractor != null) {
                 audioExtractor.release();
@@ -3201,10 +3273,10 @@ frameRate = 60;
                 videoExtractor.release();
             }
             if(renderThreadExecutorAudio != null) {
-                renderThreadExecutorAudio.shutdown();
+                renderThreadExecutorAudio.shutdownNow();
             }
             if(renderThreadExecutorVideo != null) {
-                renderThreadExecutorVideo.shutdown();
+                renderThreadExecutorVideo.shutdownNow();
             }
 
         }
@@ -3219,7 +3291,7 @@ frameRate = 60;
             this.context = context;
         }
 
-        public void buildTimeline(Timeline timeline, MainActivity.ProjectData properties, RelativeLayout previewViewGroup)
+        public void buildTimeline(Timeline timeline, MainActivity.ProjectData properties, FrameLayout previewViewGroup)
         {
             for (List<ClipRenderer> trackRenderer : trackLayers) {
                 for (ClipRenderer clipRenderer : trackRenderer) {
@@ -3235,6 +3307,15 @@ frameRate = 60;
 //            }
 
             previewViewGroup.removeAllViews();
+
+            // Black box for blank video
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+            );
+            View blackBox = new View(context);
+            blackBox.setBackgroundColor(Color.BLACK);
+            previewViewGroup.addView(blackBox, params);
 
             trackLayers = new ArrayList<>();
 
@@ -3262,12 +3343,12 @@ frameRate = 60;
                     {
                         if(clipRenderer.isVisible(time))
                         {
-                            if(clipRenderer.surfaceView != null)
-                                clipRenderer.surfaceView.setVisibility(View.VISIBLE);
+                            if(clipRenderer.textureView != null)
+                                clipRenderer.textureView.setVisibility(View.VISIBLE);
                         }
                         else {
-                            if(clipRenderer.surfaceView != null)
-                                clipRenderer.surfaceView.setVisibility(View.GONE);
+                            if(clipRenderer.textureView != null)
+                                clipRenderer.textureView.setVisibility(View.GONE);
                             clipRenderer.isPlaying = false;
                         }
                         clipRenderer.renderFrame(time, isSeekingOnly);

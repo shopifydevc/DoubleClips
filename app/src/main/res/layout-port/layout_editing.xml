@@ -20,13 +20,12 @@
             android:gravity="center">
 
 
-            <RelativeLayout
+            <FrameLayout
                 android:id="@+id/previewViewGroup"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-
-            </RelativeLayout>
+            </FrameLayout>
 
         </RelativeLayout>
 
