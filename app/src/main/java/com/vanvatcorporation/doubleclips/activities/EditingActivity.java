@@ -114,7 +114,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     private RelativeLayout timelineWrapper, editingZone, previewZone, editingToolsZone, outerPreviewViewGroup;
     private HorizontalScrollView timelineScroll, rulerScroll;
     private ScrollView timelineVerticalScroll, trackInfoVerticalScroll;
-    private TextView currentTimePosText, durationTimePosText;
+    private TextView currentTimePosText, durationTimePosText, textCanvasControllerInfo;
     private ImageButton addNewTrackButton;
     private FrameLayout previewViewGroup;
     private ImageButton playPauseButton, backButton, settingsButton;
@@ -534,6 +534,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         currentTimePosText = findViewById(R.id.currentTimePosText);
         durationTimePosText = findViewById(R.id.durationTimePosText);
+        textCanvasControllerInfo = findViewById(R.id.textCanvasControllerInfo);
 
         // Example: Add button to add more tracks
         addNewTrackButton = findViewById(R.id.addTrackButton);
@@ -1110,7 +1111,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         // TODO: Tested for dragging back and forth clips. They're doing fine with the extractor SYNC_EXACT
         //  Limit the time of refreshing entire timeline like this.
-        timelineRenderer.buildTimeline(timeline, properties, settings, previewViewGroup);
+        timelineRenderer.buildTimeline(timeline, properties, settings, previewViewGroup, textCanvasControllerInfo);
     }
     private void setCurrentTime(float value)
     {
@@ -2944,7 +2945,7 @@ frameRate = 60;
         private ExecutorService renderThreadExecutorVideo = Executors.newFixedThreadPool(1);
 
 
-        public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, VideoSettings settings, FrameLayout previewViewGroup) {
+        public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, VideoSettings settings, FrameLayout previewViewGroup, TextView textCanvasControllerInfo) {
             this.context = context;
             this.clip = clip;
 
@@ -3134,7 +3135,7 @@ frameRate = 60;
                 if(textureView != null)
                 {
                     setPivot();
-                    attachGestureControls(textureView, clip, settings);
+                    attachGestureControls(textureView, clip, settings, textCanvasControllerInfo);
                 }
 
 
@@ -3295,7 +3296,7 @@ frameRate = 60;
         }
 
 
-        private void attachGestureControls(TextureView tv, Clip clip, VideoSettings settings) {
+        private void attachGestureControls(TextureView tv, Clip clip, VideoSettings settings, TextView textCanvasControllerInfo) {
             final GestureDetector tapDrag = new GestureDetector(tv.getContext(), new GestureDetector.SimpleOnGestureListener() {
                 @Override public boolean onDown(MotionEvent e) { return true; } // must return true to receive events
                 @Override public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
@@ -3308,6 +3309,8 @@ frameRate = 60;
                     // Sync model
                     clip.posX = EditingActivity.previewToRenderConversionX(newX, settings.videoWidth);
                     clip.posY = EditingActivity.previewToRenderConversionY(newY, settings.videoHeight);
+
+                    textCanvasControllerInfo.setText("Pos X: " + clip.posX + " | Pos Y: " + clip.posY);
                     return true;
                 }
                 @Override public boolean onSingleTapUp(MotionEvent e) {
@@ -3330,6 +3333,8 @@ frameRate = 60;
                     // Sync model
                     clip.scaleX = sx;
                     clip.scaleY = sy;
+
+                    textCanvasControllerInfo.setText("Scale X: " + clip.scaleX + " | Scale Y: " + clip.scaleY);
                     return true;
                 }
             });
@@ -3355,6 +3360,8 @@ frameRate = 60;
                                 float newRot = tv.getRotation() + delta;
                                 tv.setRotation(newRot);
                                 clip.rotation = newRot;
+
+                                textCanvasControllerInfo.setText("Rot: " + clip.rotation);
                                 lastAngle[0] = angle;
                             }
                         }
@@ -3418,7 +3425,7 @@ frameRate = 60;
             this.context = context;
         }
 
-        public void buildTimeline(Timeline timeline, MainActivity.ProjectData properties, VideoSettings settings, FrameLayout previewViewGroup)
+        public void buildTimeline(Timeline timeline, MainActivity.ProjectData properties, VideoSettings settings, FrameLayout previewViewGroup, TextView textCanvasControllerInfo)
         {
             for (List<ClipRenderer> trackRenderer : trackLayers) {
                 for (ClipRenderer clipRenderer : trackRenderer) {
@@ -3454,7 +3461,7 @@ frameRate = 60;
                         case VIDEO:
                         case AUDIO:
                         case IMAGE:
-                            ClipRenderer clipRenderer = new ClipRenderer(context, clip, properties, settings, previewViewGroup);
+                            ClipRenderer clipRenderer = new ClipRenderer(context, clip, properties, settings, previewViewGroup, textCanvasControllerInfo);
                             renderers.add(clipRenderer);
                             break;
                     }
