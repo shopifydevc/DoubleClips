@@ -2116,20 +2116,20 @@ public class EditingActivity extends AppCompatActivityImpl {
 
     public static int previewToRenderConversionX(float previewX, float renderResolutionX, float clipScaleX)
     {
-        return (int) ((previewX / previewAvailableWidth) * renderResolutionX / clipScaleX);
+        return (int) ((previewX / Math.min(previewAvailableWidth, renderResolutionX)) * renderResolutionX / clipScaleX);
     }
     public static int previewToRenderConversionY(float previewY, float renderResolutionY, float clipScaleY)
     {
-        return (int) ((previewY / previewAvailableHeight) * renderResolutionY / clipScaleY);
+        return (int) ((previewY / Math.min(previewAvailableHeight, renderResolutionY)) * renderResolutionY / clipScaleY);
     }
 
     public static int renderToPreviewConversionX(float renderX, float renderResolutionX, float clipScaleX)
     {
-        return (int) ((renderX * previewAvailableWidth) / renderResolutionX * clipScaleX);
+        return (int) ((renderX * Math.min(previewAvailableWidth, renderResolutionX)) / renderResolutionX * clipScaleX);
     }
     public static int renderToPreviewConversionY(float renderY, float renderResolutionY, float clipScaleY)
     {
-        return (int) ((renderY * previewAvailableHeight) / renderResolutionY * clipScaleY);
+        return (int) ((renderY * Math.min(previewAvailableHeight, renderResolutionY)) / renderResolutionY * clipScaleY);
     }
 
 
