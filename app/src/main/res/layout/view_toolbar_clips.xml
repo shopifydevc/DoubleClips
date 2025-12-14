@@ -53,6 +53,13 @@
             android:layout_margin="5dp"
             app:navIcon="@drawable/baseline_menu_24"
             app:navText="SelectMultiple"/>
+        <com.vanvatcorporation.doubleclips.impl.NavigationIconLayout
+            android:id="@+id/restateButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="5dp"
+            app:navIcon="@drawable/baseline_restore_24"
+            app:navText="Restate"/>
 
     </LinearLayout>
 </HorizontalScrollView>

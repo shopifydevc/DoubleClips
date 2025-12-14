@@ -14,6 +14,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
 import android.media.AudioFormat;
@@ -69,6 +70,7 @@ import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.FXCommandEmitter;
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.activities.editing.BaseEditSpecificAreaScreen;
+import com.vanvatcorporation.doubleclips.activities.editing.ClipEditSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.editing.ClipsEditSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.editing.EffectEditSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.editing.TextEditSpecificAreaScreen;
@@ -127,6 +129,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     private EffectEditSpecificAreaScreen effectEditSpecificAreaScreen;
     private TransitionEditSpecificAreaScreen transitionEditSpecificAreaScreen;
     private ClipsEditSpecificAreaScreen clipsEditSpecificAreaScreen;
+    private ClipEditSpecificAreaScreen clipEditSpecificAreaScreen;
     private VideoPropertiesEditSpecificAreaScreen videoPropertiesEditSpecificAreaScreen;
 
 
@@ -671,6 +674,10 @@ public class EditingActivity extends AppCompatActivityImpl {
             case TRANSITION:
                 transitionEditSpecificAreaScreen.open();
                 break;
+            case VIDEO:
+            case IMAGE:
+                clipEditSpecificAreaScreen.open();
+                break;
         }
     }
 
@@ -871,6 +878,13 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             ((NavigationIconLayout)toolbarClips.findViewById(R.id.selectMultipleButton)).getIconView().setColorFilter((isClipSelectMultiple ? 0xFFFF0000 : 0xFFFFFFFF), PorterDuff.Mode.SRC_ATOP);
         });
+        toolbarClips.findViewById(R.id.restateButton).setOnClickListener(v -> {
+            if(selectedClip != null) {
+                selectedClip.restate();
+                updateCurrentClipEnd();
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
+        });
 
         // ===========================       CLIPS ZONE       ====================================
     }
@@ -898,6 +912,11 @@ public class EditingActivity extends AppCompatActivityImpl {
         clipsEditSpecificAreaScreen = (ClipsEditSpecificAreaScreen) LayoutInflater.from(this).inflate(R.layout.view_edit_multiple_clips, null);
         editingZone.addView(clipsEditSpecificAreaScreen);
         // ===========================       MULTIPLE CLIPS ZONE       ====================================
+
+        // ===========================       CLIP ZONE       ====================================
+        clipEditSpecificAreaScreen = (ClipEditSpecificAreaScreen) LayoutInflater.from(this).inflate(R.layout.view_edit_specific_clip, null);
+        editingZone.addView(clipEditSpecificAreaScreen);
+        // ===========================       CLIP ZONE       ====================================
 
 
         // ===========================       VIDEO PROPERTIES ZONE       ====================================
@@ -1013,6 +1032,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
         };
         clipsEditSpecificAreaScreen.onOpen = () -> {
+            // TODO: Didn't change following the endClipTrim/startClipTrim rule yet.
             clipsEditSpecificAreaScreen.clipsDurationContent.setText(String.valueOf(selectedClips.get(0).duration));
         };
 
@@ -1021,7 +1041,46 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-        // ===========================       MULTIPLE CLIPS ZONE       ====================================
+        // ===========================       CLIP ZONE       ====================================
+
+        clipEditSpecificAreaScreen.onClose = () -> {
+            if(selectedClip != null)
+            {
+                selectedClip.clipName = clipEditSpecificAreaScreen.clipNameField.getText().toString();
+                selectedClip.duration = ParserHelper.TryParse(clipEditSpecificAreaScreen.durationContent.getText().toString(), selectedClip.duration);
+                selectedClip.posX = ParserHelper.TryParse(clipEditSpecificAreaScreen.positionXField.getText().toString(), selectedClip.posX);
+                selectedClip.posY = ParserHelper.TryParse(clipEditSpecificAreaScreen.positionYField.getText().toString(), selectedClip.posY);
+                selectedClip.rotation = ParserHelper.TryParse(clipEditSpecificAreaScreen.rotationField.getText().toString(), selectedClip.rotation);
+                selectedClip.scaleX = ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleXField.getText().toString(), selectedClip.scaleX);
+                selectedClip.scaleY = ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleYField.getText().toString(), selectedClip.scaleY);
+                selectedClip.opacity = ParserHelper.TryParse(clipEditSpecificAreaScreen.opacityField.getText().toString(), selectedClip.opacity);
+
+                updateClipLayouts();
+                updateCurrentClipEnd();
+                // TODO: Find a way to specifically build only the edited clip. Not entire timeline
+                //  this is just for testing. Resource-consuming asf.
+                regeneratingTimelineRenderer();
+
+            }
+        };
+        clipEditSpecificAreaScreen.onOpen = () -> {
+            clipEditSpecificAreaScreen.totalDurationText.setText(String.valueOf(selectedClip.originalDuration));
+            clipEditSpecificAreaScreen.clipNameField.setText(String.valueOf(selectedClip.clipName));
+            clipEditSpecificAreaScreen.durationContent.setText(String.valueOf(selectedClip.duration));
+            clipEditSpecificAreaScreen.positionXField.setText(String.valueOf(selectedClip.posX));
+            clipEditSpecificAreaScreen.positionYField.setText(String.valueOf(selectedClip.posY));
+            clipEditSpecificAreaScreen.rotationField.setText(String.valueOf(selectedClip.rotation));
+            clipEditSpecificAreaScreen.scaleXField.setText(String.valueOf(selectedClip.scaleX));
+            clipEditSpecificAreaScreen.scaleYField.setText(String.valueOf(selectedClip.scaleY));
+            clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.opacity));
+        };
+
+
+        // ===========================       CLIP ZONE       ====================================
+
+
+
+        // ===========================       VIDEO PROPERTIES ZONE       ====================================
 
         videoPropertiesEditSpecificAreaScreen.onClose = () -> {
             settings.videoWidth = ParserHelper.TryParse(videoPropertiesEditSpecificAreaScreen.resolutionXField.getText().toString(), 1366);
@@ -1042,7 +1101,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         };
 
 
-        // ===========================       MULTIPLE CLIPS ZONE       ====================================
+        // ===========================       VIDEO PROPERTIES ZONE       ====================================
 
 
     }
@@ -2049,22 +2108,22 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-    public static int previewToRenderConversionX(float previewX, float renderResolutionX)
+    public static int previewToRenderConversionX(float previewX, float renderResolutionX, float clipScaleX)
     {
-        return (int) ((previewX / previewAvailableWidth) * renderResolutionX);
+        return (int) ((previewX / previewAvailableWidth) * renderResolutionX / clipScaleX);
     }
-    public static int previewToRenderConversionY(float previewY, float renderResolutionY)
+    public static int previewToRenderConversionY(float previewY, float renderResolutionY, float clipScaleY)
     {
-        return (int) ((previewY / previewAvailableHeight) * renderResolutionY);
+        return (int) ((previewY / previewAvailableHeight) * renderResolutionY / clipScaleY);
     }
 
-    public static int renderToPreviewConversionX(float renderX, float renderResolutionX)
+    public static int renderToPreviewConversionX(float renderX, float renderResolutionX, float clipScaleX)
     {
-        return (int) ((renderX * previewAvailableWidth) / renderResolutionX);
+        return (int) ((renderX * previewAvailableWidth) / renderResolutionX * clipScaleX);
     }
-    public static int renderToPreviewConversionY(float renderY, float renderResolutionY)
+    public static int renderToPreviewConversionY(float renderY, float renderResolutionY, float clipScaleY)
     {
-        return (int) ((renderY / previewAvailableHeight) * renderResolutionY);
+        return (int) ((renderY / previewAvailableHeight) * renderResolutionY * clipScaleY);
     }
 
 
@@ -2312,7 +2371,9 @@ public class EditingActivity extends AppCompatActivityImpl {
         @Expose
         public float scaleY;
         @Expose
-        public float rotation; // in radians Todo: use this to convert from degrees to radians "Math.toRadians(clip.rotation);"
+        public float rotation;
+        @Expose
+        public float opacity;
 
         @Expose
         public AnimatedProperty posXKeyFrames = new AnimatedProperty();
@@ -2364,6 +2425,8 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             this.scaleX = 1;
             this.scaleY = 1;
+
+            this.opacity = 1;
         }
 
         public Clip(Clip clip) {
@@ -2377,8 +2440,24 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.type = clip.type;
             this.isVideoHasAudio = clip.isVideoHasAudio;
 
+            this.width = clip.width;
+            this.height = clip.height;
+
             this.scaleX = clip.scaleX;
             this.scaleY = clip.scaleY;
+
+            this.opacity = clip.opacity;
+
+
+            if(clip.type == ClipType.TEXT)
+            {
+                this.textContent = clip.textContent;
+                this.fontSize = clip.fontSize;
+            }
+            if(clip.type == ClipType.EFFECT)
+            {
+                this.effect = clip.effect;
+            }
         }
 
         public void registerClipHandle(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
@@ -2430,6 +2509,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                                         // Clamping
                                         if (newWidth < minWidth) return true;
                                         // Clamp to prevent going before 0s
+                                        // TODO: In capcut it doesn't clamp. Instead after pointer up, it set the
+                                        //  start time to 0 and push the rest of the before 0s to the right.
                                         if (newStartTime < 0) return true;
 
 
@@ -2572,13 +2653,9 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             float translatedLocalCurrentTime = getLocalClipTime(currentGlobalTime);
 
-            Clip secondaryClip = new Clip(clipName, currentGlobalTime, originalDuration, trackIndex, type, isVideoHasAudio, width, height);
+            Clip secondaryClip = new Clip(this);
 
-            if(type == ClipType.TEXT)
-            {
-                secondaryClip.textContent = textContent;
-                secondaryClip.fontSize = fontSize;
-            }
+            secondaryClip.startTime = currentGlobalTime;
 
             float oldEndClipTrim = endClipTrim;
             float oldStartClipTrim = startClipTrim;
@@ -2595,6 +2672,14 @@ public class EditingActivity extends AppCompatActivityImpl {
             activity.addClipToTrack(currentTrack, secondaryClip);
             activity.revalidationClipView(this);
         }
+        public void restate() {
+            posX = 0;
+            posY = 0;
+            scaleX = 1;
+            scaleY = 1;
+            rotation = 0;
+        }
+
 
         public boolean hasAnimatedProperties() {
             return posXKeyFrames.keyframes.size() != 0 ||
@@ -2993,8 +3078,8 @@ frameRate = 60;
 
                                     surfaceTexture.setDefaultBufferSize(clip.width, clip.height); // or your target resolution
 
-                                    textureView.setTranslationX(EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth));
-                                    textureView.setTranslationY(EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight));
+                                    textureView.setTranslationX(EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth, clip.scaleX));
+                                    textureView.setTranslationY(EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight, clip.scaleY));
                                     textureView.setScaleX(clip.scaleX);
                                     textureView.setScaleY(clip.scaleY);
                                     textureView.setRotation(clip.rotation);
@@ -3072,14 +3157,27 @@ frameRate = 60;
                             @Override
                             public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
                                 // Create a Surface from the TextureView
+                                surfaceTexture.setDefaultBufferSize(clip.width, clip.height); // or your target resolution
+
+                                textureView.setTranslationX(EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth, clip.scaleX));
+                                textureView.setTranslationY(EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight, clip.scaleY));
+                                textureView.setScaleX(clip.scaleX);
+                                textureView.setScaleY(clip.scaleY);
+                                textureView.setRotation(clip.rotation);
 
                                 // For IMAGE rendering
                                 Bitmap image = IOImageHelper.LoadFileAsPNGImage(context, clip.getAbsolutePreviewPath(data), 8);
 
+                                // Resize TextureView to match bitmap size
+                                ViewGroup.LayoutParams params = textureView.getLayoutParams();
+                                params.width = image.getWidth();
+                                params.height = image.getHeight();
+                                textureView.setLayoutParams(params);
+
                                 // Draw the bitmap onto the TextureView’s canvas
                                 Canvas canvas = textureView.lockCanvas();
                                 if (canvas != null) {
-                                    canvas.drawColor(Color.BLACK); // optional background
+                                    //canvas.drawColor(Color.BLACK); // optional background
                                     canvas.drawBitmap(image, 0, 0, null); // draw at top-left
                                     textureView.unlockCanvasAndPost(canvas);
                                 }
@@ -3288,18 +3386,25 @@ frameRate = 60;
 
 
         private void setPivot() {
-            textureView.post(() -> {
-                textureView.setPivotX(textureView.getWidth() / 2f);
-                textureView.setPivotY(textureView.getHeight() / 2f);
-            });
+//            textureView.post(() -> {
+//                textureView.setPivotX(clip.width / 2f * clip.scaleX);
+//                textureView.setPivotY(clip.height / 2f * clip.scaleY);
+//            });
 
         }
+
+
+        EditMode currentMode = EditMode.NONE;
 
 
         private void attachGestureControls(TextureView tv, Clip clip, VideoSettings settings, TextView textCanvasControllerInfo) {
             final GestureDetector tapDrag = new GestureDetector(tv.getContext(), new GestureDetector.SimpleOnGestureListener() {
                 @Override public boolean onDown(MotionEvent e) { return true; } // must return true to receive events
                 @Override public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
+
+                    if(currentMode != EditMode.NONE && currentMode != EditMode.MOVE) return true;
+                    currentMode = EditMode.MOVE;
+
                     // Move
                     float newX = tv.getTranslationX() - dx;
                     float newY = tv.getTranslationY() - dy;
@@ -3307,8 +3412,8 @@ frameRate = 60;
                     tv.setTranslationY(newY);
 
                     // Sync model
-                    clip.posX = EditingActivity.previewToRenderConversionX(newX, settings.videoWidth);
-                    clip.posY = EditingActivity.previewToRenderConversionY(newY, settings.videoHeight);
+                    clip.posX = EditingActivity.previewToRenderConversionX(newX, settings.videoWidth, clip.scaleX);
+                    clip.posY = EditingActivity.previewToRenderConversionY(newY, settings.videoHeight, clip.scaleY);
 
                     textCanvasControllerInfo.setText("Pos X: " + clip.posX + " | Pos Y: " + clip.posY);
                     return true;
@@ -3322,6 +3427,10 @@ frameRate = 60;
 
             final ScaleGestureDetector scaler = new ScaleGestureDetector(tv.getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 @Override public boolean onScale(ScaleGestureDetector detector) {
+
+                    if(currentMode != EditMode.NONE && currentMode != EditMode.SCALE && currentMode != EditMode.ROTATE) return true;
+                    currentMode = EditMode.SCALE;
+
                     float sx = tv.getScaleX() * detector.getScaleFactor();
                     float sy = tv.getScaleY() * detector.getScaleFactor();
                     // Optional clamp
@@ -3334,7 +3443,14 @@ frameRate = 60;
                     clip.scaleX = sx;
                     clip.scaleY = sy;
 
-                    textCanvasControllerInfo.setText("Scale X: " + clip.scaleX + " | Scale Y: " + clip.scaleY);
+                    setPivot();
+
+                    textCanvasControllerInfo.setText(
+                                    "Scale X: " + clip.scaleX +
+                                    " | Scale Y: " + clip.scaleY +
+                                    "\n" + "Rot: " + clip.rotation
+                    );
+
                     return true;
                 }
             });
@@ -3350,6 +3466,10 @@ frameRate = 60;
                     case MotionEvent.ACTION_POINTER_DOWN:
                     case MotionEvent.ACTION_MOVE:
                         if (event.getPointerCount() >= 2) {
+
+                            if(currentMode != EditMode.NONE && currentMode != EditMode.ROTATE && currentMode != EditMode.SCALE) break;
+                            currentMode = EditMode.ROTATE;
+
                             float ax = event.getX(0), ay = event.getY(0);
                             float bx = event.getX(1), by = event.getY(1);
                             float angle = (float) Math.toDegrees(Math.atan2(by - ay, bx - ax)); // [-180,180]
@@ -3361,7 +3481,12 @@ frameRate = 60;
                                 tv.setRotation(newRot);
                                 clip.rotation = newRot;
 
-                                textCanvasControllerInfo.setText("Rot: " + clip.rotation);
+                                textCanvasControllerInfo.setText(
+                                        "Scale X: " + clip.scaleX +
+                                                " | Scale Y: " + clip.scaleY +
+                                                "\n" + "Rot: " + clip.rotation
+                                );
+
                                 lastAngle[0] = angle;
                             }
                         }
@@ -3370,6 +3495,7 @@ frameRate = 60;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
                         lastAngle[0] = Float.NaN;
+                        currentMode = EditMode.NONE;
                         break;
                 }
                 return true;
@@ -3394,6 +3520,9 @@ frameRate = 60;
 
 
 
+        public enum EditMode {
+            MOVE, SCALE, ROTATE, NONE
+        }
 
 
         public void release() {

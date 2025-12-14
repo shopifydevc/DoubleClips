@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.vanvatcorporation.doubleclips.activities.editing.ClipEditSpecificAreaScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/editMultipleArea"
+    android:layout_below="@id/timestampBar"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/windowBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+
+        android:background="@color/colorPalette1_4"
+
+        app:strokeColor="@color/colorSoftBackground"
+        app:strokeWidth="1dp"
+        app:shapeAppearanceOverlay="@style/lowerRoundedImageView"/>
+    <ImageButton
+        android:id="@+id/closeWindowButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="5dp"
+        android:layout_alignParentEnd="true"
+        android:src="@drawable/baseline_close_24"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/closeWindowButton">
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:layout_marginEnd="15dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/clipName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="ClipName"
+                    android:textSize="18sp" />
+
+                <EditText
+                    android:id="@+id/clipNameField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:hint="Name of the clip"
+                    android:textSize="18sp" />
+
+
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/durationText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Duration"
+                    android:textSize="18sp" />
+                <EditText
+                    android:id="@+id/durationContent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="15dp"
+                    android:background="@null"
+                    android:hint="1"
+                    android:textSize="18sp"/>
+                <TextView
+                    android:id="@+id/slash"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="15dp"
+                    android:background="@null"
+                    android:text="/"
+                    android:textSize="18sp"/>
+                <TextView
+                    android:id="@+id/totalDurationText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="15dp"
+                    android:background="@null"
+                    android:text="-"
+                    android:textSize="18sp"/>
+
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/keyframeText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Keyframe"
+                    android:textSize="18sp" />
+
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/positionText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Position:"
+                    android:textSize="18sp" />
+                <TextView
+                    android:id="@+id/positionXText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="X:"
+                    android:textSize="18sp" />
+                <EditText
+                    android:id="@+id/positionXField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:hint="1366"
+                    android:textSize="18sp" />
+                <TextView
+                    android:id="@+id/positionYText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Y:"
+                    android:textSize="18sp" />
+                <EditText
+                    android:id="@+id/positionYField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:hint="768"
+                    android:textSize="18sp" />
+
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/rotationText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Rotation:"
+                    android:textSize="18sp" />
+                <EditText
+                    android:id="@+id/rotationField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:hint="90"
+                    android:textSize="18sp" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/scaleText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Scale:"
+                    android:textSize="18sp" />
+                <TextView
+                    android:id="@+id/scaleXText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="X:"
+                    android:textSize="18sp" />
+                <EditText
+                    android:id="@+id/scaleXField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:hint="1"
+                    android:textSize="18sp" />
+                <TextView
+                    android:id="@+id/scaleYText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Y:"
+                    android:textSize="18sp" />
+                <EditText
+                    android:id="@+id/scaleYField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:hint="1"
+                    android:textSize="18sp" />
+
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/opacityText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Opacity:"
+                    android:textSize="18sp" />
+                <EditText
+                    android:id="@+id/opacityField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:hint="90"
+                    android:textSize="18sp" />
+
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</com.vanvatcorporation.doubleclips.activities.editing.ClipEditSpecificAreaScreen>
