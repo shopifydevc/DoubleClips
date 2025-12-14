@@ -881,7 +881,13 @@ public class EditingActivity extends AppCompatActivityImpl {
         toolbarClips.findViewById(R.id.restateButton).setOnClickListener(v -> {
             if(selectedClip != null) {
                 selectedClip.restate();
-                updateCurrentClipEnd();
+
+                // TODO: Find a way to specifically build only the edited clip. Not entire timeline
+                //  this is just for testing. Resource-consuming asf.
+                regeneratingTimelineRenderer();
+
+
+
             }
             else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
         });
