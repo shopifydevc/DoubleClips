@@ -14,7 +14,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.PorterDuff;
-import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
 import android.media.AudioFormat;
@@ -37,14 +36,10 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
@@ -52,7 +47,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -2135,11 +2129,11 @@ public class EditingActivity extends AppCompatActivityImpl {
 
     public static float previewToRenderConversionScalingX(float clipScaleX, float renderResolutionX)
     {
-        return clipScaleX * (Math.min(previewAvailableWidth, renderResolutionX) * renderResolutionX);
+        return clipScaleX * (Math.min(previewAvailableWidth, renderResolutionX) / renderResolutionX);
     }
     public static float previewToRenderConversionScalingY(float clipScaleY, float renderResolutionY)
     {
-        return clipScaleY * (Math.min(previewAvailableHeight, renderResolutionY) * renderResolutionY);
+        return clipScaleY * (Math.min(previewAvailableHeight, renderResolutionY) / renderResolutionY);
     }
 
     public static float renderToPreviewConversionScalingX(float clipScaleX, float renderResolutionX)
@@ -3058,6 +3052,18 @@ frameRate = 60;
         private ExecutorService renderThreadExecutorVideo = Executors.newFixedThreadPool(1);
 
 
+
+        private Matrix matrix = new Matrix();
+        private float scaleX = 1, scaleY = 1;
+        private float rot = 0;
+        private float posX = 0, posY = 0;
+
+
+        private float scaleMatrixX = 1, scaleMatrixY = 1;
+        private float rotMatrix = 0;
+        private float posMatrixX = 0, posMatrixY = 0;
+
+
         public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, VideoSettings settings, FrameLayout previewViewGroup, TextView textCanvasControllerInfo) {
             this.context = context;
             this.clip = clip;
@@ -3106,11 +3112,15 @@ frameRate = 60;
 
                                     surfaceTexture.setDefaultBufferSize(clip.width, clip.height); // or your target resolution
 
-                                    textureView.setTranslationX(EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth, clip.scaleX));
-                                    textureView.setTranslationY(EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight, clip.scaleY));
-                                    textureView.setScaleX(EditingActivity.renderToPreviewConversionScalingX(clip.scaleX, settings.videoWidth));
-                                    textureView.setScaleY(EditingActivity.renderToPreviewConversionScalingY(clip.scaleY, settings.videoHeight));
-                                    textureView.setRotation(clip.rotation);
+                                    posX = (EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth, clip.scaleX));
+                                    posY = (EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight, clip.scaleY));
+                                    scaleX = (EditingActivity.renderToPreviewConversionScalingX(clip.scaleX, settings.videoWidth));
+                                    scaleY = (EditingActivity.renderToPreviewConversionScalingY(clip.scaleY, settings.videoHeight));
+                                    rot = (clip.rotation);
+
+
+                                    applyTransformation();
+                                    applyPostTransformation();
 
                                 } catch (Exception e) {
                                     LoggingManager.LogExceptionToNoteOverlay(context, e);
@@ -3186,11 +3196,14 @@ frameRate = 60;
                                 // Create a Surface from the TextureView
                                 surfaceTexture.setDefaultBufferSize(clip.width, clip.height); // or your target resolution
 
-                                textureView.setTranslationX(EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth, clip.scaleX));
-                                textureView.setTranslationY(EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight, clip.scaleY));
-                                textureView.setScaleX(EditingActivity.renderToPreviewConversionScalingX(clip.scaleX, settings.videoWidth));
-                                textureView.setScaleY(EditingActivity.renderToPreviewConversionScalingY(clip.scaleY, settings.videoHeight));
-                                textureView.setRotation(clip.rotation);
+                                posX = (EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth, clip.scaleX));
+                                posY = (EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight, clip.scaleY));
+                                scaleX = (EditingActivity.renderToPreviewConversionScalingX(clip.scaleX, settings.videoWidth));
+                                scaleY = (EditingActivity.renderToPreviewConversionScalingY(clip.scaleY, settings.videoHeight));
+                                rot = (clip.rotation);
+
+                                applyTransformation();
+                                applyPostTransformation();
 
                                 // For IMAGE rendering
                                 Bitmap image = IOImageHelper.LoadFileAsPNGImage(context, clip.getAbsolutePreviewPath(data), 8);
@@ -3413,10 +3426,10 @@ frameRate = 60;
 
 
         private void setPivot() {
-//            textureView.post(() -> {
-//                textureView.setPivotX(clip.width / 2f * clip.scaleX);
-//                textureView.setPivotY(clip.height / 2f * clip.scaleY);
-//            });
+            textureView.post(() -> {
+                textureView.setPivotX(clip.width / 2f * clip.scaleX);
+                textureView.setPivotY(clip.height / 2f * clip.scaleY);
+            });
 
         }
 
@@ -3433,14 +3446,15 @@ frameRate = 60;
                     currentMode = EditMode.MOVE;
 
                     // Move
-                    float newX = tv.getTranslationX() - dx;
-                    float newY = tv.getTranslationY() - dy;
-                    tv.setTranslationX(newX);
-                    tv.setTranslationY(newY);
+                    posX -= dx;
+                    posY -= dy;
+                    posMatrixX -= dx;
+                    posMatrixY -= dy;
+                    applyTransformation();
 
                     // Sync model
-                    clip.posX = EditingActivity.previewToRenderConversionX(newX, settings.videoWidth, clip.scaleX);
-                    clip.posY = EditingActivity.previewToRenderConversionY(newY, settings.videoHeight, clip.scaleY);
+                    clip.posX = EditingActivity.previewToRenderConversionX(posX, settings.videoWidth, clip.scaleX);
+                    clip.posY = EditingActivity.previewToRenderConversionY(posY, settings.videoHeight, clip.scaleY);
 
                     textCanvasControllerInfo.setText("Pos X: " + clip.posX + " | Pos Y: " + clip.posY);
                     return true;
@@ -3458,17 +3472,18 @@ frameRate = 60;
                     if(currentMode != EditMode.NONE && currentMode != EditMode.SCALE && currentMode != EditMode.ROTATE) return true;
                     currentMode = EditMode.SCALE;
 
-                    float sx = tv.getScaleX() * detector.getScaleFactor();
-                    float sy = tv.getScaleY() * detector.getScaleFactor();
-                    // Optional clamp
-                    sx = Math.max(0.1f, Math.min(sx, 10f));
-                    sy = Math.max(0.1f, Math.min(sy, 10f));
-                    tv.setScaleX(sx);
-                    tv.setScaleY(sy);
+                    scaleX *= detector.getScaleFactor();
+                    scaleY *= detector.getScaleFactor();
+                    scaleMatrixX *= detector.getScaleFactor();
+                    scaleMatrixY *= detector.getScaleFactor();
+                    // Optional clamp TODO: Remove later because well what are the point of this clamp when we can change it freely in the edit specific?
+//                    scaleX = Math.max(0.01f, Math.min(scaleX, 100f));
+//                    scaleY = Math.max(0.01f, Math.min(scaleY, 100f));
+                    applyTransformation();
 
                     // Sync model
-                    clip.scaleX = EditingActivity.previewToRenderConversionScalingX(sx, settings.videoWidth);
-                    clip.scaleY = EditingActivity.previewToRenderConversionScalingY(sy, settings.videoHeight);
+                    clip.scaleX = EditingActivity.previewToRenderConversionScalingX(scaleX, settings.videoWidth);
+                    clip.scaleY = EditingActivity.previewToRenderConversionScalingY(scaleY, settings.videoHeight);
 
                     setPivot();
 
@@ -3504,9 +3519,25 @@ frameRate = 60;
                                 lastAngle[0] = angle;
                             } else {
                                 float delta = normalizeAngle(angle - lastAngle[0]);
-                                float newRot = tv.getRotation() + delta;
-                                tv.setRotation(newRot);
-                                clip.rotation = newRot;
+                                rot += delta;
+                                rotMatrix += delta;
+
+                                // Normalize to [-360, 360]
+                                rot = ((rot + 360f) % 720f) - 360f;
+                                rotMatrix = ((rotMatrix + 360f) % 720f) - 360f;
+
+                                // Snap to nearest multiple of 90
+                                float nearest = Math.round(rot / Constants.CANVAS_ROTATE_SNAP_DEGREE) * Constants.CANVAS_ROTATE_SNAP_DEGREE;
+                                if (Math.abs(rot - nearest) <= Constants.CANVAS_ROTATE_SNAP_THRESHOLD_DEGREE) {
+                                    rot = nearest;
+                                }
+                                nearest = Math.round(rotMatrix / Constants.CANVAS_ROTATE_SNAP_DEGREE) * Constants.CANVAS_ROTATE_SNAP_DEGREE;
+                                if (Math.abs(rotMatrix - nearest) <= Constants.CANVAS_ROTATE_SNAP_THRESHOLD_DEGREE) {
+                                    rotMatrix = nearest;
+                                }
+
+                                applyTransformation();
+                                clip.rotation = rot;
 
                                 textCanvasControllerInfo.setText(
                                         "Scale X: " + clip.scaleX +
@@ -3523,9 +3554,42 @@ frameRate = 60;
                     case MotionEvent.ACTION_CANCEL:
                         lastAngle[0] = Float.NaN;
                         currentMode = EditMode.NONE;
+                        applyPostTransformation();
                         break;
                 }
                 return true;
+            });
+        }
+
+        // TODO: Isn't handling scale properly yet.
+        private void applyTransformation() {
+            matrix.reset();
+            matrix.postScale(scaleMatrixX, scaleMatrixY);
+            matrix.postRotate(rotMatrix);
+            matrix.postTranslate(posMatrixX, posMatrixY);
+
+            textureView.setTransform(matrix);
+            textureView.invalidate();
+        }
+        private void applyPostTransformation() {
+            textureView.post(() -> {
+                // Reset the matrix state for next drag
+                scaleMatrixX = 1;
+                scaleMatrixY = 1;
+                rotMatrix = 0;
+                posMatrixX = 0;
+                posMatrixY = 0;
+                matrix.reset();
+
+                textureView.setTransform(matrix);
+                textureView.invalidate();
+
+
+                textureView.setTranslationX(posX);
+                textureView.setTranslationY(posY);
+                textureView.setScaleX(scaleX);
+                textureView.setScaleY(scaleY);
+                textureView.setRotation(rot);
             });
         }
 
