@@ -18,4 +18,15 @@ public class MathHelper {
         return 1 - (float)Math.exp(-zeta * omega * t) * (1 + zeta * omega * t);
     }
 
+    /**
+     * Ratio of a and b (a/b)
+     * @param a value a
+     * @param b value b
+     * @return the ratio of a and b
+     */
+    public static float ratio(float a, float b)
+    {
+        return a / b;
+    }
+
 }

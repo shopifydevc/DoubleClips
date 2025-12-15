@@ -2126,24 +2126,32 @@ public class EditingActivity extends AppCompatActivityImpl {
         return (int) ((renderY * Math.min(previewAvailableHeight, renderResolutionY)) / renderResolutionY * clipScaleY);
     }
 
+    // TODO: Using the same ratio system like below because multipication and division is in the same order, no plus and subtract
+
 
     public static float previewToRenderConversionScalingX(float clipScaleX, float renderResolutionX)
     {
-        return clipScaleX * (Math.min(previewAvailableWidth, renderResolutionX) / renderResolutionX);
+        return clipScaleX * getRenderRatio(previewAvailableWidth, renderResolutionX);
     }
     public static float previewToRenderConversionScalingY(float clipScaleY, float renderResolutionY)
     {
-        return clipScaleY * (Math.min(previewAvailableHeight, renderResolutionY) / renderResolutionY);
+        return clipScaleY * getRenderRatio(previewAvailableHeight, renderResolutionY);
     }
 
     public static float renderToPreviewConversionScalingX(float clipScaleX, float renderResolutionX)
     {
-        return clipScaleX / (Math.min(previewAvailableWidth, renderResolutionX) / renderResolutionX);
+        return clipScaleX / getRenderRatio(previewAvailableWidth, renderResolutionX);
     }
     public static float renderToPreviewConversionScalingY(float clipScaleY, float renderResolutionY)
     {
-        return clipScaleY / (Math.min(previewAvailableHeight, renderResolutionY) / renderResolutionY);
+        return clipScaleY / getRenderRatio(previewAvailableHeight, renderResolutionY);
     }
+
+    public static float getRenderRatio(float previewAvailable, float renderResolution)
+    {
+        return Math.min(previewAvailable, renderResolution) / renderResolution;
+    }
+
     // TODO: For the scaling. When passing the previewAvailableWidth/Height. We get
     //  the previewAvailable / renderResolution for the ratio. And we divide the render scale by the ratio to
     //  get the preview
