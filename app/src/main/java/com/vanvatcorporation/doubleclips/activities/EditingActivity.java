@@ -2123,13 +2123,13 @@ public class EditingActivity extends AppCompatActivityImpl {
         return (int) ((previewY / Math.min(previewAvailableHeight, renderResolutionY)) * renderResolutionY);
     }
 
-    public static int renderToPreviewConversionX(float renderX, float renderResolutionX, float clipScaleX)
+    public static int renderToPreviewConversionX(float renderX, float renderResolutionX)
     {
-        return (int) ((renderX * Math.min(previewAvailableWidth, renderResolutionX)) / renderResolutionX * clipScaleX);
+        return (int) ((renderX * Math.min(previewAvailableWidth, renderResolutionX)) / renderResolutionX);
     }
-    public static int renderToPreviewConversionY(float renderY, float renderResolutionY, float clipScaleY)
+    public static int renderToPreviewConversionY(float renderY, float renderResolutionY)
     {
-        return (int) ((renderY * Math.min(previewAvailableHeight, renderResolutionY)) / renderResolutionY * clipScaleY);
+        return (int) ((renderY * Math.min(previewAvailableHeight, renderResolutionY)) / renderResolutionY);
     }
 
     // TODO: Using the same ratio system like below because multiplication and division is in the same order, no plus and subtract
@@ -3139,8 +3139,8 @@ frameRate = 60;
 
                                     surfaceTexture.setDefaultBufferSize(clip.width, clip.height); // or your target resolution
 
-                                    posX = (EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth, clip.scaleX));
-                                    posY = (EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight, clip.scaleY));
+                                    posX = (EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth));
+                                    posY = (EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight));
                                     scaleX = (EditingActivity.renderToPreviewConversionScalingX(clip.scaleX, settings.videoWidth));
                                     scaleY = (EditingActivity.renderToPreviewConversionScalingY(clip.scaleY, settings.videoHeight));
                                     rot = (clip.rotation);
@@ -3223,8 +3223,8 @@ frameRate = 60;
                                 // Create a Surface from the TextureView
                                 surfaceTexture.setDefaultBufferSize(clip.width, clip.height); // or your target resolution
 
-                                posX = (EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth, clip.scaleX));
-                                posY = (EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight, clip.scaleY));
+                                posX = (EditingActivity.renderToPreviewConversionX(clip.posX, settings.videoWidth));
+                                posY = (EditingActivity.renderToPreviewConversionY(clip.posY, settings.videoHeight));
                                 scaleX = (EditingActivity.renderToPreviewConversionScalingX(clip.scaleX, settings.videoWidth));
                                 scaleY = (EditingActivity.renderToPreviewConversionScalingY(clip.scaleY, settings.videoHeight));
                                 rot = (clip.rotation);
@@ -3476,8 +3476,8 @@ frameRate = 60;
                     // Move
                     posX -= dx;
                     posY -= dy;
-                    posMatrixX -= dx;
-                    posMatrixY -= dy;
+                    posMatrixX -= dx / clip.scaleX;
+                    posMatrixY -= dy / clip.scaleY;
                     applyTransformation();
 
                     // Sync model
