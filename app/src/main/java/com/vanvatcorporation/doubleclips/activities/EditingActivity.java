@@ -2126,8 +2126,9 @@ public class EditingActivity extends AppCompatActivityImpl {
         return (int) ((renderY * Math.min(previewAvailableHeight, renderResolutionY)) / renderResolutionY * clipScaleY);
     }
 
-    // TODO: Using the same ratio system like below because multipication and division is in the same order, no plus and subtract
-
+    // TODO: Using the same ratio system like below because multiplication and division is in the same order, no plus and subtract
+    //  the matrix of the previwe clip are not using the previewAvailable ratio system yet, so 1366 width
+    //  in the 1080px screen the movement will be jittered
 
     public static float previewToRenderConversionScalingX(float clipScaleX, float renderResolutionX)
     {
