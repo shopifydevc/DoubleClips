@@ -50,6 +50,7 @@ import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
@@ -310,27 +311,16 @@ public class FFmpegEdit {
                         // In this first if expr: We process scaleX, scaleY, rot, opacity, speed
                         if (clip.hasAnimatedProperties()) {
 
-                            StringBuilder keyframeExprString = new StringBuilder();
-                            for(int i = 0; i < clip.keyframes.keyframes.size() - 1; i++)
-                            {
-                                EditingActivity.Keyframe prevKeyframe = clip.keyframes.keyframes.get(i);
-                                EditingActivity.Keyframe nextKeyframe = clip.keyframes.keyframes.get(i + 1);
 
-                                keyframeExprString
-                                        .append("'")
-                                        .append("if(")
-                                        .append("gte(t,").append(prevKeyframe.time).append(")")
-                                        .append("*")
-                                        .append("lte(t,").append(nextKeyframe.time).append(")").append(",")
-                                        .append(nextKeyframe.value.getValue(EditingActivity.VideoProperties.ValueType.ScaleX)).append(",")
-                                        .append(clip.scaleX)
+                            // TODO: Scale is not applied yet. Research zoompan instead.
+                            String scaleXExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, 0, EditingActivity.VideoProperties.ValueType.ScaleX);
+                            String scaleYExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, 0, EditingActivity.VideoProperties.ValueType.ScaleY);
 
-                                        .append("'");// TODO: Implement this using the method down below
-                            }
+                            String rotationExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, 0, EditingActivity.VideoProperties.ValueType.Rot);
 
                             filterComplex.append("scale=iw*").append(clip.scaleX).append(":ih*").append(clip.scaleY).append(",")
                                     //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
-                                    .append("rotate=").append(radiansRotation).append(":ow=rotw(").append(radiansRotation).append("):oh=roth(").append(radiansRotation).append(")")
+                                    .append("rotate='").append(rotationExpr).append("':ow=rotw('").append(rotationExpr).append("'):oh=roth('").append(rotationExpr).append("')")
                                     .append(":fillcolor=0x00000000").append(",")
                                     .append("format=rgba,colorchannelmixer=aa=").append(clip.opacity).append(",")
                                     .append("setpts='(PTS-STARTPTS)/").append(clip.speed).append("+").append(clip.startTime).append("/TB'").append(",");
@@ -375,7 +365,11 @@ public class FFmpegEdit {
 
                         // In this second if expr: We process posX, posY
                         if (clip.hasAnimatedProperties()) {
-                            filterComplex.append("overlay=").append(clip.posX).append(":").append(clip.posY);
+
+                            String posXExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, 0, EditingActivity.VideoProperties.ValueType.PosX);
+                            String posYExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, 0, EditingActivity.VideoProperties.ValueType.PosY);
+
+                            filterComplex.append("overlay='").append(posXExpr).append("':'").append(posYExpr).append("'");
                         }
                         else {
                             // Because we already merged from the first if expr, we don't have to do it here
@@ -555,12 +549,12 @@ public class FFmpegEdit {
      * @return Expression for FFmpeg in String format.
      *
      */
-    public static String getKeyframeFFmpegExpr(EditingActivity.Keyframe[] keyframes, int startIndex, EditingActivity.VideoProperties.ValueType valueType)
+    public static String getKeyframeFFmpegExpr(List<EditingActivity.Keyframe> keyframes, int startIndex, EditingActivity.VideoProperties.ValueType valueType)
     {
         StringBuilder keyframeExprString = new StringBuilder();
 
-        EditingActivity.Keyframe prevKeyframe = keyframes[startIndex];
-        EditingActivity.Keyframe nextKeyframe = keyframes[startIndex + 1];
+        EditingActivity.Keyframe prevKeyframe = keyframes.get(startIndex);
+        EditingActivity.Keyframe nextKeyframe = keyframes.get(startIndex + 1);
 
 
         keyframeExprString
