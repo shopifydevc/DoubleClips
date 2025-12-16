@@ -143,10 +143,10 @@ public class FFmpegEdit {
         for (int i = startingFrame; i < offsetTotalFrames; i++) {
             float time = i / (float)fps;
 
-            float scale = clip.scaleKeyFrames.getValueAt(time);
-            float x = clip.posXKeyFrames.getValueAt(time);
-            float y = clip.posYKeyFrames.getValueAt(time);
-            float rotation = clip.rotationKeyFrames.getValueAt(time);
+            float scale = clip.keyframes.getValueAt(time, EditingActivity.VideoProperties.ValueType.ScaleX);
+            float x = clip.keyframes.getValueAt(time, EditingActivity.VideoProperties.ValueType.PosX);
+            float y = clip.keyframes.getValueAt(time, EditingActivity.VideoProperties.ValueType.PosY);
+            float rotation = clip.keyframes.getValueAt(time, EditingActivity.VideoProperties.ValueType.Rot);
 
             renderFrameToBitmap(context, clip.getAbsolutePath(workingProjectPath), workingProjectPath, scale, x, y, rotation, i);
         }
@@ -424,6 +424,9 @@ public class FFmpegEdit {
                         //          (PTS-STARTPTS)/(1+exp(-k*(5-T))))
                         //    ) + 3/TB
                         //'
+
+
+
 
 
                         // Transition extension: because overlay are just like transparent layer so we add the raw fillingTransitionDuration

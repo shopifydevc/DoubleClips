@@ -1379,8 +1379,12 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-        clip.scaleKeyFrames.keyframes.add(new Keyframe(currentTime, Random.Range(0.5f, 3f), EasingType.LINEAR));
-        clip.rotationKeyFrames.keyframes.add(new Keyframe(currentTime, Random.Range(0.5f, 3f), EasingType.LINEAR));
+        clip.keyframes.keyframes.add(new Keyframe(currentTime, new VideoProperties(
+                clip.posX, clip.posY,
+                clip.rotation,
+                clip.scaleX, clip.scaleY,
+                clip.opacity, clip.speed
+        ), EasingType.LINEAR));
 
         handleKeyframeInteraction(knotView);
     }
@@ -2414,14 +2418,9 @@ public class EditingActivity extends AppCompatActivityImpl {
         @Expose
         public float speed;
 
+
         @Expose
-        public AnimatedProperty posXKeyFrames = new AnimatedProperty();
-        @Expose
-        public AnimatedProperty posYKeyFrames = new AnimatedProperty();
-        @Expose
-        public AnimatedProperty scaleKeyFrames = new AnimatedProperty();
-        @Expose
-        public AnimatedProperty rotationKeyFrames = new AnimatedProperty();
+        public AnimatedProperty keyframes = new AnimatedProperty();
         // Use for keyframe pre-rendering
         @Expose
         public String preRenderedName;
@@ -2731,10 +2730,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
         public boolean hasAnimatedProperties() {
-            return posXKeyFrames.keyframes.size() != 0 ||
-                    posYKeyFrames.keyframes.size() != 0 ||
-                    scaleKeyFrames.keyframes.size() != 0 ||
-                    rotationKeyFrames.keyframes.size() != 0;
+            return !keyframes.keyframes.isEmpty();
         }
 
         public String getRenderedName() {
@@ -2975,13 +2971,75 @@ frameRate = 60;
         }
 
     }
+    public static class VideoProperties implements Serializable {
+        public float valuePosX;
+        public float valuePosY;
+        public float valueRot;
+        public float valueScaleX;
+        public float valueScaleY;
+        public float valueOpacity;
+        public float valueSpeed;
+
+        public VideoProperties(float valuePosX, float valuePosY,
+                               float valueRot,
+                               float valueScaleX, float valueScaleY,
+                               float valueOpacity, float valueSpeed)
+        {
+            this.valuePosX = valuePosX;
+            this.valuePosY = valuePosY;
+            this.valueRot = valueRot;
+            this.valueScaleX = valueScaleX;
+            this.valueScaleY = valueScaleY;
+            this.valueOpacity = valueOpacity;
+            this.valueSpeed = valueSpeed;
+        }
+
+        public VideoProperties(VideoProperties properties)
+        {
+            this.valuePosX = properties.valuePosX;
+            this.valuePosY = properties.valuePosY;
+            this.valueRot = properties.valueRot;
+            this.valueScaleX = properties.valueScaleX;
+            this.valueScaleY = properties.valueScaleY;
+            this.valueOpacity = properties.valueOpacity;
+            this.valueSpeed = properties.valueSpeed;
+        }
+
+        public float getValue(ValueType valueType) {
+
+            switch (valueType)
+            {
+                case PosX:
+                    return valuePosX;
+                case PosY:
+                    return valuePosY;
+                case Rot:
+                    return valueRot;
+                case ScaleX:
+                    return valueScaleX;
+                case ScaleY:
+                    return valueScaleY;
+                case Opacity:
+                    return valueOpacity;
+                case Speed:
+                    return valueSpeed;
+                default:
+                    return 1;
+
+            }
+        }
+
+        public enum ValueType {
+            PosX, PosY, Rot, ScaleX, ScaleY, Opacity, Speed
+        }
+    }
     public static class Keyframe implements Serializable {
         public float time; // seconds
-        public float value; // could be position, scale, rotation, etc.
+        public VideoProperties value;
         public EasingType easing = EasingType.LINEAR;
 
 
-        public Keyframe(float time, float value, EasingType easing)
+        public Keyframe(float time, VideoProperties value, EasingType easing)
         {
             this.time = time;
             this.value = value;
@@ -2991,7 +3049,7 @@ frameRate = 60;
     public static class AnimatedProperty implements Serializable {
         public List<Keyframe> keyframes = new ArrayList<>();
 
-        public float getValueAt(float playheadTime) {
+        public float getValueAt(float playheadTime, VideoProperties.ValueType valueType) {
             if (keyframes.isEmpty()) return 0f;
 
             Keyframe prev = keyframes.get(0);
@@ -2999,7 +3057,12 @@ frameRate = 60;
                 if (playheadTime < next.time) {
                     float t = (playheadTime - prev.time) / (next.time - prev.time);
                     t = Math.max(0f, Math.min(1f, t));
-                    return lerp(prev.value, next.value, ease(t, next.easing)); // linear interpolation
+
+                    float prevValue = prev.value.getValue(valueType);
+                    float nextValue = next.value.getValue(valueType);
+
+
+                    return lerp(prevValue, nextValue, ease(t, next.easing)); // linear interpolation
                 }
                 prev = next;
 
@@ -3007,7 +3070,7 @@ frameRate = 60;
 //                if (playheadTime >= keyframes.get(keyframes.size() - 1).time) return keyframes.get(keyframes.size() - 1).value;
 
             }
-            return keyframes.get(keyframes.size() - 1).value;
+            return keyframes.get(keyframes.size() - 1).value.getValue(valueType);
         }
 
         private float lerp(float a, float b, float t) {
@@ -3052,10 +3115,11 @@ frameRate = 60;
     //Todo: When real-time preview is back to working, consider using this stuff
     protected void useKeyFrameInRealtimeRendering(Clip clip, float playheadTime)
     {
-        float x = clip.posXKeyFrames.getValueAt(playheadTime);
-        float y = clip.posYKeyFrames.getValueAt(playheadTime);
-        float scale = clip.scaleKeyFrames.getValueAt(playheadTime);
-        float rotation = clip.rotationKeyFrames.getValueAt(playheadTime);
+        float x = clip.keyframes.getValueAt(playheadTime, VideoProperties.ValueType.PosX);
+        float y = clip.keyframes.getValueAt(playheadTime, VideoProperties.ValueType.PosY);
+        float rotation = clip.keyframes.getValueAt(playheadTime, VideoProperties.ValueType.Rot);
+        float scaleX = clip.keyframes.getValueAt(playheadTime, VideoProperties.ValueType.ScaleX);
+        float scaleY = clip.keyframes.getValueAt(playheadTime, VideoProperties.ValueType.ScaleY);
 
         // Apply transform to canvas or OpenGL
 
