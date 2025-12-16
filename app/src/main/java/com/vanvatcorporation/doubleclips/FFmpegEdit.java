@@ -299,12 +299,16 @@ public class FFmpegEdit {
 //                            clip.type = EditingActivity.ClipType.VIDEO; // Treat as normal video now
 //                            keyframeClipIndex++;
                         }
+                        else
+                        {
+                            clip.mergingVideoPropertiesFromSingleKeyframe();
+                        }
                         // Let simulating 4 keyframe type in opacity for example:
                         // K #1: 1 at 1s
                         // K #2: 0 at 2s
                         // K #3: 0 at 3s
                         // K #4: 1 at 4s
-                        // Kinda like --\_/--
+                        // Kinda like --\_/--   (\ and _ and / are actually 3 lines created from 4 points)
 
                         // gte(t,5)*lte(t,10)
                         //colorchannelmixer=aa='if(gte(t,1)*lte(t,2), exp(-0.5*(t-3)), if(gte(t,2)*lte(t,3), 0, if(gte(t,3)*lte(t,4)), 1-exp(-1*t), 1))'

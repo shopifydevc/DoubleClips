@@ -2728,9 +2728,44 @@ public class EditingActivity extends AppCompatActivityImpl {
             rotation = 0;
         }
 
+        public void mergingVideoPropertiesFromSingleKeyframe() {
+            if(hasOnlyOneAnimatedProperties())
+            {
+                VideoProperties videoProperties = keyframes.keyframes.get(0).value;
 
+                applyPropertiesToClip(videoProperties);
+            }
+        }
+        public void applyPropertiesToClip(VideoProperties properties) {
+            posX = properties.valuePosX;
+            posY = properties.valuePosY;
+            rotation = properties.valueRot;
+            scaleX = properties.valueScaleX;
+            scaleY = properties.valueScaleY;
+            opacity = properties.valueOpacity;
+            speed = properties.valueSpeed;
+        }
+
+
+
+
+        /**
+         * To ensure rendering keyframe correctly, there must have more than 2 keyframe to form a line for
+         * lerping back and forth.
+         * 2 points create 1 line, 3 points create 2 lines, 4 points create 3 lines, etc...
+         * @return true if keyframe list has more than 2 element, false otherwise.
+         */
         public boolean hasAnimatedProperties() {
-            return !keyframes.keyframes.isEmpty();
+            return keyframes.keyframes.size() > 1;
+        }
+
+        /**
+         * If there's not enough keyframe to render, then we just merging the video properties to
+         * the main video.
+         * @return true if keyframe list has only 1 element, false otherwise.
+         */
+        public boolean hasOnlyOneAnimatedProperties() {
+            return keyframes.keyframes.size() == 1;
         }
 
         public String getRenderedName() {
@@ -2804,6 +2839,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public float getCutoutDuration() {
             return duration - startClipTrim - endClipTrim;
         }
+
     }
 
 
