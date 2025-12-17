@@ -859,7 +859,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         });
         toolbarClips.findViewById(R.id.addKeyframeButton).setOnClickListener(v -> {
             if(selectedClip != null) {
-                addKeyframe(selectedClip);
+                addKeyframe(selectedClip, currentTime);
             }
             else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
         });
@@ -1063,6 +1063,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                 //  this is just for testing. Resource-consuming asf.
                 regeneratingTimelineRenderer();
 
+
+                clipEditSpecificAreaScreen.keyframeScrollFrame.removeAllViews();
             }
         };
         clipEditSpecificAreaScreen.onOpen = () -> {
@@ -1078,6 +1080,21 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)));
 
             clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute);
+
+
+            for(Keyframe keyframe : selectedClip.keyframes.keyframes)
+            {
+                clipEditSpecificAreaScreen.createKeyframeElement(keyframe, () -> {
+                    setCurrentTime(keyframe.time);
+                });
+            }
+
+            clipEditSpecificAreaScreen.clearKeyframeButton.setOnClickListener(v -> {
+                if(selectedClip != null)
+                {
+                    selectedClip.keyframes.keyframes.clear();
+                }
+            });
         };
 
 
@@ -1332,8 +1349,14 @@ public class EditingActivity extends AppCompatActivityImpl {
         data.registerClipHandle(clipView, this, timelineScroll);
 
 
+
+
         clipView.post(() -> {
             updateCurrentClipEnd();
+
+            for (Keyframe keyframe : data.keyframes.keyframes) {
+                addKeyframeUi(data, keyframe);
+            }
         });
 
 
@@ -1360,7 +1383,23 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         handleKnotInteraction(knotView);
     }
-    public void addKeyframe(Clip clip)
+
+    public void addKeyframe(Clip clip, float keyframeTime)
+    {
+        addKeyframe(clip, new Keyframe(keyframeTime, new VideoProperties(
+                clip.videoProperties.getValue(VideoProperties.ValueType.PosX), clip.videoProperties.getValue(VideoProperties.ValueType.PosY),
+                clip.videoProperties.getValue(VideoProperties.ValueType.Rot),
+                clip.videoProperties.getValue(VideoProperties.ValueType.ScaleX), clip.videoProperties.getValue(VideoProperties.ValueType.ScaleY),
+                clip.videoProperties.getValue(VideoProperties.ValueType.Opacity), clip.videoProperties.getValue(VideoProperties.ValueType.Speed)
+        ), EasingType.LINEAR));
+    }
+    public void addKeyframe(Clip clip, Keyframe keyframe)
+    {
+        addKeyframeUi(clip, keyframe);
+
+        clip.keyframes.keyframes.add(keyframe);
+    }
+    public void addKeyframeUi(Clip clip, Keyframe keyframe)
     {
         View knotView = LayoutInflater.from(this).inflate(R.layout.view_transition_knot, null);
         knotView.setVisibility(View.VISIBLE);
@@ -1368,22 +1407,15 @@ public class EditingActivity extends AppCompatActivityImpl {
         knotView.setTag(clip);
         // Position it between clips
         int width = 12;
-        int height = 12;
+        int height = 30;
 
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
         //params.leftMargin = getCurrentTimeInX();
         params.topMargin = clip.viewRef.getTop() + (clip.viewRef.getHeight() / 2);
-        knotView.setX(getCurrentTimeInX());
+        knotView.setX(getTimeInX(keyframe.time));
         timeline.tracks.get(clip.trackIndex).viewRef.addView(knotView, params);
 
 
-
-        clip.keyframes.keyframes.add(new Keyframe(currentTime, new VideoProperties(
-                clip.videoProperties.getValue(VideoProperties.ValueType.PosX), clip.videoProperties.getValue(VideoProperties.ValueType.PosY),
-                clip.videoProperties.getValue(VideoProperties.ValueType.Rot),
-                clip.videoProperties.getValue(VideoProperties.ValueType.ScaleX), clip.videoProperties.getValue(VideoProperties.ValueType.ScaleY),
-                clip.videoProperties.getValue(VideoProperties.ValueType.Opacity), clip.videoProperties.getValue(VideoProperties.ValueType.Speed)
-        ), EasingType.LINEAR));
 
         handleKeyframeInteraction(knotView);
     }
@@ -2266,8 +2298,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                 track.viewRef.trackInfo = track;
 
                 for (Clip clip : track.clips) {
-                    if (clip.type == null)
-                        clip.type = ClipType.VIDEO;
+                    System.err.println(clip.keyframes.keyframes.size());
+                    clip.filterNullAfterLoad();
                     instance.addClipToTrackUi(track.viewRef, clip);
                 }
             }
@@ -2440,6 +2472,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public transient View leftHandle, rightHandle;
         public transient ImageGroupView viewRef;
 
+
         public Clip(String clipName, float startTime, float duration, int trackIndex, ClipType type, boolean isVideoHasAudio, int width, int height) {
             this.clipName = clipName;
             this.startTime = startTime;
@@ -2486,6 +2519,26 @@ public class EditingActivity extends AppCompatActivityImpl {
                 this.effect = clip.effect;
             }
         }
+
+
+        /**
+         * Full transfer to this new Clip.
+         * Safe enough to filter the null when the new update rolled out.
+         * @param loadedClip Clip that loaded from JSON and are potentially contains null variables
+         */
+        public void safeLoad(Clip loadedClip)
+        {
+            // ? WTF am I writing this for. Make no sense!
+        }
+
+
+        public void filterNullAfterLoad()
+        {
+            if(type == null) type = ClipType.VIDEO;
+            if(videoProperties == null) videoProperties = new VideoProperties();
+            if(keyframes == null) keyframes = new AnimatedProperty();
+        }
+
 
         public void registerClipHandle(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
             viewRef = clipView;
@@ -2992,6 +3045,16 @@ frameRate = 60;
         @Expose
         public float valueSpeed;
 
+        public VideoProperties()
+        {
+            this.valuePosX = 0;
+            this.valuePosY = 0;
+            this.valueRot = 0;
+            this.valueScaleX = 1;
+            this.valueScaleY = 1;
+            this.valueOpacity = 1;
+            this.valueSpeed = 1;
+        }
         public VideoProperties(float valuePosX, float valuePosY,
                                float valueRot,
                                float valueScaleX, float valueScaleY,
@@ -3075,8 +3138,11 @@ frameRate = 60;
         }
     }
     public static class Keyframe implements Serializable {
+        @Expose
         public float time; // seconds
+        @Expose
         public VideoProperties value;
+        @Expose
         public EasingType easing = EasingType.LINEAR;
 
 
@@ -3088,6 +3154,8 @@ frameRate = 60;
         }
     }
     public static class AnimatedProperty implements Serializable {
+
+        @Expose
         public List<Keyframe> keyframes = new ArrayList<>();
 
         public float getValueAtTime(float playheadTime, VideoProperties.ValueType valueType) {

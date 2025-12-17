@@ -118,6 +118,29 @@
                     android:text="Keyframe"
                     android:textSize="18sp" />
 
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:layout_margin="10dp"
+                    android:backgroundTint="@color/colorPalette1_1">
+                    <LinearLayout
+                        android:id="@+id/keyframeScrollFrame"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </ScrollView>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/clearKeyframeButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Clear Keyframes"/>
 
             </LinearLayout>
             <LinearLayout
