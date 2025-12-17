@@ -562,21 +562,21 @@ public class FFmpegEdit {
 
         keyframeExprString
                 .append("if(")
-                .append("gte(t,").append(prevKeyframe.time).append(")")
+                .append("gte(t,").append(prevKeyframe.time + clip.startTime).append(")")
                 .append("*")
-                .append("lte(t,").append(nextKeyframe.time).append(")").append(",")
+                .append("lte(t,").append(nextKeyframe.time + clip.startTime).append(")").append(",")
                 // insert the expr here
                 // previous: nextKeyframe.value.getValue(valueType)
-                .append(generateEasing(prevKeyframe, nextKeyframe, valueType)).append(",")
+                .append(generateEasing(prevKeyframe, nextKeyframe, clip, valueType)).append(",")
                 .append(getKeyframeFFmpegExpr(keyframes, clip, startIndex + 1, valueType))
                 .append(")");
 
         return keyframeExprString.toString();
     }
 
-    public static String generateEasing(EditingActivity.Keyframe prevKey, EditingActivity.Keyframe nextKey, EditingActivity.VideoProperties.ValueType type)
+    public static String generateEasing(EditingActivity.Keyframe prevKey, EditingActivity.Keyframe nextKey, EditingActivity.Clip clip, EditingActivity.VideoProperties.ValueType type)
     {
-        return generateEasing(prevKey.value.getValue(type), nextKey.value.getValue(type), prevKey.time, (nextKey.time - prevKey.time), prevKey.easing);
+        return generateEasing(prevKey.value.getValue(type), nextKey.value.getValue(type), prevKey.time + clip.startTime, (nextKey.time - prevKey.time), prevKey.easing);
     }
     public static String generateEasing(float prevValue, float nextValue, float offset, float duration, EditingActivity.EasingType type)
     {

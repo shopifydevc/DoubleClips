@@ -100,6 +100,7 @@ import java.util.concurrent.Executors;
 
 public class EditingActivity extends AppCompatActivityImpl {
 
+
     //List<Track> trackList = new ArrayList<>();
     Timeline timeline = new Timeline();
     MainActivity.ProjectData properties;
@@ -503,6 +504,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+
         properties = (MainActivity.ProjectData) createrBundle.getSerializable("ProjectProperties");
 
         //settings = new VideoSettings(1280, 720, 30, 30, VideoSettings.FfmpegPreset.MEDIUM, VideoSettings.FfmpegTune.ZEROLATENCY);
@@ -871,6 +873,22 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             ((NavigationIconLayout)toolbarClips.findViewById(R.id.selectMultipleButton)).getIconView().setColorFilter((isClipSelectMultiple ? 0xFFFF0000 : 0xFFFFFFFF), PorterDuff.Mode.SRC_ATOP);
         });
+        toolbarClips.findViewById(R.id.applyKeyframeToAllClip).setOnClickListener(v -> {
+
+            if(selectedTrack != null && selectedClip != null) {
+
+                List<Clip> clips = selectedTrack.clips;
+                for (Clip clip : clips) {
+                    if(clip != selectedClip)
+                    {
+                        clip.keyframes.keyframes.addAll(selectedClip.keyframes.keyframes);
+                        //TODO: Fetch the addKeyframesUi again to match the preview
+                    }
+                }
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+
+        });
         toolbarClips.findViewById(R.id.restateButton).setOnClickListener(v -> {
             if(selectedClip != null) {
                 selectedClip.restate();
@@ -1192,7 +1210,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         // TODO: Tested for dragging back and forth clips. They're doing fine with the extractor SYNC_EXACT
         //  Limit the time of refreshing entire timeline like this.
-        timelineRenderer.buildTimeline(timeline, properties, settings, previewViewGroup, textCanvasControllerInfo);
+        timelineRenderer.buildTimeline(timeline, properties, settings, this, previewViewGroup, textCanvasControllerInfo);
     }
     private void setCurrentTime(float value)
     {
@@ -1367,13 +1385,17 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     public void addKnotTransition(TransitionClip clip, View clipB)
     {
-        View knotView = LayoutInflater.from(this).inflate(R.layout.view_transition_knot, null);
+        View knotView = new View(this);
+        knotView.setBackgroundColor(Color.RED);
         knotView.setVisibility(View.VISIBLE);
 
         knotView.setTag(clip);
         // Position it between clips
         int width = 50;
         int height = 50;
+
+        knotView.setPivotX((float) width /2);
+        knotView.setPivotY((float) height /2);
 
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
         //params.leftMargin = clipB.getLeft() - (width / 2); // center between clips
@@ -1386,7 +1408,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
     public void addKeyframe(Clip clip, float keyframeTime)
     {
-        addKeyframe(clip, new Keyframe(keyframeTime, new VideoProperties(
+        addKeyframe(clip, new Keyframe(keyframeTime - clip.startTime, new VideoProperties(
                 clip.videoProperties.getValue(VideoProperties.ValueType.PosX), clip.videoProperties.getValue(VideoProperties.ValueType.PosY),
                 clip.videoProperties.getValue(VideoProperties.ValueType.Rot),
                 clip.videoProperties.getValue(VideoProperties.ValueType.ScaleX), clip.videoProperties.getValue(VideoProperties.ValueType.ScaleY),
@@ -1401,13 +1423,17 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     public void addKeyframeUi(Clip clip, Keyframe keyframe)
     {
-        View knotView = LayoutInflater.from(this).inflate(R.layout.view_transition_knot, null);
+        View knotView = new View(this);
+        knotView.setBackgroundColor(Color.BLACK);
         knotView.setVisibility(View.VISIBLE);
 
         knotView.setTag(clip);
         // Position it between clips
         int width = 12;
         int height = 30;
+
+        knotView.setPivotX((float) width /2);
+        knotView.setPivotY((float) height /2);
 
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
         //params.leftMargin = getCurrentTimeInX();
@@ -2452,6 +2478,13 @@ public class EditingActivity extends AppCompatActivityImpl {
         @Expose
         public float fontSize;    // for TEXT type
 
+
+        // TODO: End transition for clip later that attached to the end of this clip.
+        //  this will make more sense than begin Transition as no one would merge the beginning of the clip and call it a transition.
+        //  Save this endTransition alongside with this clip.
+        @Expose
+        public TransitionClip endTransition;
+
         /**
          * For VIDEO type.
          * When import, check whether the clip has audio or not
@@ -3269,7 +3302,7 @@ frameRate = 60;
         private float posMatrixX = 0, posMatrixY = 0;
 
 
-        public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, VideoSettings settings, FrameLayout previewViewGroup, TextView textCanvasControllerInfo) {
+        public ClipRenderer(Context context, Clip clip, MainActivity.ProjectData data, VideoSettings settings, EditingActivity editingActivity, FrameLayout previewViewGroup, TextView textCanvasControllerInfo) {
             this.context = context;
             this.clip = clip;
 
@@ -3478,7 +3511,7 @@ frameRate = 60;
                 if(textureView != null)
                 {
                     setPivot();
-                    attachGestureControls(textureView, clip, settings, textCanvasControllerInfo);
+                    attachGestureControls(textureView, clip, settings, editingActivity, textCanvasControllerInfo);
                 }
 
 
@@ -3643,7 +3676,7 @@ frameRate = 60;
         EditMode currentMode = EditMode.NONE;
 
 
-        private void attachGestureControls(TextureView tv, Clip clip, VideoSettings settings, TextView textCanvasControllerInfo) {
+        private void attachGestureControls(TextureView tv, Clip clip, VideoSettings settings, EditingActivity editingActivity, TextView textCanvasControllerInfo) {
             final GestureDetector tapDrag = new GestureDetector(tv.getContext(), new GestureDetector.SimpleOnGestureListener() {
                 @Override public boolean onDown(MotionEvent e) { return true; } // must return true to receive events
                 @Override public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
@@ -3666,8 +3699,7 @@ frameRate = 60;
                     return true;
                 }
                 @Override public boolean onSingleTapUp(MotionEvent e) {
-                    clip.select();
-                    EditingActivity.selectedClip = clip;
+                    editingActivity.selectingClip(clip);
                     return true;
                 }
             });
@@ -3852,7 +3884,7 @@ frameRate = 60;
             this.context = context;
         }
 
-        public void buildTimeline(Timeline timeline, MainActivity.ProjectData properties, VideoSettings settings, FrameLayout previewViewGroup, TextView textCanvasControllerInfo)
+        public void buildTimeline(Timeline timeline, MainActivity.ProjectData properties, VideoSettings settings, EditingActivity editingActivity, FrameLayout previewViewGroup, TextView textCanvasControllerInfo)
         {
             for (List<ClipRenderer> trackRenderer : trackLayers) {
                 for (ClipRenderer clipRenderer : trackRenderer) {
@@ -3888,7 +3920,7 @@ frameRate = 60;
                         case VIDEO:
                         case AUDIO:
                         case IMAGE:
-                            ClipRenderer clipRenderer = new ClipRenderer(context, clip, properties, settings, previewViewGroup, textCanvasControllerInfo);
+                            ClipRenderer clipRenderer = new ClipRenderer(context, clip, properties, settings, editingActivity, previewViewGroup, textCanvasControllerInfo);
                             renderers.add(clipRenderer);
                             break;
                     }
