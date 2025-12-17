@@ -553,20 +553,21 @@ public class FFmpegEdit {
     {
         StringBuilder keyframeExprString = new StringBuilder();
 
+        if(startIndex + 1 >= keyframes.size()) return "1"; // Default value
+        // TODO: Set the default value to match the current clip properties. Need rework on the structure.
+
         EditingActivity.Keyframe prevKeyframe = keyframes.get(startIndex);
         EditingActivity.Keyframe nextKeyframe = keyframes.get(startIndex + 1);
 
 
         keyframeExprString
-                .append("'")
                 .append("if(")
                 .append("gte(t,").append(prevKeyframe.time).append(")")
                 .append("*")
                 .append("lte(t,").append(nextKeyframe.time).append(")").append(",")
                 .append(nextKeyframe.value.getValue(valueType)).append(",")
                 .append(getKeyframeFFmpegExpr(keyframes, startIndex + 1, valueType))
-
-            .append("'");
+                .append(")");
 
         return keyframeExprString.toString();
     }
