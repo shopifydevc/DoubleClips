@@ -1211,7 +1211,6 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         // TODO: Tested for dragging back and forth clips. They're doing fine with the extractor SYNC_EXACT
         //  Limit the time of refreshing entire timeline like this.
-        //  lmao she already denined why u presist :(((((((((((((((((((((
         timelineRenderer.buildTimeline(timeline, properties, settings, this, previewViewGroup, textCanvasControllerInfo);
     }
     private void setCurrentTime(float value)
