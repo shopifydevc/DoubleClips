@@ -989,9 +989,9 @@ public class EditingActivity extends AppCompatActivityImpl {
         transitionEditSpecificAreaScreen.onClose.add(() -> {
             if(selectedKnot != null)
             {
-                for (int i = 0; i < timeline.tracks.get(selectedKnot.trackIndex).transitions.size(); i++)
+                for (int i = 0; i < timeline.tracks.get(selectedKnot.trackIndex).clips.size(); i++)
                 {
-                    TransitionClip clip = timeline.tracks.get(selectedKnot.trackIndex).transitions.get(i);
+                    TransitionClip clip = timeline.tracks.get(selectedKnot.trackIndex).clips.get(i).endTransition;
                     if(clip == selectedKnot)
                     {
                         clip.duration = ParserHelper.TryParse(transitionEditSpecificAreaScreen.transitionDurationContent.getText().toString(), 0.5f);
@@ -1011,9 +1011,9 @@ public class EditingActivity extends AppCompatActivityImpl {
             transitionEditSpecificAreaScreen.animateLayout(BaseEditSpecificAreaScreen.AnimationType.Close);
             if(selectedKnot != null)
             {
-                for (int i = 0; i < timeline.tracks.get(selectedKnot.trackIndex).transitions.size(); i++)
+                for (int i = 0; i < timeline.tracks.get(selectedKnot.trackIndex).clips.size(); i++)
                 {
-                    TransitionClip clip = timeline.tracks.get(selectedKnot.trackIndex).transitions.get(i);
+                    TransitionClip clip = timeline.tracks.get(selectedKnot.trackIndex).clips.get(i).endTransition;
                     clip.duration = ParserHelper.TryParse(transitionEditSpecificAreaScreen.transitionDurationContent.getText().toString(), 0.5f);
                     clip.effect.style = (String) FXCommandEmitter.FXRegistry.transitionFXMap.keySet().toArray()[transitionEditSpecificAreaScreen.transitionEditContent.getSelectedItemPosition()];
                     clip.effect.duration = ParserHelper.TryParse(transitionEditSpecificAreaScreen.transitionDurationContent.getText().toString(), 0.5f);
@@ -1973,13 +1973,12 @@ public class EditingActivity extends AppCompatActivityImpl {
         {
             TransitionClip transition = new TransitionClip();
             transition.trackIndex = clipA.trackIndex;
-            transition.fromClip = clipA;
-            transition.toClip = clipB;
             transition.startTime = clipB.startTime - transitionDuration / 2;
             transition.duration = transitionDuration;
             transition.effect = new EffectTemplate("fade", transitionDuration, transition.startTime);
             transition.mode = TransitionClip.TransitionMode.OVERLAP;
-            timeline.tracks.get(clipA.trackIndex).addTransition(transition);
+
+            clipA.endTransition = transition;
 
             addTransitionBridgeUi(transition, clipA);
         }
@@ -2357,8 +2356,6 @@ public class EditingActivity extends AppCompatActivityImpl {
         public int trackIndex;
         @Expose
         public List<Clip> clips = new ArrayList<>();
-        @Expose
-        public List<TransitionClip> transitions = new ArrayList<>();
 
         //Not serializing
         public transient TrackFrameLayout viewRef;
@@ -2398,9 +2395,13 @@ public class EditingActivity extends AppCompatActivityImpl {
             viewRef.setBackgroundColor(0xFF222222);
         }
 
-        public void addTransition(TransitionClip transition) {
-            transitions.add(transition);
+        public void clearTransition() {
+            for (Clip clip : clips) {
+                clip.endTransition = null;
+                removeTransitionUi(clip.endTransition);
+            }
         }
+
         public void removeTransitionUi(TransitionClip transition) {
 
             for (int i = 0; i < viewRef.getChildCount(); i++) {
@@ -2413,29 +2414,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                 }
             }
         }
-        public void removeTransition(TransitionClip transition) {
-            transitions.remove(transition);
-            removeTransitionUi(transition);
-        }
-        public void clearTransition() {
-            for (TransitionClip clip : transitions) {
-                removeTransitionUi(clip);
-            }
-            transitions.clear();
-        }
-        public void removeTransitionByClip(Clip clip) {
-            List<TransitionClip> removalQueue = new ArrayList<>();
-            for (TransitionClip transitionClip : transitions) {
-                if(transitionClip.fromClip == clip || transitionClip.toClip == clip)
-                    removalQueue.add(transitionClip);
-                if(removalQueue.size() == 2) break;
-            }
 
-            for (TransitionClip clip2 : removalQueue) {
-                removeTransitionUi(clip2);
-            }
-            transitions.removeAll(removalQueue);
-        }
+
 
         public void delete(Timeline timeline, ViewGroup trackContainer, ViewGroup trackInfo, EditingActivity activity) {
             activity.deselectingTrack();
@@ -2460,6 +2440,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             // Decrease the trackIndex from the global scope
             activity.trackCount--;
         }
+
     }
 
     public static class Clip implements Serializable {
@@ -2953,11 +2934,6 @@ public class EditingActivity extends AppCompatActivityImpl {
         public float startTime;
         @Expose
         public float duration;
-
-        @Expose
-        public Clip fromClip;
-        @Expose
-        public Clip toClip;
 
         @Expose
         public EffectTemplate effect; // e.g. xfade, zoom, etc.

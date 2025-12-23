@@ -1,6 +1,6 @@
 package com.vanvatcorporation.doubleclips.activities;
 
-import static com.vanvatcorporation.doubleclips.FFmpegEdit.generateExportCmdFull;
+import static com.vanvatcorporation.doubleclips.FFmpegEdit.generateExportCmdPartially;
 import static com.vanvatcorporation.doubleclips.FFmpegEdit.runAnyCommand;
 
 import android.app.Activity;
@@ -227,9 +227,13 @@ public class ExportActivity extends AppCompatActivityImpl {
 
     private void generateCommand()
     {
+        int clipCount = 0;
+        for (EditingActivity.Track track : timeline.tracks) {
+            clipCount += track.clips.size();
+        }
 
         runLogUpdate();
-        String cmd = generateExportCmdFull(this, settings, timeline, properties);
+        String cmd = generateExportCmdPartially(this, settings, timeline, properties, clipCount);
         commandText.setText(cmd);
     }
 

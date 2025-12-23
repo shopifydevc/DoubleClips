@@ -49,11 +49,11 @@ public class FXCommandEmitter {
         }
         return ""; // If unknown, emit nothing
     }
-    public static String emitTransition(EditingActivity.TransitionClip transition,
+    public static String emitTransition(EditingActivity.Clip clipBefore, EditingActivity.Clip clipAfter, EditingActivity.TransitionClip transition,
                                         FFmpegEdit.FfmpegFilterComplexTags tags) {
 
-        EditingActivity.Clip clipA = tags.getValidMapKey(transition.fromClip);
-        EditingActivity.Clip clipB = tags.getValidMapKey(transition.toClip);
+        EditingActivity.Clip clipA = tags.getValidMapKey(clipBefore);
+        EditingActivity.Clip clipB = tags.getValidMapKey(clipAfter);
         if(clipA == null) return "";
         if(clipB == null) return "";
         if(transition.effect.style.equals("none")) return "";
@@ -63,11 +63,10 @@ public class FXCommandEmitter {
                 (transition.mode == EditingActivity.TransitionClip.TransitionMode.OVERLAP ? transition.duration : 0)
                 , clipA.trackIndex, clipA.type, clipA.isVideoHasAudio || clipB.isVideoHasAudio, clipA.width, clipA.height);
 
-        System.err.println(clipA.duration);
-        System.err.println(clipB.duration);
         FFmpegEdit.FfmpegFilterComplexTags.FilterComplexInfo fromTag = tags.useTag(clipA, mergedClip);
         FFmpegEdit.FfmpegFilterComplexTags.FilterComplexInfo toTag = tags.useTag(clipB, mergedClip);
 
+        System.err.println(fromTag + " " + toTag + " " + tags + " ");
         if(fromTag == null) return "";
         if(toTag == null) return "";
         if(tags == null) return "";
