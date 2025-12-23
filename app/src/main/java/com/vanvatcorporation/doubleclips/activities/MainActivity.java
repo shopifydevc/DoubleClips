@@ -607,7 +607,7 @@ public class MainActivity extends AppCompatActivityImpl {
                     else if(item.getItemId() == R.id.action_share)
                     {
                         // Add ffmpeg cmd for ready-to-use rendering in other platform. Can be made into template
-                        EditingActivity.VideoSettings videoSettings = new EditingActivity.VideoSettings(1920, 1080, 30, 18,
+                        EditingActivity.VideoSettings videoSettings = new EditingActivity.VideoSettings(1920, 1080, 30, 18, Integer.MAX_VALUE,
                                 EditingActivity.VideoSettings.FfmpegPreset.MEDIUM,
                                 EditingActivity.VideoSettings.FfmpegTune.ZEROLATENCY);
                         EditingActivity.Timeline timeline = EditingActivity.Timeline.loadRawTimeline(context, projectItem);

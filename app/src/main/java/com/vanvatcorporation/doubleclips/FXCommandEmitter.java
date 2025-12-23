@@ -66,7 +66,6 @@ public class FXCommandEmitter {
         FFmpegEdit.FfmpegFilterComplexTags.FilterComplexInfo fromTag = tags.useTag(clipA, mergedClip);
         FFmpegEdit.FfmpegFilterComplexTags.FilterComplexInfo toTag = tags.useTag(clipB, mergedClip);
 
-        System.err.println(fromTag + " " + toTag + " " + tags + " ");
         if(fromTag == null) return "";
         if(toTag == null) return "";
         if(tags == null) return "";

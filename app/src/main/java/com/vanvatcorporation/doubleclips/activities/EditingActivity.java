@@ -513,7 +513,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         if(settings == null)
         {
-            settings = new VideoSettings(1366, 768, 30, 30, VideoSettings.FfmpegPreset.MEDIUM, VideoSettings.FfmpegTune.ZEROLATENCY);
+            settings = new VideoSettings(1366, 768, 30, 30, 30, VideoSettings.FfmpegPreset.MEDIUM, VideoSettings.FfmpegTune.ZEROLATENCY);
         }
 
         pixelsPerSecond = basePixelsPerSecond;
@@ -1014,6 +1014,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                 for (int i = 0; i < timeline.tracks.get(selectedKnot.trackIndex).clips.size(); i++)
                 {
                     TransitionClip clip = timeline.tracks.get(selectedKnot.trackIndex).clips.get(i).endTransition;
+                    if(clip == null) continue;
                     clip.duration = ParserHelper.TryParse(transitionEditSpecificAreaScreen.transitionDurationContent.getText().toString(), 0.5f);
                     clip.effect.style = (String) FXCommandEmitter.FXRegistry.transitionFXMap.keySet().toArray()[transitionEditSpecificAreaScreen.transitionEditContent.getSelectedItemPosition()];
                     clip.effect.duration = ParserHelper.TryParse(transitionEditSpecificAreaScreen.transitionDurationContent.getText().toString(), 0.5f);
@@ -2956,14 +2957,16 @@ public class EditingActivity extends AppCompatActivityImpl {
         int videoHeight;
         int frameRate;
         int crf;
+        int clipCap;
         String preset;
         String tune;
-        public VideoSettings(int videoWidth, int videoHeight, int frameRate, int crf, String preset, String tune)
+        public VideoSettings(int videoWidth, int videoHeight, int frameRate, int crf, int clipCap, String preset, String tune)
         {
             this.videoWidth = videoWidth;
             this.videoHeight = videoHeight;
             this.frameRate = frameRate;
             this.crf = crf;
+            this.clipCap = clipCap;
             this.preset = preset;
             this.tune = tune;
         }
@@ -2979,6 +2982,9 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
         public int getCRF() {
             return crf;
+        }
+        public int getClipCap() {
+            return clipCap;
         }
         public String getPreset() {
             return preset;
@@ -2997,6 +3003,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.videoHeight = loadSettings.videoHeight;
             this.frameRate = loadSettings.frameRate;
             this.crf = loadSettings.crf;
+            this.clipCap = loadSettings.clipCap;
             this.preset = loadSettings.preset;
             this.tune = loadSettings.tune;
         }

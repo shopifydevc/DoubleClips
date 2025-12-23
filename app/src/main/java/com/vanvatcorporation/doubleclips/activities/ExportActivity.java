@@ -1,6 +1,6 @@
 package com.vanvatcorporation.doubleclips.activities;
 
-import static com.vanvatcorporation.doubleclips.FFmpegEdit.generateExportCmdPartially;
+import static com.vanvatcorporation.doubleclips.FFmpegEdit.generateExportCmdFull;
 import static com.vanvatcorporation.doubleclips.FFmpegEdit.runAnyCommand;
 
 import android.app.Activity;
@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -199,13 +200,36 @@ public class ExportActivity extends AppCompatActivityImpl {
             settings.videoHeight = ParserHelper.TryParse(videoPropertiesExportSpecificAreaScreen.resolutionYField.getText().toString(), settings.videoHeight);
             settings.frameRate = ParserHelper.TryParse(videoPropertiesExportSpecificAreaScreen.frameRateText.getText().toString(), settings.frameRate);
             settings.crf = ParserHelper.TryParse(videoPropertiesExportSpecificAreaScreen.crfText.getText().toString(), settings.crf);
+            settings.clipCap = ParserHelper.TryParse(videoPropertiesExportSpecificAreaScreen.clipCapText.getText().toString(), settings.clipCap);
             settings.preset = videoPropertiesExportSpecificAreaScreen.presetSpinner.getSelectedItem().toString();
             settings.tune = videoPropertiesExportSpecificAreaScreen.tuneSpinner.getSelectedItem().toString();
+
+            settings.saveSettings(this, properties);
+
+
+            // Recommended value not in range pop up [10, 30]
+            if(settings.clipCap > 30 || settings.clipCap < 10)
+            {
+                new AlertDialog.Builder(this)
+                        .setTitle("Clip Cap out of recommended range!")
+                        .setMessage("Clip Cap out of recommended range, this mean the rendering process might take longer due to inefficient rendering part. Would you like to continue?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            dialog.dismiss();
+                        })
+                        .setNegativeButton("No", (dialog, which) -> {
+                            // Set back to default (30)
+                            settings.clipCap = 30;
+                            settings.saveSettings(this, properties);
+                            dialog.dismiss();
+                        })
+                        .show();
+            }
         });
         videoPropertiesExportSpecificAreaScreen.onOpen.add(() -> {
             videoPropertiesExportSpecificAreaScreen.resolutionXField.setText(String.valueOf(settings.getVideoWidth()));
             videoPropertiesExportSpecificAreaScreen.resolutionYField.setText(String.valueOf(settings.getVideoHeight()));
             videoPropertiesExportSpecificAreaScreen.crfText.setText(String.valueOf(settings.getCRF()));
+            videoPropertiesExportSpecificAreaScreen.clipCapText.setText(String.valueOf(settings.getClipCap()));
             videoPropertiesExportSpecificAreaScreen.presetSpinner.setSelection(videoPropertiesExportSpecificAreaScreen.presetAdapter.getPosition(settings.preset));
             videoPropertiesExportSpecificAreaScreen.tuneSpinner.setSelection(videoPropertiesExportSpecificAreaScreen.tuneAdapter.getPosition(settings.tune));
 
@@ -227,19 +251,21 @@ public class ExportActivity extends AppCompatActivityImpl {
 
     private void generateCommand()
     {
-        int clipCount = 0;
-        for (EditingActivity.Track track : timeline.tracks) {
-            clipCount += track.clips.size();
-        }
-
-        runLogUpdate();
-        String cmd = generateExportCmdPartially(this, settings, timeline, properties, clipCount);
+        String cmd = generateExportCmdFull(this, settings, timeline, properties);
         commandText.setText(cmd);
     }
 
 
     private void exportClip()
     {
+
+        // Keep the screen on for rendering process
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+
+
+
+
         logText.post(() -> logText.setTextIsSelectable(false));
         FFmpegKit.cancel();
 
@@ -250,51 +276,62 @@ public class ExportActivity extends AppCompatActivityImpl {
         // No need. Already in the EditText
         //logText.setText(cmd);
 
-        if(!isLogUpdateRunning)
-            runLogUpdate();
-
 
         AdsHandler.loadBothAds(this, this);
 
-        runAnyCommand(this, cmd, "Exporting Video", this::exportClipTo, () -> {
-                    logText.post(() -> logText.setTextIsSelectable(true));
-                }
-                , new RunnableImpl() {
-                    @Override
-                    public <T> void runWithParam(T param) {
-                        Log log = (Log) param;
-                        if(logCheckbox.isChecked())
-                        {
-                            logText.post(() -> {
-                                String logStr = logText.getText() + "\n" + log.getMessage();
-                                if(logStr.length() > Constants.DEFAULT_LOGGING_LIMIT_CHARACTERS)
-                                    logStr = logStr.substring(logStr.length() - Constants.DEFAULT_LOGGING_LIMIT_CHARACTERS);
-                                logText.setText(logStr);
-                                logScroll.fullScroll(View.FOCUS_DOWN);
-                            });
-                        }
-                    }
-                }, new RunnableImpl() {
-                    @Override
-                    public <T> void runWithParam(T param) {
-                        //MediaInformationSession session = FFprobeKit.getMediaInformation(properties.getProjectPath());
-                        //double duration = Double.parseDouble(session.getMediaInformation().getDuration());
-                        double duration = properties.getProjectDuration();
 
-                        Statistics statistics = (Statistics) param;
-                        {
-                            if (statistics.getTime() > 0) {
-                                int progress = (int) ((statistics.getTime() * 100) / (int) duration);
-                                statusBar.setMax(100);
-                                statusBar.setProgress(progress);
+        String[] cmdAfterSplit = cmd.split(Constants.DEFAULT_MULTI_FFMPEG_COMMAND_REGEX);
+        for (int i = 0; i < cmdAfterSplit.length; i++) {
+            String cmdEach = cmdAfterSplit[i];
+            runAnyCommand(this, cmdEach, "Exporting Video", (i == cmdAfterSplit.length - 1 ? this::exportClipTo : () -> {}), () -> {
+                        logText.post(() -> logText.setTextIsSelectable(true));
+                    }
+                    , new RunnableImpl() {
+                        @Override
+                        public <T> void runWithParam(T param) {
+                            Log log = (Log) param;
+                            if (logCheckbox.isChecked()) {
+                                logText.post(() -> {
+                                    String logStr = logText.getText() + "\n" + log.getMessage();
+                                    if (logStr.length() > Constants.DEFAULT_LOGGING_LIMIT_CHARACTERS)
+                                        logStr = logStr.substring(logStr.length() - Constants.DEFAULT_LOGGING_LIMIT_CHARACTERS);
+                                    logText.setText(logStr);
+                                    logScroll.fullScroll(View.FOCUS_DOWN);
+                                });
                             }
                         }
-                    }
-                });
+                    }, new RunnableImpl() {
+                        @Override
+                        public <T> void runWithParam(T param) {
+                            //MediaInformationSession session = FFprobeKit.getMediaInformation(properties.getProjectPath());
+                            //double duration = Double.parseDouble(session.getMediaInformation().getDuration());
+                            double duration = properties.getProjectDuration();
+
+                            Statistics statistics = (Statistics) param;
+                            {
+                                if (statistics.getTime() > 0) {
+                                    int progress = (int) ((statistics.getTime() * 100) / (int) duration);
+                                    statusBar.setMax(100);
+                                    statusBar.setProgress(progress);
+                                }
+                            }
+                        }
+                    });
+        }
+
+
+
+
+        if(!isLogUpdateRunning)
+            runLogUpdate();
     }
     //TODO: Delete the exported clip inside project path. Detect in the beginning the export.mp4 if its exist then do the same with this method to extract it out.
     private void exportClipTo()
     {
+
+        // After rendering, set back to default
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         logText.post(() -> logText.setTextIsSelectable(true));
 
         IOHelper.deleteFilesInDir(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_CLIP_TEMP_DIRECTORY));

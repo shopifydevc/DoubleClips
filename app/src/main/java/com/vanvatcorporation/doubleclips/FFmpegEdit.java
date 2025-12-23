@@ -54,6 +54,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class FFmpegEdit {
     public static FfmpegRenderQueue queue = new FfmpegRenderQueue();
@@ -119,7 +121,16 @@ public class FFmpegEdit {
                                             onFailRunnable.run();
                                         }
 
-                                        queue.taskCompleted(); // Move to next task
+                                        // TODO: Add a slightly user friendly delay (Execute next ffmpeg rendering part in 3, 2, 1), dynamically into logText
+                                        Executors.newSingleThreadExecutor().execute(() -> {
+                                            try {
+                                                Thread.sleep(1000);
+                                            } catch (InterruptedException ignored) {
+
+                                            }
+                                            queue.taskCompleted(); // Move to next task
+                                        });
+
                                     },
                                     onLogRunnable::runWithParam,
                                     onStatisticsRunnable::runWithParam
@@ -151,29 +162,49 @@ public class FFmpegEdit {
 
 
     public static String generateExportCmdPartially(Context context, EditingActivity.VideoSettings settings, EditingActivity.Timeline timeline, MainActivity.ProjectData data,
-                                                    int clipCount) {
+                                                    int clipCount, int clipOffset, int renderingIndex, boolean isFinal) {
         EditingActivity.Clip[] clips = new EditingActivity.Clip[clipCount];
         int currentClipCount = 0;
         for (EditingActivity.Track track : timeline.tracks) {
             if(currentClipCount >= clipCount) break;
             for (EditingActivity.Clip clip : track.clips) {
                 if(currentClipCount >= clipCount) break;
+
+                if(clipOffset > 0) {
+                    clipOffset--;
+                    continue;
+                }
+
                 clips[currentClipCount] = clip;
                 currentClipCount++;
             }
         }
-        return generateExportCmdPartially(context, settings, timeline, data, clips);
+        return generateExportCmdPartially(context, settings, timeline, data, clips, renderingIndex, isFinal);
     }
 
     public static String generateExportCmdPartially(Context context, EditingActivity.VideoSettings settings, EditingActivity.Timeline timeline, MainActivity.ProjectData data,
-                                                    EditingActivity.Clip[] clips) {
+                                                    EditingActivity.Clip[] clips, int renderingIndex, boolean isFinal) {
 
         FfmpegFilterComplexTags tags = new FfmpegFilterComplexTags();
 
         StringBuilder cmd = new StringBuilder();
-        cmd.append("-f lavfi -i color=c=black:s=")
-                .append(settings.getVideoWidth()).append("x").append(settings.getVideoHeight())
-                .append(":r=").append(settings.getFrameRate()).append(" -t ").append(timeline.duration).append(" ");
+
+        // Use the beginning as base
+        if(renderingIndex > 0)
+        {
+            String previousRenderedClipPath = IOHelper.CombinePath(data.getProjectPath(), ((renderingIndex - 1) + "_") + Constants.DEFAULT_EXPORT_CLIP_FILENAME);
+
+            cmd.append("-i \"").append(previousRenderedClipPath).append("\" ");
+
+        }
+        else {
+            cmd.append("-f lavfi -i color=c=black:s=")
+                    .append(settings.getVideoWidth()).append("x").append(settings.getVideoHeight())
+                    .append(":r=").append(settings.getFrameRate()).append(" -t ").append(timeline.duration).append(" ");
+        }
+
+
+
 
         StringBuilder filterComplex = new StringBuilder();
         StringBuilder audioInputs = new StringBuilder();
@@ -187,7 +218,6 @@ public class FFmpegEdit {
         // --- Inserting file path into -i ---
 
         for (EditingActivity.Clip clip : clips) {
-            System.err.println(clip.type);
 
             switch (clip.type) {
                 case VIDEO:
@@ -550,404 +580,37 @@ public class FFmpegEdit {
                 .append(" -c:v libx264 -preset ").append(settings.getPreset())
                 .append(" -tune ").append(settings.getTune())
                 .append(" -crf ").append(settings.getCRF())
-                .append(" -y ").append("\"").append(IOHelper.CombinePath(data.getProjectPath(), Constants.DEFAULT_EXPORT_CLIP_FILENAME)).append("\"");
+                .append(" -y ").append("\"")
+                .append(IOHelper.CombinePath(data.getProjectPath(), (isFinal ? "" : (renderingIndex + "_")) + Constants.DEFAULT_EXPORT_CLIP_FILENAME))
+                .append("\"");
 
         return cmd.toString();
     }
     public static String generateExportCmdFull(Context context, EditingActivity.VideoSettings settings, EditingActivity.Timeline timeline, MainActivity.ProjectData data) {
-        FfmpegFilterComplexTags tags = new FfmpegFilterComplexTags();
+
+        int clipCount = 0;
+        for (EditingActivity.Track track : timeline.tracks) {
+            clipCount += track.clips.size();
+        }
 
         StringBuilder cmd = new StringBuilder();
-        cmd.append("-f lavfi -i color=c=black:s=")
-                .append(settings.getVideoWidth()).append("x").append(settings.getVideoHeight())
-                .append(":r=").append(settings.getFrameRate()).append(" -t ").append(timeline.duration).append(" ");
-
-        StringBuilder filterComplex = new StringBuilder();
-        StringBuilder audioInputs = new StringBuilder();
-        StringBuilder audioMaps = new StringBuilder();
-
-        int inputIndex = 0;
-        int audioClipCount = 0;
-
-
-        int keyframeClipIndex = 0;
-        // --- Inserting file path into -i ---
-
-        // TODO: Future optimization. We cut the clip input to 30 each command, and later did a recursion to render all of the part.
-        //  Because the stream process are just like track. We process 30 of 50 clip in track 1, then next command will process the rest 20
-        //  and the other track too. Divide it into parts and display it as shown in the multipart ExportActivity (2 progress bar)
-        for (EditingActivity.Track track : timeline.tracks) {
-            for (EditingActivity.Clip clip : track.clips) {
-
-                switch (clip.type) {
-                    case VIDEO:
-                    case IMAGE:
-                        cmd.append("-f lavfi -i \"nullsrc=size=")
-                                .append(settings.getVideoWidth()).append("x").append(settings.getVideoHeight())
-                                .append(":rate=").append(settings.getFrameRate()).append(",format=rgba\"").append(" ");
-
-                        // Since image is a still image, with only one frame. We need to specify it and manipulate it
-                        // some how to behave like a video, that way we can use that as a normal video playback
-                        // and working with many more effect like transition
-                        String frameFilter =
-                                clip.type == EditingActivity.ClipType.IMAGE ?
-                                        "-loop 1 -t " + clip.duration + " -framerate " + settings.getFrameRate() + " " :
-                                        "";
-
-                        cmd.append(frameFilter).append("-i \"").append(clip.getAbsolutePath(data)).append("\" ");
-                        break;
-                    case AUDIO:
-                        cmd.append("-i \"").append(clip.getAbsolutePath(data)).append("\" ");
-                        break;
-                    case TEXT:
-                        cmd.append("-f lavfi -i \"nullsrc=size=")
-                                .append(settings.getVideoWidth()).append("x").append(settings.getVideoHeight())
-                                .append(":rate=").append(settings.getFrameRate()).append(",format=rgba\"").append(" ");
-                        break;
-
-                }
-            }
-        }
-
-
-        // --- Inputting clips from -i ---
-        String baseTag = "[base]";
-        filterComplex.append("[").append(inputIndex).append(":v]trim=duration=").append(timeline.duration).append(",setpts=PTS-STARTPTS").append(baseTag).append(";\n");
-        tags.storeTag(baseTag);
-        inputIndex++;
-        for (EditingActivity.Track track : timeline.tracks) {
-            for (EditingActivity.Clip clip : track.clips) {
-
-                String clipLabel = "[video-" + inputIndex + "]";
-                String transparentLabel = "[trans-" + inputIndex + "]";
-                String outputLabel = "[trans-video-" + inputIndex + "]";
-
-
-                String audioLabel = "[audio-" + inputIndex + "]";
-
-
-
-
-
-                // Transition extension
-                // First we find the exact clip associated with the TransitionClip's clipA
-                // Then extract the half duration, we don't need the rest for now at least
-                // This for loop may inefficient, but it works! Optimize this later
-                // TODO: Optimize the search.
-                float fillingTransitionDuration = 0;
-
-                // Full being obsoleted
-//                for (EditingActivity.TransitionClip transition : track.transitions) {
-//                    if(clip == transition.fromClip && !transition.effect.style.equals("none")) {
-//                        switch (transition.mode)
-//                        {
-//                            case END_FIRST:
-//                                // 0. End first mean the moment the second clip begin, the fade has completed, so we
-//                                // doesnt need filling as we begin the transition at the clipA entirely
-//                                fillingTransitionDuration = 0;
-//                                break;
-//                            case OVERLAP:
-//                                // Duration / 2. Overlap mean half of clipA and half of clipB are join together, we only need
-//                                // to fill half the clipA as clipB is already get the half.
-//                                fillingTransitionDuration = transition.duration / 2;
-//                                break;
-//                            case BEGIN_SECOND:
-//                                // Duration. Begin second mean the opposite to end first. The moment the second clip begin,
-//                                // its when the transition begin, so we need to fill all of the duration that's going to fade
-//                                fillingTransitionDuration = transition.duration;
-//                                break;
-//
-//                        }
-//                        break;
-//                    }
-//                }
-                // Because we based on availability of endClipTrim, we first get the few parameters
-                // correct adding (extendMediaDuration) and freeze frame duration (freezeFrameDuration)
-
-                // extendMediaDuration: We get the minimum of the clip to extend, if endClipTrim has more than filling
-                // then we just take the half duration of transition to extend.
-                // if filling is more than the available of clip, which is endClipTrim, then we only extend to the maximum duration of the clip,
-                // that mean endClipTrim is meaningless.
-                float extendMediaDuration = Math.min(clip.endClipTrim, fillingTransitionDuration);
-
-                // freezeFrameDuration: We get the max value of these 2 variable ( fillingTransitionDuration - clip.endClipTrim and 0 )
-                // fillingTransitionDuration - clip.endClipTrim will get the remaining duration after the clip extend all of it endClipTrim
-                // Why 0? If the subtraction is negative then it has no freeze frame because there is still enough endClipTrim to extend.
-                float freezeFrameDuration = Math.max(fillingTransitionDuration - clip.endClipTrim, 0);
-
-
-
-                switch (clip.type) {
-                    case VIDEO:
-                    case IMAGE:
-
-                        // 🖼️ Video/Image visual logic
-                        // Transition extension: Add half of the duration to the transparent layer, if transition isn't exist, then add 0
-                        filterComplex.append("[").append(inputIndex).append(":v]")
-                                .append("trim=duration=").append(clip.duration + fillingTransitionDuration).append(",")
-                                .append("setpts=PTS-STARTPTS+").append(clip.startTime).append("/TB").append(transparentLabel).append(";\n");
-                        inputIndex++;
-
-                        // Video can use start and end trim, but image cant, so we need to specify the trim for each type.
-                        // Transition extension: This time we don't use raw fillingTransitionDuration like the transparent, but we use the
-                        // value we calculate earlier using endClipTrim. Because endClipTrim has already applied to duration, so now we
-                        // can just add to it.
-                        // Image is just like transparent layer, so we add the raw fillingTransitionDuration
-                        String trimFilter =
-                                clip.type == EditingActivity.ClipType.VIDEO ?
-                                        "trim=start=" + clip.startClipTrim + ":end=" + (clip.startClipTrim + clip.duration + extendMediaDuration) :
-                                        "trim=duration=" + (clip.duration + fillingTransitionDuration);
-
-                        // FFmpeg uses radians rotation, so...
-                        double radiansRotation = clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.RotInRadians);
-
-
-                        // First we declared the stream of video
-                        filterComplex.append("[").append(inputIndex).append(":v]");
-
-
-                        // Let simulating 4 keyframe type in opacity for example:
-                        // K #1: 1 at 1s
-                        // K #2: 0 at 2s
-                        // K #3: 0 at 3s
-                        // K #4: 1 at 4s
-                        // Kinda like --\_/--   (\ and _ and / are actually 3 lines created from 4 points)
-
-                        // gte(t,5)*lte(t,10)
-                        //colorchannelmixer=aa='if(gte(t,1)*lte(t,2), exp(-0.5*(t-3)), if(gte(t,2)*lte(t,3), 0, if(gte(t,3)*lte(t,4)), 1-exp(-1*t), 1))'
-
-
-
-                        // Detect keyframe after which we write our expr compilation
-                        // In this first if expr: We process scaleX, scaleY, rot, opacity, speed
-                        if (clip.hasAnimatedProperties()) {
-
-
-                            // TODO: Scale is not applied yet. Research zoompan instead.
-                            String scaleXExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.ScaleX);
-                            String scaleYExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.ScaleY);
-
-                            String rotationExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.RotInRadians);
-
-                            filterComplex.append("scale=iw*").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX)).append(":ih*").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleY)).append(",")
-                                    //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
-                                    .append("rotate='").append(rotationExpr).append("':ow=rotw('").append(rotationExpr).append("'):oh=roth('").append(rotationExpr).append("')")
-                                    .append(":fillcolor=0x00000000").append(",")
-                                    .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
-                                    .append("setpts='(PTS-STARTPTS)/").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed)).append("+").append(clip.startTime).append("/TB'").append(",");
-                        }
-                        else
-                        {
-                            // If possible then merge the keyframe to clip
-                            clip.mergingVideoPropertiesFromSingleKeyframe();
-
-                            // And then add to filterComplex no matter
-                            // the clip has merge or there are no keyframe to combine
-
-                            filterComplex.append("scale=iw*").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX)).append(":ih*").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleY)).append(",")
-                                    //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
-                                    .append("rotate=").append(radiansRotation).append(":ow=rotw(").append(radiansRotation).append("):oh=roth(").append(radiansRotation).append(")")
-                                    .append(":fillcolor=0x00000000").append(",")
-                                    .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
-                                    .append("setpts='(PTS-STARTPTS)/").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed)).append("+").append(clip.startTime).append("/TB'").append(",");
-                        }
-
-
-                        filterComplex
-                                .append(trimFilter).append(",")
-                                // Transition extension: If there has freeze frames, then this line will handle it.
-                                .append("tpad=stop_mode=clone:stop_duration=").append(freezeFrameDuration)
-                                .append(clipLabel).append(";\n");
-                        // TODO: For robust speed control
-                        //'
-                        //    if(between(T,0,1.5),
-                        //       (PTS-STARTPTS)/(1+exp(-k*(T-0.75))),
-                        //       if(between(T,1.5,3.5),
-                        //          (PTS-STARTPTS)/2,
-                        //          (PTS-STARTPTS)/(1+exp(-k*(5-T))))
-                        //    ) + 3/TB
-                        //'
-
-
-
-
-                        // Transition extension: because overlay are just like transparent layer so we add the raw fillingTransitionDuration
-                        filterComplex.append(transparentLabel).append(clipLabel);
-
-                        // In this second if expr: We process posX, posY
-                        if (clip.hasAnimatedProperties()) {
-
-                            String posXExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.PosX);
-                            String posYExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.PosY);
-
-                            filterComplex.append("overlay='").append(posXExpr).append("':'").append(posYExpr).append("'");
-                        }
-                        else {
-                            // Because we already merged from the first if expr, we don't have to do it here
-                            //clip.mergingVideoPropertiesFromSingleKeyframe();
-
-
-                            filterComplex.append("overlay=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.PosX)).append(":").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.PosY));
-
-                        }
-
-                        filterComplex.append(":enable='between(t,")
-                                .append(clip.startTime).append(",")
-                                .append(clip.startTime + clip.duration + fillingTransitionDuration).append(")'").append(",")
-                                .append("fps=").append(settings.getFrameRate())
-                                .append(outputLabel).append(";\n");
-
-                        tags.storeTag(clip, outputLabel);
-                        break;
-                    case TEXT:
-                        filterComplex.append("[").append(inputIndex).append(":v]")
-                                .append("trim=duration=").append(clip.duration).append(",")
-                                .append("setpts=PTS-STARTPTS+").append(clip.startTime).append("/TB").append(transparentLabel).append(";\n");
-
-                        filterComplex.append(transparentLabel)
-                                .append("drawtext=").append("fontfile='/system/fonts/DroidSans.ttf'")
-                                .append(":fontsize=").append(clip.fontSize)
-                                .append(":text='").append(clip.textContent.replace(":", "\\:").replace("'", "\\'"))
-                                .append("':x=").append("(w-text_w)/2")//.append(clip.posX) Centralize text
-                                .append(":y=").append("(h-text_h)/2")//.append(clip.posY) Centralize text
-                                .append(":enable='between(t,").append(clip.startTime).append(",")
-                                .append(clip.startTime + clip.duration).append(")'").append(",")
-                                .append("fps=").append(settings.getFrameRate())
-                                .append(outputLabel).append(";\n");
-
-                        tags.storeTag(clip, outputLabel);
-                        break;
-
-                    case AUDIO:
-                        // 🎵 Pure audio clip logic
-                        int delayMs = (int) (clip.startTime * 1000);
-                        filterComplex.append("[").append(inputIndex).append(":a]")
-                                .append("atrim=start=").append(clip.startClipTrim).append(":end=").append(clip.startClipTrim + clip.duration).append(",")
-                                .append("adelay=").append(delayMs).append("|").append(delayMs).append(",")
-                                .append("asetpts=PTS-STARTPTS")
-                                .append(audioLabel).append(";\n");
-
-                        audioInputs.append(audioLabel);
-                        audioClipCount++;
-                        break;
-                }
-
-                // 🔊 Handle embedded audio in VIDEO
-                if (clip.type == EditingActivity.ClipType.VIDEO && clip.isVideoHasAudio && !clip.isMute) {
-
-                    // Transition extension: Same for clip
-                    int delayMs = (int) (clip.startTime * 1000);
-                    filterComplex.append("[").append(inputIndex).append(":a]")
-                            .append("atrim=start=").append(clip.startClipTrim).append(":end=").append(clip.startClipTrim + clip.duration + extendMediaDuration).append(",")
-                            .append("adelay=").append(delayMs).append("|").append(delayMs).append(",")
-                            // This handle the extension in silent to match the video
-                            .append("apad=pad_dur=").append(freezeFrameDuration).append(",")
-                            .append("asetpts=PTS-STARTPTS")
-                            .append(audioLabel).append(";\n");
-
-                    audioInputs.append(audioLabel);
-                    audioClipCount++;
-                }
-
-                switch (clip.type) {
-                    case VIDEO:
-                    case IMAGE:
-                    case AUDIO:
-                    case TEXT:
-                        inputIndex++;
-                        break;
-                }
-            }
-        }
-
-
-        // Full is being obsoleted
-//        for (EditingActivity.Track track : timeline.tracks) {
-//            for (EditingActivity.TransitionClip transition : track.transitions) {
-//                filterComplex.append(FXCommandEmitter.emitTransition(transition, tags));
-//            }
-//        }
-
-        for (EditingActivity.Track track : timeline.tracks) {
-            for (EditingActivity.Clip clip : track.clips) {
-
-                if (Objects.requireNonNull(clip.type) == EditingActivity.ClipType.EFFECT) {
-                    if (clip.effect != null) {
-                        filterComplex.append(FXCommandEmitter.emit(clip, tags.useTag(clip), tags)).append("\n");
-                    }
-                }
-            }
-        }
-
-
-        int layer = 0;
-        FfmpegFilterComplexTags.FilterComplexInfo baseInfo = tags.useTag(baseTag);
-        while(tags.tagsMapToUsableTagIndex.size() > 0)
+        int renderingIndex = 0;
+        if(settings.getClipCap() <= 0) return "Invalid argument: Clip Cap should be greater than 0";
+        while (clipCount > 0)
         {
-            EditingActivity.Clip clip = (EditingActivity.Clip) tags.tagsMapToUsableTagIndex.keySet().toArray()[0];
-
-            String prevOutputLabel = "[layer-" + (layer - 1 ) + "]";
-            String outputLabel = "[layer-" + layer + "]";
-
-            switch (clip.type) {
-                case VIDEO:
-                case IMAGE:
-                case TEXT:
-                    filterComplex.append((layer == 0 ? baseInfo.tag : (tags.useTag(prevOutputLabel).tag))).append(tags.useTag(clip).tag)
-                            .append("overlay=")
-                            .append("enable='between(t,")
-                            .append(clip.startTime).append(",")
-                            .append(clip.startTime + clip.duration).append(")'").append(outputLabel).append(";\n");
-
-                    tags.storeTag(outputLabel);
-
-                    layer++;
-                    break;
-            }
-        }
-
-        String finalTag = "";
-        layer = 0;
-
-        while(tags.usableTag.size() > 1)
-        {
-            String outputLabel = "[leftover-layer-" + layer + "]";
-            finalTag = tags.usableTag.get(0);
-            if(tags.usableTag.size() > 2)
+            if(clipCount > settings.getClipCap())
             {
-                String upperTag = tags.usableTag.get(1);
-                tags.useTag(finalTag);
-                tags.useTag(upperTag);
-                filterComplex.append(finalTag).append(upperTag)
-                        .append("overlay").append(outputLabel).append(";\n");
-                tags.storeTag(outputLabel);
+                cmd.append(generateExportCmdPartially(context, settings, timeline, data, settings.getClipCap(), renderingIndex * settings.getClipCap(), renderingIndex, false))
+                        .append(Constants.DEFAULT_MULTI_FFMPEG_COMMAND_REGEX);
+
+                clipCount -= settings.getClipCap();
             }
-            else break;
+            else {
+                cmd.append(generateExportCmdPartially(context, settings, timeline, data, clipCount, renderingIndex * settings.getClipCap(), renderingIndex, true));
+                break;
+            }
+            renderingIndex++;
         }
-
-
-        // 🔁 Mix audio if present
-        if (audioClipCount > 0) {
-            filterComplex.append(audioInputs)
-                    .append("amix=inputs=").append(audioClipCount).append(":dropout_transition=0").append("[aout];\n");
-            audioMaps.append("-map \"[aout]\" ");
-        } else {
-            audioMaps.append("-an "); // 🧘 No audio at all
-        }
-
-        // Available when the track has at least 1 video
-        // Null when there are no video in the track
-        FfmpegFilterComplexTags.FilterComplexInfo mapTag = tags.useTag(0);
-
-        cmd.append("-filter_complex \"").append(filterComplex).append("\" ")
-                .append("-map \"").append( (mapTag != null ? mapTag.tag : "[base]") ).append("\" ")
-                .append(audioMaps)
-                .append("-t ").append(timeline.duration)
-                .append(" -c:v libx264 -preset ").append(settings.getPreset())
-                .append(" -tune ").append(settings.getTune())
-                .append(" -crf ").append(settings.getCRF())
-                .append(" -y ").append("\"").append(IOHelper.CombinePath(data.getProjectPath(), Constants.DEFAULT_EXPORT_CLIP_FILENAME)).append("\"");
-
         return cmd.toString();
     }
 

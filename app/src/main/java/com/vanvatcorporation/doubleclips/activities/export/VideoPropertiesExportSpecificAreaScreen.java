@@ -16,7 +16,7 @@ public class VideoPropertiesExportSpecificAreaScreen extends BaseEditSpecificAre
     public ArrayAdapter<String> presetAdapter, tuneAdapter;
 
     public Spinner presetSpinner, tuneSpinner;
-    public EditText resolutionXField, resolutionYField, frameRateText, crfText;
+    public EditText resolutionXField, resolutionYField, frameRateText, crfText, clipCapText;
 
 
 
@@ -45,6 +45,7 @@ public class VideoPropertiesExportSpecificAreaScreen extends BaseEditSpecificAre
         resolutionYField = findViewById(R.id.resolutionYField);
         frameRateText = findViewById(R.id.exportFrameRate);
         crfText = findViewById(R.id.exportCRF);
+        clipCapText = findViewById(R.id.exportClipCap);
 
         presetSpinner = findViewById(R.id.exportPreset);
         presetAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, new String[]{
@@ -79,6 +80,7 @@ public class VideoPropertiesExportSpecificAreaScreen extends BaseEditSpecificAre
             resolutionYField.clearFocus();
             frameRateText.clearFocus();
             crfText.clearFocus();
+            clipCapText.clearFocus();
             presetSpinner.clearFocus();
             tuneSpinner.clearFocus();
         });
