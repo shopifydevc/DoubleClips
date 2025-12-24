@@ -1104,7 +1104,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             for(Keyframe keyframe : selectedClip.keyframes.keyframes)
             {
-                clipEditSpecificAreaScreen.createKeyframeElement(keyframe, () -> {
+                clipEditSpecificAreaScreen.createKeyframeElement(selectedClip, keyframe, () -> {
                     setCurrentTime(keyframe.getGlobalTime(selectedClip));
                 });
             }

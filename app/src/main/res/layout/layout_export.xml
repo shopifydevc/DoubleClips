@@ -85,10 +85,26 @@
         android:layout_below="@id/statusBar"/>
     <CheckBox
         android:id="@+id/logCheckbox"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Enable log"
         android:layout_below="@id/globalStatusBar"/>
+    <CheckBox
+        android:id="@+id/truncateCheckbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Truncate log"
+        android:checked="true"
+        android:layout_below="@id/globalStatusBar"
+        android:layout_toEndOf="@id/logCheckbox"/>
+    <CheckBox
+        android:id="@+id/scrollLockCheckbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scroll lock"
+        android:checked="true"
+        android:layout_below="@id/globalStatusBar"
+        android:layout_toEndOf="@id/truncateCheckbox"/>
     <ScrollView
         android:id="@+id/logScroll"
         android:layout_width="match_parent"

@@ -52,7 +52,7 @@ public class ExportActivity extends AppCompatActivityImpl {
     TextView logText, statusText, globalStatusText;
     EditText commandText;
     ScrollView logScroll;
-    CheckBox logCheckbox;
+    CheckBox logCheckbox, truncateCheckbox, scrollLockCheckbox;
 
 
     private ActivityResultLauncher<Intent> filePickerLauncher = registerForActivityResult(
@@ -143,6 +143,8 @@ public class ExportActivity extends AppCompatActivityImpl {
         globalStatusText = findViewById(R.id.globalStatusText);
         logScroll = findViewById(R.id.logScroll);
         logCheckbox = findViewById(R.id.logCheckbox);
+        truncateCheckbox = findViewById(R.id.truncateCheckbox);
+        scrollLockCheckbox = findViewById(R.id.scrollLockCheckbox);
 
         commandText = findViewById(R.id.exportCommand);
 
@@ -293,10 +295,11 @@ public class ExportActivity extends AppCompatActivityImpl {
                             if (logCheckbox.isChecked()) {
                                 logText.post(() -> {
                                     String logStr = logText.getText() + "\n" + log.getMessage();
-                                    if (logStr.length() > Constants.DEFAULT_LOGGING_LIMIT_CHARACTERS)
+                                    if (logStr.length() > Constants.DEFAULT_LOGGING_LIMIT_CHARACTERS && truncateCheckbox.isChecked())
                                         logStr = logStr.substring(logStr.length() - Constants.DEFAULT_LOGGING_LIMIT_CHARACTERS);
                                     logText.setText(logStr);
-                                    logScroll.fullScroll(View.FOCUS_DOWN);
+                                    if(scrollLockCheckbox.isChecked())
+                                        logScroll.fullScroll(View.FOCUS_DOWN);
                                 });
                             }
                         }
@@ -328,10 +331,6 @@ public class ExportActivity extends AppCompatActivityImpl {
     //TODO: Delete the exported clip inside project path. Detect in the beginning the export.mp4 if its exist then do the same with this method to extract it out.
     private void exportClipTo()
     {
-
-        // After rendering, set back to default
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
         logText.post(() -> logText.setTextIsSelectable(true));
 
         IOHelper.deleteFilesInDir(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_CLIP_TEMP_DIRECTORY));
@@ -341,6 +340,10 @@ public class ExportActivity extends AppCompatActivityImpl {
         intent.setType("video/*");
         intent.putExtra(Intent.EXTRA_TITLE, "export");
         filePickerLauncher.launch(Intent.createChooser(intent, "Select Export"));
+
+
+        // After rendering, set back to default
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override

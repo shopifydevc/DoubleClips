@@ -71,17 +71,22 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
         });
     }
 
-    public void createKeyframeElement(EditingActivity.Keyframe keyframe, Runnable onClickKeyframe)
+    public void createKeyframeElement(EditingActivity.Clip clip, EditingActivity.Keyframe keyframe, Runnable onClickKeyframe)
     {
         LinearLayout layout = new LinearLayout(getContext());
         layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView text = new TextView(getContext());
         text.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        text.setText("Keyframe");
+        text.setText("Keyframe | Local clip time: " + keyframe.getLocalTime());
         text.setOnClickListener(v -> {
             text.setBackgroundColor(getResources().getColor(R.color.colorHighlightedButton, null));
             onClickKeyframe.run();
+        });
+        text.setOnLongClickListener(v -> {
+            clip.keyframes.keyframes.remove(keyframe);
+            keyframeScrollFrame.removeView(layout);
+            return true;
         });
 
         layout.addView(text);
