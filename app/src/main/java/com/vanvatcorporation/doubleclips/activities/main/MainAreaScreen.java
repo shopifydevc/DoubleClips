@@ -94,9 +94,6 @@ public class MainAreaScreen extends BaseAreaScreen {
     public void init() {
         super.init();
 
-
-        addNewProjectButton = findViewById(R.id.addProjectButton);
-
         projectListView = findViewById(R.id.projectList);
         //progressBarFetchingBook = view.findViewById(R.id.progressBarFetchingBook);
         projectSwipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
@@ -426,7 +423,9 @@ public class MainAreaScreen extends BaseAreaScreen {
                                 .setPositiveButton(android.R.string.ok, (dialog, which) -> {
                                     // Continue with delete operation
                                     IOHelper.deleteDir(projectItem.projectPath);
+                                    int index = projectList.indexOf(projectItem);
                                     projectList.remove(projectItem);
+                                    projectAdapter.notifyItemRemoved(index);
 
                                 })
 

@@ -44,6 +44,7 @@ import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.UncaughtExceptionHandler;
 import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
+import com.vanvatcorporation.doubleclips.activities.main.TemplateAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.ext.rajawali.RajawaliExample;
 import com.vanvatcorporation.doubleclips.helper.CompressionHelper;
@@ -81,6 +82,7 @@ public class MainActivity extends AppCompatActivityImpl {
 
 
     MainAreaScreen homeAreaScreen;
+    TemplateAreaScreen templateAreaScreen;
 
     SwipeRefreshLayout profileSwipeRefreshLayout;
 
@@ -152,7 +154,7 @@ public class MainActivity extends AppCompatActivityImpl {
 
 
         homeAreaScreen = (MainAreaScreen) getLayoutInflater().inflate(R.layout.pager_main_homepage, null);
-        View templateView = getLayoutInflater().inflate(R.layout.pager_main_template, null);
+        templateAreaScreen = (TemplateAreaScreen) getLayoutInflater().inflate(R.layout.pager_main_template, null);
         View View3 = getLayoutInflater().inflate(R.layout.pager_main_template, null);
         View View4 = getLayoutInflater().inflate(R.layout.pager_main_template, null);
         View profileView = getLayoutInflater().inflate(R.layout.pager_main_profile, null);
@@ -176,7 +178,7 @@ public class MainActivity extends AppCompatActivityImpl {
 
 
         viewPager = findViewById(R.id.mainViewPager);
-        viewPager.insertView(homeAreaScreen, templateView, View3, View4, profileView);
+        viewPager.insertView(homeAreaScreen, templateAreaScreen, View3, View4, profileView);
         viewPager.setupActions(
                 new RunnableImpl2() {
                     @Override

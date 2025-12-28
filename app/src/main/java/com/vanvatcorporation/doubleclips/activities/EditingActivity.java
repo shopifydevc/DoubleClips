@@ -98,6 +98,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class EditingActivity extends AppCompatActivityImpl {
 
@@ -227,20 +228,18 @@ public class EditingActivity extends AppCompatActivityImpl {
                     Intent data = result.getData();
                     // Check if multiple files are selected
 
-                    float offsetTime = 0;
-
                     if (data.getClipData() != null) {
                         int count = data.getClipData().getItemCount();
+                        Uri[] uris = new Uri[count];
                         for (int i = 0; i < count; i++) {
-                            Uri fileUri = data.getClipData().getItemAt(i).getUri();
-                            // Process each file URI
-                            offsetTime = parseFileIntoWorkPathAndAddToTrack(fileUri, offsetTime);
+                            uris[i] = data.getClipData().getItemAt(i).getUri();
                         }
+                        processingMultiPreview(uris);
                     } else if (data.getData() != null) {
                         // Single file selected
                         Uri fileUri = data.getData();
                         // Process the file URI
-                        parseFileIntoWorkPathAndAddToTrack(fileUri, offsetTime);
+                        parseFileIntoWorkPathAndAddToTrack(fileUri, 0);
                     }
                 }
             }
@@ -489,6 +488,62 @@ public class EditingActivity extends AppCompatActivityImpl {
             // Any other type should be drop
             dialog.dismiss();
         }
+    }
+
+    void processingMultiPreview(Uri[] uris) {
+//        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//
+//        // Inflate your custom layout
+//        LayoutInflater inflater = LayoutInflater.from(this);
+//        View dialogView = inflater.inflate(R.layout.popup_processing_preview, null);
+//        builder.setCancelable(false);
+//        builder.setView(dialogView);
+//        builder.setNegativeButton(getText(R.string.alert_processing_without_preview_confirmation),
+//                (dialog, which) -> {
+//                    // This initial listener might be simple or a placeholder
+//                    dialog.dismiss();
+//                });
+//
+//        // Get references to the EditText and Buttons in your custom layout
+//        TextView processingText = dialogView.findViewById(R.id.adsDescriptionText);
+//        TextView processingDescription = dialogView.findViewById(R.id.processingDescription);
+//        ProgressBar previewProgressBar = dialogView.findViewById(R.id.previewProgressBar);
+//        TextView processingPercent = dialogView.findViewById(R.id.processingPercent);
+//
+//        // Create the AlertDialog
+//        AlertDialog dialog = builder.create();
+//
+//        // Already prevent using the setCancelable above
+//        //dialog.setCanceledOnTouchOutside(false);
+//        // Show the dialog
+//        dialog.show();
+
+        // TODO: Find a way to render 2 uncancelable dialog for these commented line of code to work
+
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.execute(() -> {
+            int index = 0;
+            AtomicReference<Float> offsetTime = new AtomicReference<>((float) 0);
+//            previewProgressBar.setMax(100);
+            for (Uri uri : uris) {
+                index++;
+                int percent = ((index * 100) / uris.length);
+
+                runOnUiThread(() -> {
+                    offsetTime.set(parseFileIntoWorkPathAndAddToTrack(uri, offsetTime.get()));
+//                    processingText.setText(getString(R.string.processing));
+//                    previewProgressBar.setProgress(percent);
+//                    processingPercent.setText(percent + "%");
+                });
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+
+                }
+//                if(index == uris.length) dialog.dismiss();
+            }
+        });
+
     }
 
 
