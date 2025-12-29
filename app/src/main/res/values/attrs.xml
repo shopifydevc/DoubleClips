@@ -4,4 +4,10 @@
         <attr name="navIcon" format="reference" />
         <attr name="navText" format="string" />
     </declare-styleable>
+    <declare-styleable name="SectionView">
+        <!-- Custom attribute for section title -->
+        <attr name="sectionTitle" format="string" />
+        <attr name="isOpenAtStart" format="boolean" />
+    </declare-styleable>
 </resources>
+

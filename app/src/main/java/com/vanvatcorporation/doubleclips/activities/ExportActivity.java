@@ -42,6 +42,7 @@ import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.ParserHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
+import com.vanvatcorporation.doubleclips.impl.SectionView;
 import com.vanvatcorporation.doubleclips.impl.java.RunnableImpl;
 
 public class ExportActivity extends AppCompatActivityImpl {
@@ -60,6 +61,8 @@ public class ExportActivity extends AppCompatActivityImpl {
     EditText commandText;
     ScrollView logScroll;
     CheckBox logCheckbox, truncateCheckbox, scrollLockCheckbox;
+
+    SectionView logSection, advancedSection;
 
 
     private ActivityResultLauncher<Intent> filePickerLauncher = registerForActivityResult(
@@ -151,6 +154,9 @@ public class ExportActivity extends AppCompatActivityImpl {
 
         commandText = findViewById(R.id.exportCommand);
 
+        logSection = findViewById(R.id.logSection);
+        advancedSection = findViewById(R.id.advancedSection);
+
 
         // Detect the last export session, if exist, try to export again.
         String inputPath = IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_EXPORT_CLIP_FILENAME);
@@ -173,62 +179,9 @@ public class ExportActivity extends AppCompatActivityImpl {
         setupSpecificEdit();
 
 
-        LinearLayout advancedHeader;
-        LinearLayout advancedContent;
-        ImageView advancedArrow;
 
-        advancedHeader = findViewById(R.id.advancedHeader);
-        advancedContent = findViewById(R.id.advancedContent);
-        advancedArrow = findViewById(R.id.advancedArrow);
-        advancedHeader.setOnClickListener(v -> {
-            boolean isVisible = advancedContent.getVisibility() == View.VISIBLE;
-            AutoTransition transition = new AutoTransition();
-            transition.setDuration(300); // smooth animation
-            TransitionManager.beginDelayedTransition((ViewGroup) advancedHeader.getParent(), transition);
-            if (isVisible) {
-                advancedArrow.setImageResource(R.drawable.baseline_keyboard_arrow_down_24);
-                advancedArrow.animate().rotation(0).setDuration(300).start();
-                collapse(advancedContent);
-            } else {
-                advancedArrow.setImageResource(R.drawable.diamond_shape); // Up
-                advancedArrow.animate().rotation(180).setDuration(300).start();
-                expand(advancedContent, 200); // target height in dp
-            }
-        });
     }
 
-    private void expand(final View view, int targetDp) {
-        view.setVisibility(View.VISIBLE);
-        int targetPx = (int) (targetDp * getResources().getDisplayMetrics().density);
-        ValueAnimator animator = ValueAnimator.ofInt(0, targetPx);
-        animator.setDuration(300);
-        animator.addUpdateListener(animation -> {
-            int value = (Integer) animation.getAnimatedValue();
-            ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
-            layoutParams.height = value;
-            view.setLayoutParams(layoutParams);
-        });
-        animator.start();
-    }
-
-    private void collapse(final View view) {
-        int initialHeight = view.getHeight();
-        ValueAnimator animator = ValueAnimator.ofInt(initialHeight, 0);
-        animator.setDuration(300);
-        animator.addUpdateListener(animation -> {
-            int value = (Integer) animation.getAnimatedValue();
-            ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
-            layoutParams.height = value;
-            view.setLayoutParams(layoutParams);
-        });
-        animator.start();
-        animator.addListener(new android.animation.AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(android.animation.Animator animation) {
-                view.setVisibility(View.GONE);
-            }
-        });
-    }
 
     private void setupSpecificEdit() {
 

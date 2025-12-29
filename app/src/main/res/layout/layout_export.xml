@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <RelativeLayout
         android:id="@+id/modifyZone"
@@ -27,12 +28,7 @@
                 android:layout_toEndOf="@id/backButton"
                 android:src="@drawable/baseline_display_settings_24" />
 
-            <Button
-                android:id="@+id/generateCmdButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_toStartOf="@id/exportButton"
-                android:text="Gen cmd" />
+
 
             <Button
                 android:id="@+id/exportButton"
@@ -45,47 +41,18 @@
 
 
 
-        <LinearLayout
+        <com.vanvatcorporation.doubleclips.impl.SectionView
+            android:id="@+id/advancedSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_below="@id/top_bar">
+            android:layout_below="@id/top_bar"
+            app:sectionTitle="@string/advanced">
 
-
-            <!-- Header row -->
-            <LinearLayout
-                android:id="@+id/advancedHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackground"
-                android:orientation="horizontal"
-                android:layout_below="@id/top_bar"
-                android:padding="12dp">
-
-                <TextView
-                    android:id="@+id/advancedTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Advanced"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <ImageView
-                    android:id="@+id/advancedArrow"
+                <Button
+                    android:id="@+id/generateCmdButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:src="@drawable/baseline_keyboard_arrow_down_24" />
-            </LinearLayout>
-
-            <!-- Collapsible content -->
-            <LinearLayout
-                android:id="@+id/advancedContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
+                    android:text="Gen cmd" />
 
                 <EditText
                     android:id="@+id/exportCommand"
@@ -96,88 +63,109 @@
                     android:scrollbarSize="20dp"
                     android:textSize="12sp" />
 
-            </LinearLayout>
 
-        </LinearLayout>
+        </com.vanvatcorporation.doubleclips.impl.SectionView>
+
 
     </RelativeLayout>
 
 
-    <TextView
-        android:id="@+id/statusText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/modifyZone"
-        android:layout_marginTop="-10dp"
-        android:text="Current Task: 0%"
-        android:textSize="15sp" />
 
-    <ProgressBar
-        android:id="@+id/statusBar"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+    <com.vanvatcorporation.doubleclips.impl.SectionView
+        android:id="@+id/logSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/modifyZone"
-        android:layout_marginTop="5dp" />
+        app:sectionTitle="@string/log">
 
-    <TextView
-        android:id="@+id/globalStatusText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/statusBar"
-        android:layout_marginTop="-10dp"
-        android:text="Remaining Task: 0/0"
-        android:textSize="15sp" />
 
-    <ProgressBar
-        android:id="@+id/globalStatusBar"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/statusBar"
-        android:layout_marginTop="5dp" />
 
-    <CheckBox
-        android:id="@+id/logCheckbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/globalStatusBar"
-        android:text="Enable log" />
-
-    <CheckBox
-        android:id="@+id/truncateCheckbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/globalStatusBar"
-        android:layout_toEndOf="@id/logCheckbox"
-        android:checked="true"
-        android:text="Truncate log" />
-
-    <CheckBox
-        android:id="@+id/scrollLockCheckbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/globalStatusBar"
-        android:layout_toEndOf="@id/truncateCheckbox"
-        android:checked="true"
-        android:text="Scroll lock" />
-
-    <ScrollView
-        android:id="@+id/logScroll"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/logCheckbox"
-        android:scrollbarSize="25dp">
-
-        <TextView
-            android:id="@+id/logText"
+        <RelativeLayout
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="export"
-            android:textIsSelectable="true"
-            android:textSize="15sp" />
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Current Task: 0%"
+                android:textSize="15sp" />
 
-    </ScrollView>
+            <ProgressBar
+                android:id="@+id/statusBar"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp" />
+        </RelativeLayout>
+
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/globalStatusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Remaining Task: 0/0"
+                android:textSize="15sp" />
+
+            <ProgressBar
+                android:id="@+id/globalStatusBar"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp" />
+        </RelativeLayout>
+
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <CheckBox
+                android:id="@+id/logCheckbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Enable log" />
+
+            <CheckBox
+                android:id="@+id/truncateCheckbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/logCheckbox"
+                android:checked="true"
+                android:text="Truncate log" />
+
+            <CheckBox
+                android:id="@+id/scrollLockCheckbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/truncateCheckbox"
+                android:checked="true"
+                android:text="Scroll lock" />
+        </RelativeLayout>
+
+
+        <ScrollView
+            android:id="@+id/logScroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/logCheckbox"
+            android:scrollbarSize="25dp">
+
+            <TextView
+                android:id="@+id/logText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="export"
+                android:textIsSelectable="true"
+                android:textSize="15sp" />
+
+        </ScrollView>
+
+
+    </com.vanvatcorporation.doubleclips.impl.SectionView>
+
+
 
 
 </RelativeLayout>

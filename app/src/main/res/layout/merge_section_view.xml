@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/layout/view_section.xml -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Header row -->
+    <LinearLayout
+        android:id="@+id/sectionHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/sectionTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Section"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/sectionArrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/baseline_keyboard_arrow_down_24" />
+    </LinearLayout>
+
+    <!-- Collapsible content -->
+    <LinearLayout
+        android:id="@+id/sectionContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"/>
+</merge>
+
