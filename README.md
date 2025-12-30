@@ -14,11 +14,13 @@
   </div>
 </div>
 
-[<img src="https://img.buymeacoffee.com/button-api/?text=Feed%20me&emoji=%F0%9F%8D%9A&slug=viet2007ht&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt='Feed me' height="80">](https://www.buymeacoffee.com/viet2007ht)
-
-
 
 DoubleClips is an open-source, ready-to-use video editor with functionality similar to CapCut. It offers Community Templates, Cross-platform rendering, Multitrack editing, and a variety of effects!
+
+
+
+[<img src="https://img.buymeacoffee.com/button-api/?text=Feed%20me&emoji=%F0%9F%8D%9A&slug=viet2007ht&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt='Feed me' height="80">](https://www.buymeacoffee.com/viet2007ht)
+
 
 ## Install
 [<img src="./assets/get-it-on-github.png" alt='Get it on GitHub' height="80">](https://github.com/VanVatCorporation/DoubleClips/releases/latest)
