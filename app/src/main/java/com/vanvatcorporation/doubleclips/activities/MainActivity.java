@@ -44,6 +44,7 @@ import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.UncaughtExceptionHandler;
 import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
+import com.vanvatcorporation.doubleclips.activities.main.ProfileAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.main.TemplateAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.ext.rajawali.RajawaliExample;
@@ -83,8 +84,8 @@ public class MainActivity extends AppCompatActivityImpl {
 
     MainAreaScreen homeAreaScreen;
     TemplateAreaScreen templateAreaScreen;
+    ProfileAreaScreen profileAreaScreen;
 
-    SwipeRefreshLayout profileSwipeRefreshLayout;
 
 
 
@@ -155,9 +156,9 @@ public class MainActivity extends AppCompatActivityImpl {
 
         homeAreaScreen = (MainAreaScreen) getLayoutInflater().inflate(R.layout.pager_main_homepage, null);
         templateAreaScreen = (TemplateAreaScreen) getLayoutInflater().inflate(R.layout.pager_main_template, null);
-        View View3 = getLayoutInflater().inflate(R.layout.pager_main_template, null);
-        View View4 = getLayoutInflater().inflate(R.layout.pager_main_template, null);
-        View profileView = getLayoutInflater().inflate(R.layout.pager_main_profile, null);
+        View View3 = getLayoutInflater().inflate(R.layout.pager_main_search, null);
+        View View4 = getLayoutInflater().inflate(R.layout.pager_main_storage, null);
+        profileAreaScreen = (ProfileAreaScreen) getLayoutInflater().inflate(R.layout.pager_main_profile, null);
 
 
         View belowNavigationBar = findViewById(R.id.belowNavigationBar);
@@ -178,7 +179,7 @@ public class MainActivity extends AppCompatActivityImpl {
 
 
         viewPager = findViewById(R.id.mainViewPager);
-        viewPager.insertView(homeAreaScreen, templateAreaScreen, View3, View4, profileView);
+        viewPager.insertView(homeAreaScreen, templateAreaScreen, View3, View4, profileAreaScreen);
         viewPager.setupActions(
                 new RunnableImpl2() {
                     @Override
@@ -197,20 +198,6 @@ public class MainActivity extends AppCompatActivityImpl {
         // ---------------------------------------------------------- End initializing critical modules
 
 
-
-
-        // Start initializing Profile module ----------------------------------------------------------
-
-        profileSwipeRefreshLayout = profileView.findViewById(R.id.swipeRefreshLayout);
-
-
-        Button settingButton = profileView.findViewById(R.id.settingsButton);
-        settingButton.setOnClickListener(v -> {
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
-        });
-
-        // ---------------------------------------------------------- End initializing Profile module
         homeAreaScreen.reloadingProject();
 
 

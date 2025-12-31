@@ -1,150 +1,152 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- fragment_screen_slide_page.xml -->
 
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.vanvatcorporation.doubleclips.activities.main.ProfileAreaScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
 
     <RelativeLayout
-        android:id="@+id/constraintLayoutSettings"
+        android:id="@+id/titleFrame"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
-        app:layout_constraintTop_toTopOf="parent"
-        android:background="#aaa0522d">
+        android:layout_height="150dp">
 
-        <TextView
-            android:id="@+id/textViewProfile"
+
+        <com.google.android.material.imageview.ShapeableImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:layout_marginTop="24dp"
-            android:layout_above="@id/readTimePanel"
-            android:gravity="start|center"
-            android:text="@string/main_settings"
-            android:textSize="20sp" />
+
+
+            android:background="@color/colorPalette1_2"
+
+            app:shapeAppearanceOverlay="@style/upperRoundedImageView"
+            app:strokeColor="@color/colorSoftBackground"
+            app:strokeWidth="1dp" />
+
+
 
         <RelativeLayout
-            android:id="@+id/readTimePanel"
+            android:id="@+id/addProjectPanel"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:layout_above="@id/streakPanel">
+            android:layout_height="match_parent">
 
-            <ImageView
-                android:id="@+id/todayReadingImage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/readTimeToday"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_toEndOf="@id/todayReadingImage"
-                android:text="3 minutes"/>
-            <TextView
-                android:id="@+id/readTimeTodayForStreak"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:text="15 minutes"/>
-            <ProgressBar
-                android:id="@+id/readTimeProgress"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/readTimeToday"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"/>
-        </RelativeLayout>
-        <RelativeLayout
-            android:id="@+id/streakPanel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:layout_alignParentBottom="true">
-            <ImageView
-                android:id="@+id/streakFireImage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/profileAvatarImage"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_margin="15dp"
+
+
+                android:background="@color/colorPalette1_4"
+
+                app:shapeAppearanceOverlay="@style/roundedImageView"
+                app:strokeColor="@color/colorSoftBlueBackground"
+                app:strokeWidth="1dp" />
 
             <TextView
-                android:id="@+id/streakText"
+                android:id="@+id/title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_toEndOf="@id/streakFireImage"
-                android:layout_marginStart="5dp"
-                android:text="Streak: 3"/>
+                android:layout_toEndOf="@id/profileAvatarImage"
+                android:layout_alignTop="@id/profileAvatarImage"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="25dp"
+                android:layout_marginBottom="0dp"
+                android:gravity="start|center"
+                android:text="Van Vat Employee"
+                android:textColor="@color/colorPrimaryBackground"
+                android:textSize="24sp" />
+
         </RelativeLayout>
+
 
     </RelativeLayout>
-
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/constraintLayoutSettings">
+
+        android:layout_below="@id/titleFrame"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="5dp"
+
+        android:layout_marginBottom="5dp">
 
 
-        <ScrollView
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+
+
+                android:background="@color/colorPalette1_4"
+
+                app:shapeAppearanceOverlay="@style/roundedImageView"
+                app:strokeColor="@color/colorSoftBlueBackground"
+                app:strokeWidth="1dp" />
+
+
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
                 android:orientation="vertical"
                 android:padding="10dp">
 
-                <TextView
-                    android:id="@+id/textViewSettings1"
+                <com.vanvatcorporation.doubleclips.impl.SectionView
                     android:layout_width="match_parent"
-                    android:layout_height="30dp"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp"
-                    android:gravity="center|start"
-                    android:text="@string/settings_group_general"
-                    android:textSize="20sp" />
-
-                <Button
-                    android:id="@+id/settingsButton"
-                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/main_settings"/>
-                <Button
+                    app:sectionTitle="@string/settings_group_general">
+                    <Button
+                        android:id="@+id/settingsButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/main_settings" />
 
-                    android:visibility="gone"
-                    android:id="@+id/testingButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-
-
-
-                <TextView
-                    android:id="@+id/textViewSettings2"
+                </com.vanvatcorporation.doubleclips.impl.SectionView>
+                <com.vanvatcorporation.doubleclips.impl.SectionView
                     android:layout_width="match_parent"
-                    android:layout_height="30dp"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp"
-                    android:gravity="center|start"
-                    android:textSize="20sp" />
-                <Button
-                    android:id="@+id/statisticsButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-                <Button
-                    android:id="@+id/logOutButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:sectionTitle="@string/settings_group_account">
 
+                    <Button
+                        android:id="@+id/statisticsButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_account_statistics"/>
+
+                    <Button
+                        android:id="@+id/logOutButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_account_log_out"/>
+
+
+
+                </com.vanvatcorporation.doubleclips.impl.SectionView>
 
             </LinearLayout>
-        </ScrollView>
+
+        </RelativeLayout>
+
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-</RelativeLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBarFetchingBook"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="4dp"
+        android:visibility="gone" />
+
+
+</com.vanvatcorporation.doubleclips.activities.main.ProfileAreaScreen>

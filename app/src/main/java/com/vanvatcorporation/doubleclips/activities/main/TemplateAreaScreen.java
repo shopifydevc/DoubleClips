@@ -16,6 +16,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.vanvatcorporation.doubleclips.BuildConfig;
 import com.vanvatcorporation.doubleclips.R;
+import com.vanvatcorporation.doubleclips.externalUtils.Random;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
 
 import java.io.Serializable;
@@ -59,7 +60,7 @@ public class TemplateAreaScreen extends BaseAreaScreen {
 
 
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
-//        layoutManager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_NONE); doesnt know the exact purpose of this line yet
+        layoutManager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
         templateRecyclerView.setLayoutManager(layoutManager);
 
 
@@ -76,8 +77,6 @@ public class TemplateAreaScreen extends BaseAreaScreen {
 
     public void addTemplate(TemplateData data)
     {
-        data.version = BuildConfig.VERSION_NAME;
-
         templateList.add(data);
         templateAdapter.notifyItemInserted(templateList.size() - 1);
     }
@@ -89,8 +88,8 @@ public class TemplateAreaScreen extends BaseAreaScreen {
                 "Tớ yêu cậu Template",
                 "Template tớ yêu cậu là template đầu tiên trong hệ sinh thái. Ra mắt vào ngày 28/12/2025, Template tớ yêu cậu đã đánh dấu sự ra đời của hệ thống mẫu chỉnh sửa video mã nguồn mở.",
                 "-i \"<editable-video-0>\" -y output.mp4",
-                "https://app.vanvatcorp.com/doubleclips/templates/viet2007ht/mkr5r-SDfve6/first-template/preview.png",
-                "https://app.vanvatcorp.com/doubleclips/templates/viet2007ht/mkr5r-SDfve6/first-template/preview.mp4",
+                "https://app.vanvatcorp.com/doubleclips/templates/viet2007ht/mkr5r-SDfve6/preview.png",
+                "https://app.vanvatcorp.com/doubleclips/templates/viet2007ht/mkr5r-SDfve6/preview.mp4",
                 new Date().getTime(), 8032007);
         addTemplate(data);
 
@@ -219,6 +218,10 @@ public class TemplateAreaScreen extends BaseAreaScreen {
             holder.templateTitle.setText(projectItem.getProjectTitle());
 
             ImageHelper.getImageBitmapFromNetwork(context, projectItem.getTemplateSnapshotLink(), holder.templatePreview);
+            ViewGroup.LayoutParams imageDimension = holder.templatePreview.getLayoutParams();
+            imageDimension.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            imageDimension.height = Random.Range(100, 600);
+            holder.templatePreview.setLayoutParams(imageDimension);
             holder.templateTitle.setOnClickListener(v -> {
                 holder.wholeView.performClick();
             });

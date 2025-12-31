@@ -11,11 +11,12 @@ import android.widget.RelativeLayout;
 
 import com.google.android.material.imageview.ShapeableImageView;
 import com.vanvatcorporation.doubleclips.R;
+import com.vanvatcorporation.doubleclips.activities.main.BaseAreaScreen;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BaseEditSpecificAreaScreen extends RelativeLayout {
+public class BaseEditSpecificAreaScreen extends BaseAreaScreen {
 
     public ShapeableImageView windowBackground;
     public ImageButton closeWindowButton;
@@ -42,12 +43,8 @@ public class BaseEditSpecificAreaScreen extends RelativeLayout {
     }
 
     @Override
-    protected void onFinishInflate() {
-        super.onFinishInflate();
-        init();
-    }
-
     public void init() {
+        super.init();
         windowBackground = findViewById(R.id.windowBackground);
         closeWindowButton = findViewById(R.id.closeWindowButton);
         setVisibility(GONE);
