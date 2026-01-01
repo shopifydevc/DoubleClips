@@ -29,6 +29,7 @@ import java.util.List;
 public class ProfileAreaScreen extends BaseAreaScreen {
     SwipeRefreshLayout profileSwipeRefreshLayout;
 
+    TextView profileNameText;
     ShapeableImageView profileAvatarImage;
 
 
@@ -55,9 +56,14 @@ public class ProfileAreaScreen extends BaseAreaScreen {
         super.init();
 
         profileSwipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        profileNameText = findViewById(R.id.profileName);
         profileAvatarImage = findViewById(R.id.profileAvatarImage);
 
         findViewById(R.id.settingsButton).setOnClickListener(v -> {
+            Intent intent = new Intent(getContext(), SettingsActivity.class);
+            getContext().startActivity(intent);
+        });
+        findViewById(R.id.signInButton).setOnClickListener(v -> {
             Intent intent = new Intent(getContext(), SettingsActivity.class);
             getContext().startActivity(intent);
         });
@@ -69,6 +75,7 @@ public class ProfileAreaScreen extends BaseAreaScreen {
 
     public void reloadingPage()
     {
+        profileNameText.setText("Van Vat Employee");
         ImageHelper.getImageBitmapFromNetwork(getContext(), "https://account.vanvatcorp.com/viet2007ht/avatar.png", profileAvatarImage);
 
         profileSwipeRefreshLayout.setRefreshing(false);

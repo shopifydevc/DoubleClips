@@ -1,6 +1,7 @@
 package com.vanvatcorporation.doubleclips.activities.main;
 
 import android.content.Context;
+import android.content.Intent;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +17,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.vanvatcorporation.doubleclips.BuildConfig;
 import com.vanvatcorporation.doubleclips.R;
+import com.vanvatcorporation.doubleclips.activities.TemplatePreviewActivity;
 import com.vanvatcorporation.doubleclips.externalUtils.Random;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
 
@@ -228,6 +230,9 @@ public class TemplateAreaScreen extends BaseAreaScreen {
 
 
             holder.wholeView.setOnClickListener(v -> {
+                Intent intent = new Intent(context, TemplatePreviewActivity.class);
+                intent.putExtra("TemplateData", projectItem);
+                context.startActivity(intent);
             });
             holder.wholeView.setOnLongClickListener(v -> {
                 return true;

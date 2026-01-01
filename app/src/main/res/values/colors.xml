@@ -9,6 +9,10 @@
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#FFAAAAAA</color>
 
+
+    <color name="fadeGray">#88AAAAAA</color>
+
+
     <color name="colorPrimaryBackground">#FFFFFFFF</color>
     <color name="colorSoftBackground">#FAF3E0</color>
     <color name="colorSoftBlueBackground">#BBDEFB</color>
