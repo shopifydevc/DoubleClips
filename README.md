@@ -33,13 +33,13 @@ DoubleClips is an open-source, ready-to-use video editor with functionality simi
 - Audio & Video precise seeking
 - Export project
 - Smooth transitions
-- Sharable templates (Alpla Early access. FFmpeg command and preview testing.)
+- Sharable templates (Beta Early access.)
 - Edit raw FFmpeg command (Gen Cmd and you're free to edit whatever you want. Not for normal users as it require FFmpeg command experience)
 - Render cross-platform (By saving it as a zip file including the JSON timeline, transfer it to your PC, or other stronger devices, and use it to render the clip, you can easily render across platforms)
 - Full control over export parameters (including Constant Rate Factor, Width, Height, Framerate and etc. Allows you to input any value you prefer. Higher settings may take longer to render. The limitations depend on the devices used. Yup, we can render 4k, 8k, 16k or whatever k you want)
 - Multitrack editing
 - No watermarks or subscriptions
-- ~~Profiles and status~~
+- Profiles and status (Alpla Early access. Avatar and display username.)
 - ~~Transactions~~ (Not what you might think! You can upload the template, set the price for people to buy, and earn 80% of the transactions. Purchased templates can be customized however the buyers want. It’s literally their right to own it.)
 
 ## Requirements
