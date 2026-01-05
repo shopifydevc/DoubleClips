@@ -1694,14 +1694,14 @@ public class EditingActivity extends AppCompatActivityImpl {
 
                                     // Optional: Snap start-to-start or end-to-end
                                     // Todo: Pending removal as no sense of letting clips overlapping each other in the same track in the near future.
-                                    if (Math.abs(ghostStart - otherStart) <= Constants.TRACK_CLIPS_SNAP_THRESHOLD_PIXEL) {
-                                        newX = otherStart;
-                                        break;
-                                    }
-                                    if (Math.abs(ghostEnd - otherEnd) <= Constants.TRACK_CLIPS_SNAP_THRESHOLD_PIXEL) {
-                                        newX = otherEnd - ghostWidth;
-                                        break;
-                                    }
+//                                    if (Math.abs(ghostStart - otherStart) <= Constants.TRACK_CLIPS_SNAP_THRESHOLD_PIXEL) {
+//                                        newX = otherStart;
+//                                        break;
+//                                    }
+//                                    if (Math.abs(ghostEnd - otherEnd) <= Constants.TRACK_CLIPS_SNAP_THRESHOLD_PIXEL) {
+//                                        newX = otherEnd - ghostWidth;
+//                                        break;
+//                                    }
                                 }
                             }
                             dragContext.ghost.setX(newX);
@@ -2738,10 +2738,9 @@ public class EditingActivity extends AppCompatActivityImpl {
                                         clip.startTime = (clipView.getX() - centerOffset) / pixelsPerSecond;
                                         clip.startClipTrim += (deltaX) / pixelsPerSecond;
                                         clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
+
                                     }
                                     else {
-                                        deltaX = -deltaX;
-
                                         int newWidth = clipView.getWidth() - (int) deltaX;
 
                                         clipView.getLayoutParams().width = newWidth;
