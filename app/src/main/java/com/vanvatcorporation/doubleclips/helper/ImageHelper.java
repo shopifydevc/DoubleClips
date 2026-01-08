@@ -41,9 +41,14 @@ import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import javax.net.ssl.HttpsURLConnection;
+
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class ImageHelper {
@@ -60,9 +65,10 @@ public class ImageHelper {
 //
 //        RectF rect = new RectF(0.0f, 0.0f, width, height);
 //
-//// rect contains the bounds of the shape
-//// radius is the radius in pixels of the rounded corners
-//// paint contains the shader that will texture the shape
+
+    /// / rect contains the bounds of the shape
+    /// / radius is the radius in pixels of the rounded corners
+    /// / paint contains the shader that will texture the shape
 //        canvas.drawRoundRect(rect, radius, radius, paint);
 //    }
 //
@@ -104,6 +110,7 @@ public class ImageHelper {
 
         return bitmap;
     }
+
     public static Bitmap createBitmapFromDrawable(Drawable drawable) {
         if (drawable == null) {
             return null; // Handle null drawable case
@@ -119,9 +126,11 @@ public class ImageHelper {
 
         return bitmap;
     }
+
     public static Drawable createDrawableFromBitmap(Resources resources, Bitmap bitmap) {
         return new BitmapDrawable(resources, bitmap);
     }
+
     @RequiresApi(Build.VERSION_CODES.M)
     public static Icon createIconFromDrawable(Drawable drawable) {
         if (drawable == null) {
@@ -139,51 +148,76 @@ public class ImageHelper {
         return Icon.createWithBitmap(bitmap);
     }
 
+    /***
+     * Get Image from https URL. Thread-blocking, unhandled exceptions.
+     * @param context The app context
+     * @param urlInput The url to retrieve image
+     * @return Image's Bitmap retrieved from server
+     * @throws ExecutionException thrown when Future failed to execute.
+     * @throws InterruptedException thrown when the process is interrupted.
+     */
+    public static Bitmap getImageBitmapFromNetwork(Context context, String urlInput) throws ExecutionException, InterruptedException {
+
+        Future<Bitmap> bitmapFuture = Executors.newSingleThreadExecutor().submit(() -> {
+            try {
+                URL url = new URL(urlInput);
+                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+                connection.setDoInput(true);
+                connection.connect();
+                InputStream input = connection.getInputStream();
+                Bitmap bitmap = BitmapFactory.decodeStream(input);
+
+                input.close();
+
+                return bitmap;
+            } catch (Exception e) {
+                LoggingManager.LogExceptionToNoteOverlay(context, e);
+                return null;
+            }
+        });
+
+        return bitmapFuture.get();
+
+    }
+
     public static void getImageBitmapFromNetwork(Context context, String urlInput, ImageView imageDestination) {
         Handler handler = new Handler(Looper.getMainLooper());
         new Thread(() -> {
-            try {
-                URL url = new URL(urlInput);
-                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-                connection.setDoInput(true);
-                connection.connect();
-                InputStream input = connection.getInputStream();
-                Bitmap bitmap = BitmapFactory.decodeStream(input);
 
-                input.close();
+            handler.post(() -> {
+                try {
 
-                // Update the ImageView on the main thread
-                handler.post(() -> imageDestination.setImageBitmap(bitmap));
-            } catch (Exception e) {
-                LoggingManager.LogExceptionToNoteOverlay(context, e);
-            }
+                    // Update the ImageView on the main thread
+                    imageDestination.setImageBitmap(getImageBitmapFromNetwork(context, urlInput));
+
+                } catch (Exception e) {
+                    LoggingManager.LogExceptionToNoteOverlay(context, e);
+                }
+            });
+
         }).start();
 
     }
+
     public static void getImageBitmapFromNetwork(Context context, String urlInput, RunnableImpl runnable) {
         Handler handler = new Handler(Looper.getMainLooper());
         new Thread(() -> {
-            try {
-                URL url = new URL(urlInput);
-                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-                connection.setDoInput(true);
-                connection.connect();
-                InputStream input = connection.getInputStream();
-                Bitmap bitmap = BitmapFactory.decodeStream(input);
 
-                input.close();
+            handler.post(() -> {
+                try {
+                    runnable.runWithParam(getImageBitmapFromNetwork(context, urlInput));
 
-                // Update the ImageView on the main thread
-                handler.post(() -> runnable.runWithParam(bitmap));
-            } catch (Exception e) {
-                LoggingManager.LogExceptionToNoteOverlay(context, e);
-            }
+                } catch (Exception e) {
+                    LoggingManager.LogExceptionToNoteOverlay(context, e);
+                }
+            });
+
         }).start();
+
 
     }
 
-    public static View drawStrokeShape(View view, int backgroundColor, int strokeColor)
-    {
+    public static View drawStrokeShape(View view, int backgroundColor, int strokeColor) {
         ShapeDrawable shapeDrawable = new ShapeDrawable(createRoundRectShape(view.getResources()));
         ShapeDrawable shapeDrawable2 = new ShapeDrawable(createRoundRectShape(view.getResources()));
         shapeDrawable2.getPaint().setStyle(Paint.Style.FILL);
@@ -197,8 +231,8 @@ public class ImageHelper {
         view.setBackground(combinedDrawable);
         return view;
     }
-    public static View drawStrokeShapeUnderCurrentBackground(View view, int backgroundColor, int strokeColor)
-    {
+
+    public static View drawStrokeShapeUnderCurrentBackground(View view, int backgroundColor, int strokeColor) {
         ShapeDrawable shapeDrawable = new ShapeDrawable(createRoundRectShape(view.getResources()));
         ShapeDrawable shapeDrawable2 = new ShapeDrawable(createRoundRectShape(view.getResources()));
         shapeDrawable2.getPaint().setStyle(Paint.Style.FILL);
@@ -213,8 +247,7 @@ public class ImageHelper {
         return view;
     }
 
-    public static Bitmap RotateDrawable(Drawable drawable, float rotation)
-    {
+    public static Bitmap RotateDrawable(Drawable drawable, float rotation) {
         if (drawable == null) {
             return null; // Handle null drawable case
         }
@@ -255,15 +288,7 @@ public class ImageHelper {
     }
 
 
-
-
-
-
-
-
-
-
-//    public static Drawable getActivityIcon(Context context, String packageName, @DrawableRes int defaultIconRes) {
+    //    public static Drawable getActivityIcon(Context context, String packageName, @DrawableRes int defaultIconRes) {
 //        PackageManager pm = context.getPackageManager();
 //        Intent intent = ExtendedUnityPlayerActivity.GetIntentFromStringPackageWithExternalBase(context, pm, packageName);
 //        //Intent intent = new Intent();
@@ -279,14 +304,11 @@ public class ImageHelper {
 //        return AppCompatResources.getDrawable(context, (defaultIconRes == 0) ? context.getApplicationInfo().icon : defaultIconRes);
 //    }
     public static Drawable getActivityIcon(Context context, Class<?> activity) {
-        try
-        {
+        try {
             PackageManager pm = context.getPackageManager();
             ComponentName componentName = new ComponentName(context, activity);
             return pm.getActivityIcon(componentName);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             LoggingManager.LogExceptionToNoteOverlay(context, e);
         }
         return null;

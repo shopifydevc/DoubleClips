@@ -1427,7 +1427,12 @@ public class EditingActivity extends AppCompatActivityImpl {
         //params.topMargin = 4; // 8
         clipView.setX(getTimeInX(data.startTime));
         clipView.setLayoutParams(params);
-        clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
+        clipView.setBackgroundColor(0xFF000000);
+        Executors.newSingleThreadExecutor().execute(() -> {
+            clipView.post(() -> {
+                clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
+            });
+        });
         clipView.setTag(data);
 
 
@@ -1485,6 +1490,8 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     public void addKeyframe(Clip clip, Keyframe keyframe)
     {
+        // Clamp keyframe in local time.
+        if(!keyframe.isWithinClip(clip)) return;
         addKeyframeUi(clip, keyframe);
 
         clip.keyframes.keyframes.add(keyframe);
@@ -1933,7 +1940,6 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     private void updateRuler(float totalSeconds, float interval) {
         rulerContainer.removeAllViews();
-
 
 
         // 👻 Add spacer to align 0s with center playhead
@@ -2794,7 +2800,6 @@ public class EditingActivity extends AppCompatActivityImpl {
                                         // Clamping
                                         if (newWidth < minWidth) return true;
 
-
                                         newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
 
                                         clipView.getLayoutParams().width = newWidth;
@@ -3079,8 +3084,11 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
         public void setClipName(String clipName, MainAreaScreen.ProjectData data)
         {
+            // Apply the filename change for both preview path and
             File file = new File(getAbsolutePath(data));
-            if(file.renameTo(new File(getAbsolutePath(data).replace(this.clipName, clipName))))
+            File filePreview = new File(getAbsolutePreviewPath(data));
+            if(file.renameTo(new File(getAbsolutePath(data).replace(this.clipName, clipName))) &&
+                    filePreview.renameTo(new File(getAbsolutePreviewPath(data).replace(this.clipName, clipName))))
                 this.clipName = clipName;
             else
                 ; // Operation failed
@@ -3387,6 +3395,10 @@ frameRate = 60;
         public float getGlobalTime(Clip clip)
         {
             return time + clip.startTime;
+        }
+
+        public boolean isWithinClip(Clip clip) {
+            return (time >= 0 && time <= clip.duration);
         }
     }
     public static class AnimatedProperty implements Serializable {

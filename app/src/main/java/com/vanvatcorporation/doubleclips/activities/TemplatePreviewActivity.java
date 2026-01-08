@@ -6,22 +6,22 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
 import com.vanvatcorporation.doubleclips.R;
-import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.main.TemplateAreaScreen;
 import com.vanvatcorporation.doubleclips.externalUtils.Random;
+import com.vanvatcorporation.doubleclips.helper.AlgorithmHelper;
 import com.vanvatcorporation.doubleclips.helper.DateHelper;
 import com.vanvatcorporation.doubleclips.helper.NumberHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
-
-import java.io.IOException;
 
 public class TemplatePreviewActivity extends AppCompatActivityImpl {
     TemplateAreaScreen.TemplateData data;
@@ -66,6 +66,21 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
     }
 
 
+    void adjustMaximumAspectRatio(int width, int height)
+    {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        // Extract width and height in pixels
+        int displayWidth = displayMetrics.widthPixels;
+        int displayHeight = displayMetrics.heightPixels;
+
+        int[] res = AlgorithmHelper.calculateTargetRatio(displayWidth, displayHeight, width, height);
+
+        ViewGroup.LayoutParams surfaceParams = surfaceView.getLayoutParams();
+        surfaceParams.width = res[0];
+        surfaceParams.height = res[1];
+        surfaceView.setLayoutParams(surfaceParams);
+    }
     void setupMediaPlayer(String httpsPath) {
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
@@ -83,6 +98,9 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
                         mp.start();
                         durationClipCount.setText(DateHelper.convertTimestampToMMSSFormat(mp.getDuration()));
                         data.setTemplateDuration(mp.getDuration());
+                    });
+                    mediaPlayer.setOnVideoSizeChangedListener((mp, width, height) -> {
+                        adjustMaximumAspectRatio(width, height);
                     });
 
 

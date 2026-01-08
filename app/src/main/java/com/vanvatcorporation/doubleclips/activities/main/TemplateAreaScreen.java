@@ -2,6 +2,7 @@ package com.vanvatcorporation.doubleclips.activities.main;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +19,7 @@ import com.google.gson.Gson;
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.activities.TemplatePreviewActivity;
 import com.vanvatcorporation.doubleclips.externalUtils.Random;
+import com.vanvatcorporation.doubleclips.helper.AlgorithmHelper;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 
@@ -27,6 +29,7 @@ import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -279,11 +282,29 @@ public class TemplateAreaScreen extends BaseAreaScreen {
 
             holder.templateTitle.setText(projectItem.getTemplateTitle());
 
-            ImageHelper.getImageBitmapFromNetwork(context, projectItem.getTemplateSnapshotLink(), holder.templatePreview);
-            ViewGroup.LayoutParams imageDimension = holder.templatePreview.getLayoutParams();
-            imageDimension.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            imageDimension.height = Random.Range(100, 600);
-            holder.templatePreview.setLayoutParams(imageDimension);
+            Executors.newSingleThreadExecutor().execute(() -> {
+                try {
+                    Bitmap thumbnailBitmap = ImageHelper.getImageBitmapFromNetwork(context, projectItem.getTemplateSnapshotLink());
+
+                    holder.wholeView.post(() -> {
+                        holder.templatePreview.setImageBitmap(thumbnailBitmap);
+                        int targetWidth = holder.wholeView.getWidth();
+
+                        int imageWidth = thumbnailBitmap.getWidth();
+                        int imageHeight = thumbnailBitmap.getHeight();
+
+                        int[] res = AlgorithmHelper.scaleByWidth(targetWidth, imageWidth, imageHeight);
+
+                        ViewGroup.LayoutParams imageDimension = holder.templatePreview.getLayoutParams();
+                        imageDimension.width = res[0];
+                        imageDimension.height = res[1];
+                        holder.templatePreview.setLayoutParams(imageDimension);
+                    });
+                } catch (Exception e) {
+                    LoggingManager.LogExceptionToNoteOverlay(context, e);
+                }
+            });
+
             holder.templateTitle.setOnClickListener(v -> {
                 holder.wholeView.performClick();
             });
