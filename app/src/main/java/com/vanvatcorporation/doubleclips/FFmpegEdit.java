@@ -219,8 +219,10 @@ public class FFmpegEdit {
         for (int i = 0; i < clips.length; i++) {
             EditingActivity.Clip clip = clips[i];
 
-            String inputPath = isTemplateCommand ? Constants.DEFAULT_TEMPLATE_CLIP_MARK(i) :
-                    clip.isLockedForTemplate ? Constants.DEFAULT_TEMPLATE_CLIP_STATIC_MARK(clip.getClipName()) : clip.getAbsolutePath(data);
+            String inputPath = (isTemplateCommand && clip.getIsLockedForTemplate()) ?
+                    Constants.DEFAULT_TEMPLATE_CLIP_STATIC_MARK(clip.getClipName()) :
+                    isTemplateCommand ? Constants.DEFAULT_TEMPLATE_CLIP_MARK(i) :
+                            clip.getAbsolutePath(data);
 
             switch (clip.type) {
                 case VIDEO:
@@ -372,7 +374,14 @@ public class FFmpegEdit {
 
                         String rotationExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.RotInRadians);
 
-                        filterComplex.append("scale=iw*").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX)).append(":ih*").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX)).append(",") // in the ih* here, it should be ValueType.ScaleY, but for the temporal scaling then it will be scaleX too
+
+                        String scaleXCmd = settings.isStretchToFull() ?
+                                String.valueOf(settings.getVideoWidth()) :
+                                "iw*" + clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX);
+                        String scaleYCmd = settings.isStretchToFull() ?
+                                String.valueOf(settings.getVideoHeight()) :
+                                "ih*" + clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX); // in the ih* here, it should be ValueType.ScaleY, but for the temporal scaling then it will be scaleX too
+                        filterComplex.append("scale=").append(scaleXCmd).append(":").append(scaleYCmd).append(",")
                                 //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
                                 .append("rotate='").append(rotationExpr).append("':ow=rotw('").append(rotationExpr).append("'):oh=roth('").append(rotationExpr).append("')")
                                 .append(":fillcolor=0x00000000").append(",")

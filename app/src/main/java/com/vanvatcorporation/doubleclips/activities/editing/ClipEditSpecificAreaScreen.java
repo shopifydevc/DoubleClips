@@ -17,7 +17,7 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
 
     public TextView totalDurationText;
     public EditText clipNameField, durationContent, positionXField, positionYField, rotationField, scaleXField, scaleYField, opacityField, speedField;
-    public CheckBox muteAudioCheckbox;
+    public CheckBox muteAudioCheckbox, lockMediaForTemplateCheckbox;
     public LinearLayout keyframeScrollFrame;
     public Button clearKeyframeButton;
 
@@ -56,6 +56,7 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
         opacityField = findViewById(R.id.opacityField);
         speedField = findViewById(R.id.speedField);
         muteAudioCheckbox = findViewById(R.id.muteAudioCheckbox);
+        lockMediaForTemplateCheckbox = findViewById(R.id.lockMediaForTemplateCheckbox);
 
         // Clear focus after edit
         onClose.add(() -> {

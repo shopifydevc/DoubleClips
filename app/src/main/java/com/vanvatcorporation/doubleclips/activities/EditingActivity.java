@@ -731,6 +731,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                 break;
             case VIDEO:
             case IMAGE:
+            case AUDIO:
                 clipEditSpecificAreaScreen.open();
                 break;
         }
@@ -1139,6 +1140,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                 selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
 
                 selectedClip.isMute = clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked();
+                selectedClip.setIsLockedForTemplate(clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.isChecked());
 
                 updateClipLayouts();
                 updateCurrentClipEnd();
@@ -1163,6 +1165,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)));
 
             clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute);
+            clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.setChecked(selectedClip.isLockedForTemplate);
 
 
             for(Keyframe keyframe : selectedClip.keyframes.keyframes)
@@ -3167,6 +3170,19 @@ public class EditingActivity extends AppCompatActivityImpl {
         int clipCap;
         String preset;
         String tune;
+        boolean isStretchToFull;
+        public VideoSettings(int videoWidth, int videoHeight, int frameRate, int crf, int clipCap, String preset, String tune, boolean isStretchToFull)
+        {
+            this.videoWidth = videoWidth;
+            this.videoHeight = videoHeight;
+            this.frameRate = frameRate;
+            this.crf = crf;
+            this.clipCap = clipCap;
+            this.preset = preset;
+            this.tune = tune;
+            this.isStretchToFull = isStretchToFull;
+        }
+
         public VideoSettings(int videoWidth, int videoHeight, int frameRate, int crf, int clipCap, String preset, String tune)
         {
             this.videoWidth = videoWidth;
@@ -3176,6 +3192,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.clipCap = clipCap;
             this.preset = preset;
             this.tune = tune;
+            this.isStretchToFull = false;
         }
 
         public int getVideoWidth() {
@@ -3199,6 +3216,10 @@ public class EditingActivity extends AppCompatActivityImpl {
         public String getTune() {
             return tune;
         }
+        public boolean isStretchToFull() {
+            return isStretchToFull;
+        }
+
 
         public void saveSettings(Context context, MainAreaScreen.ProjectData data) {
             IOHelper.writeToFile(context, IOHelper.CombinePath(data.getProjectPath(), Constants.DEFAULT_VIDEO_SETTINGS_FILENAME), new Gson().toJson(this));
@@ -3213,6 +3234,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.clipCap = loadSettings.clipCap;
             this.preset = loadSettings.preset;
             this.tune = loadSettings.tune;
+            this.isStretchToFull = loadSettings.isStretchToFull;
         }
         public static VideoSettings loadSettings(Context context, MainAreaScreen.ProjectData data) {
             return new Gson().fromJson(IOHelper.readFromFile(context, IOHelper.CombinePath(data.getProjectPath(), Constants.DEFAULT_VIDEO_SETTINGS_FILENAME)), VideoSettings.class);
