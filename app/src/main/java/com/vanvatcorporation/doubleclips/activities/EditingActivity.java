@@ -1351,6 +1351,11 @@ public class EditingActivity extends AppCompatActivityImpl {
         timelineRenderer.release();
         Timeline.saveTimeline(this, timeline, properties, settings);
     }
+    @Override
+    public void onResume() {
+        super.onResume();
+        regeneratingTimelineRenderer();
+    }
 
     private Track addNewTrack() {
         Track trackInfo = new Track(trackCount, addNewTrackUi());
@@ -4068,6 +4073,7 @@ frameRate = 60;
         }
 
         // TODO: Isn't handling scale properly yet.
+        // TODO: Rotation is based on shared pivot. matrix.postRotate() does have 3 parameters and the last 2 are pivot maybe.
         private void applyTransformation() {
             matrix.reset();
             matrix.postScale(scaleMatrixX, scaleMatrixY);
