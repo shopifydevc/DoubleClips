@@ -27,6 +27,8 @@ public class Constants {
 
 
     public static String DEFAULT_TEMPLATE_CLIP_EXPORT_MARK = "<output.mp4>";
+    public static String DEFAULT_TEMPLATE_CLIP_SCALE_WIDTH_MARK = "<scale-width>";
+    public static String DEFAULT_TEMPLATE_CLIP_SCALE_HEIGHT_MARK = "<scale-height>";
     public static String DEFAULT_TEMPLATE_CLIP_STATIC_MARK(String resourceName) {
         return "<static-" + resourceName + ">";
     }

@@ -198,7 +198,7 @@ public class FFmpegEdit {
         }
         else {
             cmd.append("-f lavfi -i color=c=black:s=")
-                    .append(settings.getVideoWidth()).append("x").append(settings.getVideoHeight())
+                    .append(settings.getRenderVideoWidth(isTemplateCommand)).append("x").append(settings.getRenderVideoHeight(isTemplateCommand))
                     .append(":r=").append(settings.getFrameRate()).append(" -t ").append(timeline.duration).append(" ");
         }
 
@@ -228,7 +228,7 @@ public class FFmpegEdit {
                 case VIDEO:
                 case IMAGE:
                     cmd.append("-f lavfi -i \"nullsrc=size=")
-                            .append(settings.getVideoWidth()).append("x").append(settings.getVideoHeight())
+                            .append(settings.getRenderVideoWidth(isTemplateCommand)).append("x").append(settings.getRenderVideoHeight(isTemplateCommand))
                             .append(":rate=").append(settings.getFrameRate()).append(",format=rgba\"").append(" ");
 
                     // Since image is a still image, with only one frame. We need to specify it and manipulate it
@@ -247,7 +247,7 @@ public class FFmpegEdit {
                     break;
                 case TEXT:
                     cmd.append("-f lavfi -i \"nullsrc=size=")
-                            .append(settings.getVideoWidth()).append("x").append(settings.getVideoHeight())
+                            .append(settings.getRenderVideoWidth(isTemplateCommand)).append("x").append(settings.getRenderVideoHeight(isTemplateCommand))
                             .append(":rate=").append(settings.getFrameRate()).append(",format=rgba\"").append(" ");
                     break;
 
@@ -375,10 +375,10 @@ public class FFmpegEdit {
                         String rotationExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.RotInRadians);
 
                         String scaleXCmd = settings.isStretchToFull() ?
-                                String.valueOf(settings.getVideoWidth()) :
+                                String.valueOf(settings.getRenderVideoWidth(isTemplateCommand)) :
                                 "iw*" + clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX);
                         String scaleYCmd = settings.isStretchToFull() ?
-                                String.valueOf(settings.getVideoHeight()) :
+                                String.valueOf(settings.getRenderVideoHeight(isTemplateCommand)) :
                                 "ih*" + clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX); // in the ih* here, it should be ValueType.ScaleY, but for the temporal scaling then it will be scaleX too
                         filterComplex.append("scale=").append(scaleXCmd).append(":").append(scaleYCmd).append(",")
                                 //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
@@ -399,10 +399,10 @@ public class FFmpegEdit {
                         // the clip has merge or there are no keyframe to combine
 
                         String scaleXCmd = settings.isStretchToFull() ?
-                                String.valueOf(settings.getVideoWidth()) :
+                                String.valueOf(settings.getRenderVideoWidth(isTemplateCommand)) :
                                 "iw*" + clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX);
                         String scaleYCmd = settings.isStretchToFull() ?
-                                String.valueOf(settings.getVideoHeight()) :
+                                String.valueOf(settings.getRenderVideoHeight(isTemplateCommand)) :
                                 "ih*" + clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX); // in the ih* here, it should be ValueType.ScaleY, but for the temporal scaling then it will be scaleX too
                         filterComplex.append("scale=").append(scaleXCmd).append(":").append(scaleYCmd).append(",")                                //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
                                 .append("rotate=").append(radiansRotation).append(":ow=rotw(").append(radiansRotation).append("):oh=roth(").append(radiansRotation).append(")")

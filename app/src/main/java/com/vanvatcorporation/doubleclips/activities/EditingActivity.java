@@ -3221,6 +3221,24 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
 
 
+        /**
+         * Special getter for rendering
+         * @param isTemplate distinguish the render type reason
+         * @return width output by the type accordingly
+         */
+        public String getRenderVideoWidth(boolean isTemplate) {
+            return isTemplate ? Constants.DEFAULT_TEMPLATE_CLIP_SCALE_WIDTH_MARK : String.valueOf(videoWidth);
+        }
+        /**
+         * Special getter for rendering
+         * @param isTemplate distinguish the render type reason
+         * @return width output by the type accordingly
+         */
+        public String getRenderVideoHeight(boolean isTemplate) {
+            return isTemplate ? Constants.DEFAULT_TEMPLATE_CLIP_SCALE_HEIGHT_MARK : String.valueOf(videoHeight);
+        }
+
+
         public void saveSettings(Context context, MainAreaScreen.ProjectData data) {
             IOHelper.writeToFile(context, IOHelper.CombinePath(data.getProjectPath(), Constants.DEFAULT_VIDEO_SETTINGS_FILENAME), new Gson().toJson(this));
         }

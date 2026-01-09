@@ -375,6 +375,12 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
                         ffmpegTemplate = ffmpegTemplate.charAt(ffmpegTemplate.length() - 1) == '\n' ? ffmpegTemplate.substring(0, ffmpegTemplate.length() - 1) : ffmpegTemplate;
 
                     data.setFfmpegCommand(ffmpegTemplate);
+
+                    // Allow edit only if these is a place to replace those alternative resolution
+                    runOnUiThread(() -> {
+                        videoPropertiesExportSpecificAreaScreen.resolutionXField.setEnabled(data.getFfmpegCommand().contains(Constants.DEFAULT_TEMPLATE_CLIP_SCALE_WIDTH_MARK));
+                        videoPropertiesExportSpecificAreaScreen.resolutionYField.setEnabled(data.getFfmpegCommand().contains(Constants.DEFAULT_TEMPLATE_CLIP_SCALE_HEIGHT_MARK));
+                    });
                 }
                 catch (Exception e)
                 {
@@ -421,6 +427,9 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
                     Constants.DEFAULT_TEMPLATE_CLIP_TEMP_DIRECTORY,
                     resourceName));
         }
+        cmd = cmd.replace(Constants.DEFAULT_TEMPLATE_CLIP_SCALE_WIDTH_MARK, String.valueOf(settings.videoWidth));
+        cmd = cmd.replace(Constants.DEFAULT_TEMPLATE_CLIP_SCALE_HEIGHT_MARK, String.valueOf(settings.videoHeight));
+
         // Replace output.mp4 to relative device temp path
         cmd = cmd.replace(Constants.DEFAULT_TEMPLATE_CLIP_EXPORT_MARK, IOHelper.CombinePath(
                         IOHelper.getPersistentDataPath(this),
