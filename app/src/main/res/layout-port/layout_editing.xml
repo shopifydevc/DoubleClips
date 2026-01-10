@@ -187,8 +187,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical"
-                                android:padding="8dp"
-                                android:background="#111111" />
+                                android:padding="0dp"
+                                android:background="#111111" /><!-- Previously padding was 8dp, but it interference with centerOffset -->
                         </HorizontalScrollView>
                     </ScrollView>
 

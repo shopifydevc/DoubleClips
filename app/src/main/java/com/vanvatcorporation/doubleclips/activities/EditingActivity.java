@@ -1382,22 +1382,23 @@ public class EditingActivity extends AppCompatActivityImpl {
         track.setPadding(4, 4, 4, 4);
 
         // 👻 Add spacer to align 0s with center playhead
-        View startSpacer = new View(this);
-        TrackFrameLayout.LayoutParams spacerParams = new TrackFrameLayout.LayoutParams(
-                centerOffset,
-                ViewGroup.LayoutParams.MATCH_PARENT
-        );
-        startSpacer.setLayoutParams(spacerParams);
-        track.addView(startSpacer); // Add spacer before any clips
+//        View startSpacer = new View(this);
+//        TrackFrameLayout.LayoutParams spacerParams = new TrackFrameLayout.LayoutParams(
+//                centerOffset,
+//                ViewGroup.LayoutParams.MATCH_PARENT
+//        );
+//        startSpacer.setLayoutParams(spacerParams);
+//        track.addView(startSpacer); // Add spacer before any clips
 
 
-        View endSpacer = new View(this);
-        TrackFrameLayout.LayoutParams endParams = new TrackFrameLayout.LayoutParams(
-                centerOffset,
-                ViewGroup.LayoutParams.MATCH_PARENT
-        );
-        endSpacer.setLayoutParams(endParams);
-        track.addView(endSpacer); // Add this after all clips
+        // ??? FrameLayout. This mean it will overlap the startSpacer, useless.
+//        View endSpacer = new View(this);
+//        TrackFrameLayout.LayoutParams endParams = new TrackFrameLayout.LayoutParams(
+//                centerOffset,
+//                ViewGroup.LayoutParams.MATCH_PARENT
+//        );
+//        endSpacer.setLayoutParams(endParams);
+//        track.addView(endSpacer); // Add this after all clips
 
 
         TextView trackInfoView = new TextView(this);
@@ -2690,6 +2691,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public transient ImageGroupView viewRef;
         public transient LinearLayout clipPropertiesLinearLayoutGroup;
         public transient ImageView templateLockViewRef;
+        public transient HorizontalScrollView timelineScrollViewRef;
 
 
         public Clip(String clipName, float startTime, float duration, int trackIndex, ClipType type, boolean isVideoHasAudio, int width, int height) {
@@ -2763,6 +2765,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         public void registerClipHandle(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
             viewRef = clipView;
+            timelineScrollViewRef = timelineScroll;
 
             // Group for properties like duration, template lock, effect, etc...
             clipPropertiesLinearLayoutGroup = new LinearLayout(activity);
@@ -2971,7 +2974,12 @@ public class EditingActivity extends AppCompatActivityImpl {
             leftHandle.setVisibility(View.VISIBLE);
             rightHandle.setVisibility(View.VISIBLE);
             clipPropertiesLinearLayoutGroup.setVisibility(View.VISIBLE);
+
+            // Starting point when selecting clip
+            if (timelineScrollViewRef != null)
+                movePropertiesLayoutAlong(timelineScrollViewRef.getScrollX());
         }
+
         public void deselect() {
             viewRef.getFilledImageView().setColorFilter(0x00000000);
 
