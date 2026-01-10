@@ -1451,7 +1451,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         clipView.setTag(data);
 
 
-        data.registerClipHandle(clipView, this, timelineScroll);
+        data.initClip(clipView, this, timelineScroll);
 
 
 
@@ -1829,6 +1829,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
                                 updateCurrentClipEnd();
+                                dragContext.clip.resetHandlesPosition();
 
 
                                 // Remove ghost
@@ -2761,9 +2762,172 @@ public class EditingActivity extends AppCompatActivityImpl {
             if(keyframes == null) keyframes = new AnimatedProperty();
             if(keyframes.keyframes == null) keyframes.keyframes = new ArrayList<>();
         }
+        public void resetHandlesPosition()
+        {
+            leftHandle.setX(viewRef.getX() - 35);
+            rightHandle.setX(viewRef.getX() + viewRef.getWidth());
+        }
+
+        public void registerClipHandles(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
+            leftHandle = new View(clipView.getContext());
+            leftHandle.setBackgroundColor(Color.WHITE);
+            RelativeLayout.LayoutParams leftParams = new RelativeLayout.LayoutParams(35, ViewGroup.LayoutParams.MATCH_PARENT);
+            //leftParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+            //leftParams.setMarginStart(-35);   for rendering the part outside of clip to match Capcut
+            leftHandle.setLayoutParams(leftParams);
+
+            rightHandle = new View(clipView.getContext());
+            rightHandle.setBackgroundColor(Color.WHITE);
+            RelativeLayout.LayoutParams rightParams = new RelativeLayout.LayoutParams(35, ViewGroup.LayoutParams.MATCH_PARENT);
+            //rightParams.addRule(RelativeLayout.ALIGN_PARENT_END);
+            //rightParams.setMarginEnd(-35);   for rendering the part outside of clip to match Capcut
+            rightHandle.setLayoutParams(rightParams);
+
+            resetHandlesPosition();
+
+            leftHandle.setOnTouchListener(
+                    new View.OnTouchListener() {
+                        float dX;
+                        @Override
+                        public boolean onTouch(View v, MotionEvent event) {
+                            Clip clip = (Clip) clipView.getTag();
+                            int minWidth = (int) (MIN_CLIP_DURATION * pixelsPerSecond);
+                            int maxWidth = (int) (clip.originalDuration * pixelsPerSecond);
+                            switch (event.getAction()) {
+                                case MotionEvent.ACTION_DOWN:
+                                    dX = event.getRawX();
+                                    break;
+                                case MotionEvent.ACTION_MOVE:
+                                    timelineScroll.requestDisallowInterceptTouchEvent(true);
+
+                                    float deltaX = event.getRawX() - dX;
+                                    dX = event.getRawX();
+
+                                    int newWidth;
+
+                                    // Clamping only for video and audio as these type has limited duration
+                                    if (type == ClipType.VIDEO || type == ClipType.AUDIO)
+                                    {
+                                        deltaX = (Math.min(-deltaX, clip.startClipTrim * pixelsPerSecond));
+                                        deltaX = -deltaX;
+
+                                        newWidth = clipView.getWidth() - (int) deltaX;
+
+                                        // Clamping
+                                        if (newWidth < minWidth) return true;
+
+                                        newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+
+                                    }
+                                    else {
+                                        newWidth = clipView.getWidth() - (int) deltaX;
+                                    }
 
 
-        public void registerClipHandle(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
+                                    clipView.getLayoutParams().width = newWidth;
+                                    clipView.setX(clipView.getX() + deltaX);
+                                    clipView.requestLayout();
+
+                                    leftHandle.setX(leftHandle.getX() + deltaX);
+
+                                    clip.startTime = (clipView.getX() - centerOffset) / pixelsPerSecond;
+                                    clip.startClipTrim += (deltaX) / pixelsPerSecond;
+                                    clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
+                                    break;
+
+                                case MotionEvent.ACTION_UP:
+                                case MotionEvent.ACTION_CANCEL:
+                                    timelineScroll.requestDisallowInterceptTouchEvent(false);
+
+                                    if(clip.startTime < 0)
+                                    {
+                                        clipView.setX(activity.getTimeInX(0));
+                                        clip.startTime = 0;
+                                    }
+
+                                    resetHandlesPosition();
+
+                                    activity.updateCurrentClipEnd();
+                                    break;
+
+                            }
+                            return true;
+                        }
+                    }
+            );
+
+            rightHandle.setOnTouchListener(
+                    new View.OnTouchListener() {
+                        float dX;
+                        @Override
+                        public boolean onTouch(View v, MotionEvent event) {
+                            Clip clip = (Clip) clipView.getTag();
+                            int minWidth = (int) (MIN_CLIP_DURATION * pixelsPerSecond);
+                            int maxWidth = (int) (clip.originalDuration * pixelsPerSecond);
+                            switch (event.getAction())
+                            {
+                                case MotionEvent.ACTION_DOWN:
+                                    dX = event.getRawX();
+                                    break;
+                                case MotionEvent.ACTION_MOVE:
+                                    timelineScroll.requestDisallowInterceptTouchEvent(true);
+
+                                    float deltaX = event.getRawX() - dX;
+                                    dX = event.getRawX();
+
+                                    int newWidth;
+
+                                    // Clamping only for video and audio as these type has limited duration
+                                    if(type == ClipType.VIDEO || type == ClipType.AUDIO)
+                                    {
+                                        deltaX = Math.min(deltaX, clip.endClipTrim * pixelsPerSecond);
+
+                                        newWidth = clipView.getWidth() + (int) deltaX;
+
+                                        // Clamping
+                                        if (newWidth < minWidth) return true;
+
+                                        newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+
+                                    }
+                                    else {
+                                        newWidth = clipView.getWidth() + (int) deltaX;
+                                    }
+
+
+
+                                    clipView.getLayoutParams().width = newWidth;
+                                    clipView.requestLayout();
+
+                                    rightHandle.setX(rightHandle.getX() + deltaX);
+
+                                    clip.endClipTrim -= (deltaX) / pixelsPerSecond;
+                                    clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
+
+                                    break;
+
+                                case MotionEvent.ACTION_UP:
+                                case MotionEvent.ACTION_CANCEL:
+                                    timelineScroll.requestDisallowInterceptTouchEvent(false);
+                                    resetHandlesPosition();
+                                    activity.updateCurrentClipEnd();
+                                    break;
+
+                            }
+
+                            return true;
+                        }
+                    }
+            );
+
+
+            new Handler().postDelayed(() -> {
+                activity.timeline.getTrackFromClip(this).viewRef.addView(leftHandle);
+                activity.timeline.getTrackFromClip(this).viewRef.addView(rightHandle);
+            }, 2000);
+        }
+
+        public void initClip(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
             viewRef = clipView;
             timelineScrollViewRef = timelineScroll;
 
@@ -2796,160 +2960,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             durationText.setLayoutParams(durationLayoutParams);
             clipPropertiesLinearLayoutGroup.addView(durationText);
 
-            leftHandle = new View(clipView.getContext());
-            leftHandle.setBackgroundColor(Color.WHITE);
-            RelativeLayout.LayoutParams leftParams = new RelativeLayout.LayoutParams(35, ViewGroup.LayoutParams.MATCH_PARENT);
-            leftParams.addRule(RelativeLayout.ALIGN_PARENT_START);
-            //leftParams.setMarginStart(-35);   for rendering the part outside of clip to match Capcut
-            leftHandle.setLayoutParams(leftParams);
-
-            rightHandle = new View(clipView.getContext());
-            rightHandle.setBackgroundColor(Color.WHITE);
-            RelativeLayout.LayoutParams rightParams = new RelativeLayout.LayoutParams(35, ViewGroup.LayoutParams.MATCH_PARENT);
-            rightParams.addRule(RelativeLayout.ALIGN_PARENT_END);
-            //rightParams.setMarginEnd(-35);   for rendering the part outside of clip to match Capcut
-            rightHandle.setLayoutParams(rightParams);
-
-            leftHandle.setOnTouchListener(
-                    new View.OnTouchListener() {
-                        float dX;
-                        @Override
-                        public boolean onTouch(View v, MotionEvent event) {
-                            Clip clip = (Clip) clipView.getTag();
-                            int minWidth = (int) (MIN_CLIP_DURATION * pixelsPerSecond);
-                            int maxWidth = (int) (clip.originalDuration * pixelsPerSecond);
-                            switch (event.getAction()) {
-                                case MotionEvent.ACTION_DOWN:
-                                    dX = event.getRawX();
-                                    break;
-                                case MotionEvent.ACTION_MOVE:
-                                    timelineScroll.requestDisallowInterceptTouchEvent(true);
-
-                                    float deltaX = event.getRawX() - dX;
-                                    dX = event.getRawX();
-
-
-                                    // Clamping only for video and audio as these type has limited duration
-                                    if (type == ClipType.VIDEO || type == ClipType.AUDIO)
-                                    {
-                                        deltaX = (Math.min(-deltaX, clip.startClipTrim * pixelsPerSecond));
-                                        deltaX = -deltaX;
-
-
-                                        int newWidth = clipView.getWidth() - (int) deltaX;
-
-                                        // Clamping
-                                        if (newWidth < minWidth) return true;
-
-                                        newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
-
-                                        clipView.getLayoutParams().width = newWidth;
-                                        clipView.setX(clipView.getX() + deltaX);
-                                        clipView.requestLayout();
-
-                                        clip.startTime = (clipView.getX() - centerOffset) / pixelsPerSecond;
-                                        clip.startClipTrim += (deltaX) / pixelsPerSecond;
-                                        clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
-
-                                    }
-                                    else {
-                                        int newWidth = clipView.getWidth() - (int) deltaX;
-
-                                        clipView.getLayoutParams().width = newWidth;
-                                        clipView.setX(clipView.getX() + deltaX);
-                                        clipView.requestLayout();
-
-                                        clip.startTime = (clipView.getX() - centerOffset) / pixelsPerSecond;
-                                        clip.startClipTrim += (deltaX) / pixelsPerSecond;
-                                        clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;
-                                    }
-                                    break;
-
-                                case MotionEvent.ACTION_UP:
-                                case MotionEvent.ACTION_CANCEL:
-                                    timelineScroll.requestDisallowInterceptTouchEvent(false);
-
-                                    if(clip.startTime < 0)
-                                    {
-                                        clipView.setX(activity.getTimeInX(0));
-                                        clip.startTime = 0;
-                                    }
-
-                                    activity.updateCurrentClipEnd();
-                                    break;
-
-                            }
-                            return true;
-                        }
-                    }
-            );
-
-            rightHandle.setOnTouchListener(
-                    new View.OnTouchListener() {
-                        float dX;
-                        @Override
-                        public boolean onTouch(View v, MotionEvent event) {
-                            Clip clip = (Clip) clipView.getTag();
-                            int minWidth = (int) (MIN_CLIP_DURATION * pixelsPerSecond);
-                            int maxWidth = (int) (clip.originalDuration * pixelsPerSecond);
-                            switch (event.getAction())
-                            {
-                                case MotionEvent.ACTION_DOWN:
-                                    dX = event.getRawX();
-                                    break;
-                                case MotionEvent.ACTION_MOVE:
-                                    timelineScroll.requestDisallowInterceptTouchEvent(true);
-
-                                    float deltaX = event.getRawX() - dX;
-                                    dX = event.getRawX();
-
-                                    // Clamping only for video and audio as these type has limited duration
-                                    if(type == ClipType.VIDEO || type == ClipType.AUDIO)
-                                    {
-                                        deltaX = Math.min(deltaX, clip.endClipTrim * pixelsPerSecond);
-
-                                        int newWidth = clipView.getWidth() + (int) deltaX;
-
-                                        // Clamping
-                                        if (newWidth < minWidth) return true;
-
-                                        newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
-
-                                        clipView.getLayoutParams().width = newWidth;
-                                        clipView.requestLayout();
-
-                                        clip.endClipTrim -= (deltaX) / pixelsPerSecond;
-                                        clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
-                                    }
-                                    else {
-                                        int newWidth = clipView.getWidth() + (int) deltaX;
-
-                                        clipView.getLayoutParams().width = newWidth;
-                                        clipView.requestLayout();
-
-                                        clip.endClipTrim -= (deltaX) / pixelsPerSecond;
-                                        clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
-                                    }
-
-
-                                    break;
-
-                                case MotionEvent.ACTION_UP:
-                                case MotionEvent.ACTION_CANCEL:
-                                    timelineScroll.requestDisallowInterceptTouchEvent(false);
-
-                                    activity.updateCurrentClipEnd();
-                                    break;
-
-                            }
-
-                            return true;
-                        }
-                    }
-            );
-
-            clipView.addView(leftHandle);
-            clipView.addView(rightHandle);
+            registerClipHandles(clipView, activity, timelineScroll);
 
             deselect();
         }
