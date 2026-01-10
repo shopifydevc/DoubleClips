@@ -30,6 +30,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -669,6 +670,9 @@ public class EditingActivity extends AppCompatActivityImpl {
         });
         timelineScroll.getViewTreeObserver().addOnScrollChangedListener(() -> {
             rulerScroll.scrollTo(timelineScroll.getScrollX(), 0);
+            if(selectedClip != null) {
+                selectedClip.movePropertiesLayoutAlong(timelineScroll.getScrollX());
+            }
 
             if(!isPlaying)
                 currentTime = (timelineScroll.getScrollX()) / (float) pixelsPerSecond;
@@ -1472,15 +1476,16 @@ public class EditingActivity extends AppCompatActivityImpl {
         knotView.setTag(R.id.transition_knot_tag, clip);
         knotView.setTag(R.id.clip_knot_tag, clipA);
         // Position it between clips
-        int width = 50;
-        int height = 50;
+        int width = 30;
+        int height = 30;
 
         knotView.setPivotX((float) width /2);
         knotView.setPivotY((float) height /2);
 
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
+        TrackFrameLayout.LayoutParams params = new TrackFrameLayout.LayoutParams(width, height);
         //params.leftMargin = clipB.getLeft() - (width / 2); // center between clips
-        params.topMargin = clipA.viewRef.getTop() + (clipA.viewRef.getHeight() / 2) - (height / 2);
+        params.gravity = Gravity.CENTER_VERTICAL;
+        //params.topMargin = clipA.viewRef.getTop() + (clipA.viewRef.getHeight() / 2) - (height / 2);
         knotView.setX(clipA.viewRef.getX() + (clipA.duration * pixelsPerSecond) - (width / 2));
         timeline.tracks.get(clip.trackIndex).viewRef.addView(knotView, params);
 
@@ -2066,6 +2071,9 @@ public class EditingActivity extends AppCompatActivityImpl {
                 }
                 if(clip.getTag(R.id.transition_knot_tag) instanceof TransitionClip) {
                     TransitionClip data = (TransitionClip) clip.getTag(R.id.transition_knot_tag);
+                    Clip data2 = (Clip) clip.getTag(R.id.clip_knot_tag);
+
+                    clip.setX(getTimeInX(data2.duration) - (clip.getWidth() / 2));
                     //clip.setX(getTimeInX(data.time));
                 }
                 if(clip.getTag(R.id.keyframe_knot_tag) instanceof Keyframe) {
@@ -2678,6 +2686,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         //Not serializing
         public transient View leftHandle, rightHandle;
         public transient ImageGroupView viewRef;
+        public transient LinearLayout clipPropertiesLinearLayoutGroup;
         public transient ImageView templateLockViewRef;
 
 
@@ -2753,15 +2762,34 @@ public class EditingActivity extends AppCompatActivityImpl {
         public void registerClipHandle(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
             viewRef = clipView;
 
-            // Lock display for isLockedForTemplate
+            // Group for properties like duration, template lock, effect, etc...
+            clipPropertiesLinearLayoutGroup = new LinearLayout(activity);
+            ImageGroupView.LayoutParams clipPropertiesLinearLayoutGroupLayoutParams = new ImageGroupView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 30);
+            clipPropertiesLinearLayoutGroupLayoutParams.setMargins(5, 5, 0, 0);
+            clipPropertiesLinearLayoutGroup.setLayoutParams(clipPropertiesLinearLayoutGroupLayoutParams);
+            clipPropertiesLinearLayoutGroup.setOrientation(LinearLayout.HORIZONTAL);
+            viewRef.addView(clipPropertiesLinearLayoutGroup);
 
+
+
+            // Lock display for isLockedForTemplate
             templateLockViewRef = new ImageView(activity);
-            ImageGroupView.LayoutParams templateLockLayoutParams = new ImageGroupView.LayoutParams(30, 30);
+            LinearLayout.LayoutParams templateLockLayoutParams = new LinearLayout.LayoutParams(30, 30);
             templateLockLayoutParams.setMargins(5, 5, 0, 0);
             templateLockViewRef.setLayoutParams(templateLockLayoutParams);
             templateLockViewRef.setImageResource(R.drawable.baseline_lock_24);
-            viewRef.addView(templateLockViewRef);
+            clipPropertiesLinearLayoutGroup.addView(templateLockViewRef);
             templateLockViewRef.setVisibility(isLockedForTemplate ? View.VISIBLE : View.GONE);
+
+            TextView durationText = new TextView(activity);
+            durationText.setBackgroundResource(R.drawable.rounded_rectangle);
+            durationText.setBackgroundColor(0x88888888);
+            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 30);
+            durationText.setText(StringFormatHelper.smartRound(duration, 2, true) + "s");
+            LinearLayout.LayoutParams durationLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 30);
+            durationLayoutParams.setMargins(5, 5, 0, 0);
+            durationText.setLayoutParams(durationLayoutParams);
+            clipPropertiesLinearLayoutGroup.addView(durationText);
 
             leftHandle = new View(clipView.getContext());
             leftHandle.setBackgroundColor(Color.WHITE);
@@ -2921,17 +2949,33 @@ public class EditingActivity extends AppCompatActivityImpl {
             deselect();
         }
 
+        public void movePropertiesLayoutAlong(int scrollX) {
+            clipPropertiesLinearLayoutGroup.post(() -> {
+                // Normal position (moves with layout)
+                float normalLeft = viewRef.getX(); // If scrolled left past the TextView, pin it to screen
+                float normalRight = viewRef.getWidth() + viewRef.getX(); // If scrolled right past the TextView, stop
+                if (scrollX > normalLeft) {
+                    if(scrollX < normalRight)
+                        clipPropertiesLinearLayoutGroup.setTranslationX(scrollX - normalLeft);
+                } else {
+                    clipPropertiesLinearLayoutGroup.setTranslationX(0); // reset
+                }
+            });
+        }
+
         public void select() {
             viewRef.getFilledImageView().setColorFilter(0x77AAAAAA);
 
             leftHandle.setVisibility(View.VISIBLE);
             rightHandle.setVisibility(View.VISIBLE);
+            clipPropertiesLinearLayoutGroup.setVisibility(View.VISIBLE);
         }
         public void deselect() {
             viewRef.getFilledImageView().setColorFilter(0x00000000);
 
             leftHandle.setVisibility(View.GONE);
             rightHandle.setVisibility(View.GONE);
+            clipPropertiesLinearLayoutGroup.setVisibility(View.GONE);
         }
 
 
