@@ -667,6 +667,9 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
             timeline = Timeline.loadTimeline(this, this, properties);
+
+            // Regenerate timeline renderer when timeline finishes loading.
+            regeneratingTimelineRenderer();
         });
         timelineScroll.getViewTreeObserver().addOnScrollChangedListener(() -> {
             rulerScroll.scrollTo(timelineScroll.getScrollX(), 0);
@@ -1296,15 +1299,10 @@ public class EditingActivity extends AppCompatActivityImpl {
     {
         timelineRenderer = new TimelineRenderer(this);
 
-
         DisplayMetrics metrics = getResources().getDisplayMetrics();
         int screenHeight = metrics.heightPixels;
         editingZone.getLayoutParams().height = (int) (screenHeight * 0.35);
         editingZone.requestLayout();
-
-
-
-        regeneratingTimelineRenderer();
     }
     void reloadPreviewClip()
     {
@@ -1352,13 +1350,17 @@ public class EditingActivity extends AppCompatActivityImpl {
     public void onPause() {
         super.onPause();
 
-        timelineRenderer.release();
+        timelineRenderer.releasePause();
         Timeline.saveTimeline(this, timeline, properties, settings);
     }
     @Override
     public void onResume() {
         super.onResume();
-        regeneratingTimelineRenderer();
+        if(timelineRenderer.isPauseReleased) {
+            regeneratingTimelineRenderer();
+            // Resuming
+            timelineRenderer.isPauseReleased = false;
+        }
     }
 
     private Track addNewTrack() {
@@ -2784,7 +2786,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             TextView durationText = new TextView(activity);
             durationText.setBackgroundResource(R.drawable.rounded_rectangle);
             durationText.setBackgroundColor(0x88888888);
-            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 30);
+            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 22);
             durationText.setText(StringFormatHelper.smartRound(duration, 2, true) + "s");
             LinearLayout.LayoutParams durationLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 30);
             durationLayoutParams.setMargins(5, 5, 0, 0);
@@ -4214,6 +4216,9 @@ frameRate = 60;
         private final Context context;
         private List<List<ClipRenderer>> trackLayers = new ArrayList<>();
 
+
+        public boolean isPauseReleased;
+
         public TimelineRenderer(Context context) {
             this.context = context;
         }
@@ -4312,6 +4317,11 @@ frameRate = 60;
             for (List<ClipRenderer> track : trackLayers) {
                 for (ClipRenderer cr : track) cr.release();
             }
+        }
+
+        public void releasePause() {
+            release();
+            isPauseReleased = true;
         }
     }
 
