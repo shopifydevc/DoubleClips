@@ -3940,6 +3940,10 @@ frameRate = 60;
                 // Not affecting the translation pos when scaling
                 textureView.setPivotX(0);
                 textureView.setPivotY(0);
+                // TODO: Research later. Can be useful (#1)
+                // But lets try if we apply the pivot to matrix
+//                textureView.setPivotX(textureView.getWidth() / 2f);
+//                textureView.setPivotY(textureView.getHeight() / 2f);
             });
 
         }
@@ -4076,8 +4080,12 @@ frameRate = 60;
         // TODO: Rotation is based on shared pivot. matrix.postRotate() does have 3 parameters and the last 2 are pivot maybe.
         private void applyTransformation() {
             matrix.reset();
+
             matrix.postScale(scaleMatrixX, scaleMatrixY);
             matrix.postRotate(rotMatrix);
+            // TODO: Research later. Can be useful (#2)
+//            matrix.postScale(scaleMatrixX, scaleMatrixY, textureView.getPivotX(), textureView.getPivotY());
+//            matrix.postRotate(rotMatrix, textureView.getPivotX(), textureView.getPivotY());
             matrix.postTranslate(posMatrixX, posMatrixY);
 
             textureView.setTransform(matrix);
