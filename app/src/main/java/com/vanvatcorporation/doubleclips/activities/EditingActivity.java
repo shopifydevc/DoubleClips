@@ -75,6 +75,7 @@ import com.vanvatcorporation.doubleclips.activities.editing.VideoPropertiesEditS
 import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.helper.DateHelper;
+import com.vanvatcorporation.doubleclips.helper.EdgeScrollHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
@@ -656,6 +657,8 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         timelineScroll = findViewById(R.id.trackHorizontalScrollView);
         rulerScroll = findViewById(R.id.ruler_scroll);
+        EdgeScrollHelper edgeScrollHelper = new EdgeScrollHelper(timelineScroll, 40, 20, 16);
+        edgeScrollHelper.attach();
         timelineScroll.post(() -> {
 
             centerOffset = timelineScroll.getWidth() / 2;
@@ -686,6 +689,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             timelineRenderer.updateTime(currentTime, !isPlaying);
         });
+
 
 
         timelineVerticalScroll = findViewById(R.id.trackVerticalScrollView);
@@ -1814,9 +1818,13 @@ public class EditingActivity extends AppCompatActivityImpl {
                                 // Move original to new track and position
                                 ViewGroup oldParent = (ViewGroup) v.getParent();
                                 oldParent.removeView(v);
+                                oldParent.removeView(dragContext.clip.leftHandle);
+                                oldParent.removeView(dragContext.clip.rightHandle);
 
                                 // Add to new track
                                 dragContext.currentTrack.viewRef.addView(v);
+                                dragContext.currentTrack.viewRef.addView(dragContext.clip.leftHandle);
+                                dragContext.currentTrack.viewRef.addView(dragContext.clip.rightHandle);
                                 v.setX(finalX1);
                                 v.setVisibility(View.VISIBLE);
 
@@ -2933,7 +2941,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             // Group for properties like duration, template lock, effect, etc...
             clipPropertiesLinearLayoutGroup = new LinearLayout(activity);
-            ImageGroupView.LayoutParams clipPropertiesLinearLayoutGroupLayoutParams = new ImageGroupView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 30);
+            ImageGroupView.LayoutParams clipPropertiesLinearLayoutGroupLayoutParams = new ImageGroupView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 40);
             clipPropertiesLinearLayoutGroupLayoutParams.setMargins(5, 5, 0, 0);
             clipPropertiesLinearLayoutGroup.setLayoutParams(clipPropertiesLinearLayoutGroupLayoutParams);
             clipPropertiesLinearLayoutGroup.setOrientation(LinearLayout.HORIZONTAL);
@@ -2943,7 +2951,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             // Lock display for isLockedForTemplate
             templateLockViewRef = new ImageView(activity);
-            LinearLayout.LayoutParams templateLockLayoutParams = new LinearLayout.LayoutParams(30, 30);
+            LinearLayout.LayoutParams templateLockLayoutParams = new LinearLayout.LayoutParams(40, 40);
             templateLockLayoutParams.setMargins(5, 5, 0, 0);
             templateLockViewRef.setLayoutParams(templateLockLayoutParams);
             templateLockViewRef.setImageResource(R.drawable.baseline_lock_24);
@@ -2953,7 +2961,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             TextView durationText = new TextView(activity);
             durationText.setBackgroundResource(R.drawable.rounded_rectangle);
             durationText.setBackgroundColor(0x88888888);
-            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 22);
+            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 24);
             durationText.setText(StringFormatHelper.smartRound(duration, 2, true) + "s");
             LinearLayout.LayoutParams durationLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 30);
             durationLayoutParams.setMargins(5, 5, 0, 0);
