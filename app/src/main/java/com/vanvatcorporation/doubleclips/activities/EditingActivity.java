@@ -1386,24 +1386,14 @@ public class EditingActivity extends AppCompatActivityImpl {
         track.setPadding(4, 4, 4, 4);
 
         // 👻 Add spacer to align 0s with center playhead
-//        View startSpacer = new View(this);
-//        TrackFrameLayout.LayoutParams spacerParams = new TrackFrameLayout.LayoutParams(
-//                centerOffset,
-//                ViewGroup.LayoutParams.MATCH_PARENT
-//        );
-//        startSpacer.setLayoutParams(spacerParams);
-//        track.addView(startSpacer); // Add spacer before any clips
-
-
-        // ??? FrameLayout. This mean it will overlap the startSpacer, useless.
-//        View endSpacer = new View(this);
-//        TrackFrameLayout.LayoutParams endParams = new TrackFrameLayout.LayoutParams(
-//                centerOffset,
-//                ViewGroup.LayoutParams.MATCH_PARENT
-//        );
-//        endSpacer.setLayoutParams(endParams);
-//        track.addView(endSpacer); // Add this after all clips
-
+        // This spacer is crucial to the new project as it provide a space for new track to have room to click
+        View startSpacer = new View(this);
+        TrackFrameLayout.LayoutParams spacerParams = new TrackFrameLayout.LayoutParams(
+                centerOffset,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        );
+        startSpacer.setLayoutParams(spacerParams);
+        track.addView(startSpacer); // Add spacer before any clips
 
         TextView trackInfoView = new TextView(this);
         LinearLayout.LayoutParams trackInfoParams = new LinearLayout.LayoutParams(
@@ -1610,9 +1600,12 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     private void handleKeyframeInteraction(View view) {
         view.setOnClickListener(v -> {
-            if(view.getTag(R.id.keyframe_knot_tag) instanceof Keyframe)
+            if(view.getTag(R.id.keyframe_knot_tag) instanceof Keyframe && view.getTag(R.id.clip_knot_tag) instanceof Clip)
             {
                 Keyframe data = (Keyframe) view.getTag(R.id.keyframe_knot_tag);
+                Clip data2 = (Clip) view.getTag(R.id.clip_knot_tag);
+
+                setCurrentTime(data.getGlobalTime(data2));
             }
 
         });
@@ -1740,7 +1733,14 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
                             // Snap the other track
-                            for (Track track : timeline.tracks) {
+                            for (int j = 0; j < timeline.tracks.size(); j++) {
+                                Track track = timeline.tracks.get(j);
+
+                                // Only snap in neighbors track, user can choose to snap to all track
+                                // default is false (only neighbors)
+                                // if user set to snap all track, remove these 2 lines.
+                                int currentTrackIndex = timeline.tracks.indexOf(dragContext.currentTrack);
+                                if (!(j >= currentTrackIndex - 1 && j <= currentTrackIndex + 1)) continue;
 
                                 for (int i = 0; i < track.viewRef.getChildCount(); i++) {
 
