@@ -1153,6 +1153,11 @@ public class EditingActivity extends AppCompatActivityImpl {
                 selectedClip.isMute = clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked();
                 selectedClip.setIsLockedForTemplate(clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.isChecked());
 
+                Keyframe k = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
+                if(k != null)
+                    k.easing = (EasingType) clipEditSpecificAreaScreen.easingSpinner.getSelectedItem();
+                else LoggingManager.LogToToast(this, "There are 0 keyframe at this time.");
+
                 updateClipLayouts();
                 updateCurrentClipEnd();
                 // TODO: Find a way to specifically build only the edited clip. Not entire timeline
@@ -1177,6 +1182,11 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute);
             clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.setChecked(selectedClip.isLockedForTemplate);
+
+            Keyframe k = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
+            if(k != null)
+                clipEditSpecificAreaScreen.easingSpinner.setSelection(clipEditSpecificAreaScreen.easingTypeArrayAdapter.getPosition(k.easing));
+            else LoggingManager.LogToToast(this, "There are 0 keyframe to show at this time.");
 
 
             for(Keyframe keyframe : selectedClip.keyframes.keyframes)
@@ -3542,6 +3552,21 @@ frameRate = 60;
         @Expose
         public List<Keyframe> keyframes = new ArrayList<>();
 
+        /**
+         * Get keyframe at global clip time
+         * @param clip the clip that contains keyframe to get its global time
+         * @param playheadTime the global time
+         * @return keyframe that matched exactly the global time, null if there's no keyframe match the provided global time.
+         */
+        public Keyframe getKeyframeAtTime(Clip clip, float playheadTime)
+        {
+            for (Keyframe k : keyframes) {
+                //if(k.getGlobalTime(clip) == playheadTime) return k;
+                // Adjust tolerance (0.01s)
+                if(Math.abs(k.getGlobalTime(clip) - playheadTime) <= 0.01) return k;
+            }
+            return null;
+        }
         public float getValueAtTime(Clip clip, float playheadTime, VideoProperties.ValueType valueType) {
             if (keyframes.isEmpty()) return -1;
 
@@ -3580,22 +3605,111 @@ frameRate = 60;
 
         private float ease(float t, EasingType type) {
             switch (type) {
+                // Linear
                 case LINEAR: return t;
-                case EASE_IN: return t * t;
-                case EASE_OUT: return 1 - (1 - t) * (1 - t);
-                case EXPONENTIAL: return (float)Math.pow(2, 10 * (t - 1));
-                case EASE_IN_OUT:
-                    return t < 0.5f ? 2 * t * t : 1 - (float)Math.pow(-2 * t + 2, 2) / 2;
-                case QUADRATIC:
-                    return t * t; // same as EASE_IN, but you can customize later
-                case SPRING:
-                    MathHelper.spring(t, 1, 12, 0.5f);
-//                    SpringProperty spring = new SpringProperty();
-//                    return spring.getValueAt(t);
-                // Add more...
+
+                // Sine
+                case EASE_IN_SINE: return (float)(1 - Math.cos((t * Math.PI) / 2));
+                case EASE_OUT_SINE: return (float)(Math.sin((t * Math.PI) / 2));
+                case EASE_IN_OUT_SINE: return (float)(-(Math.cos(Math.PI * t) - 1) / 2);
+
+                // Quadratic
+                case EASE_IN_QUAD: return t * t;
+                case EASE_OUT_QUAD: return (float)(1 - (1 - t) * (1 - t));
+                case EASE_IN_OUT_QUAD: return t < 0.5f ? 2 * t * t : (float)(1 - Math.pow(-2 * t + 2, 2) / 2);
+
+                // Cubic
+                case EASE_IN_CUBIC: return t * t * t;
+                case EASE_OUT_CUBIC: return (float)(1 - Math.pow(1 - t, 3));
+                case EASE_IN_OUT_CUBIC: return t < 0.5f ? 4 * t * t * t : (float)(1 - Math.pow(-2 * t + 2, 3) / 2);
+
+                // Quartic
+                case EASE_IN_QUART: return t * t * t * t;
+                case EASE_OUT_QUART: return (float)(1 - Math.pow(1 - t, 4));
+                case EASE_IN_OUT_QUART: return t < 0.5f ? 8 * t * t * t * t : (float)(1 - Math.pow(-2 * t + 2, 4) / 2);
+
+                // Quintic
+                case EASE_IN_QUINT: return t * t * t * t * t;
+                case EASE_OUT_QUINT: return (float)(1 - Math.pow(1 - t, 5));
+                case EASE_IN_OUT_QUINT: return t < 0.5f ? 16 * t * t * t * t * t : (float)(1 - Math.pow(-2 * t + 2, 5) / 2);
+
+                // Exponential
+                case EASE_IN_EXPO: return (t == 0) ? 0 : (float)Math.pow(2, 10 * t - 10);
+                case EASE_OUT_EXPO: return (t == 1) ? 1 : (float)(1 - Math.pow(2, -10 * t));
+                case EASE_IN_OUT_EXPO:
+                    if (t == 0) return 0;
+                    if (t == 1) return 1;
+                    return t < 0.5f
+                            ? (float)(Math.pow(2, 20 * t - 10) / 2)
+                            : (float)((2 - Math.pow(2, -20 * t + 10)) / 2);
+
+                // Circular
+                case EASE_IN_CIRC: return (float)(1 - Math.sqrt(1 - t * t));
+                case EASE_OUT_CIRC: return (float)(Math.sqrt(1 - Math.pow(t - 1, 2)));
+                case EASE_IN_OUT_CIRC:
+                    return t < 0.5f
+                            ? (float)((1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2)
+                            : (float)((Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2);
+
+                // Back
+                case EASE_IN_BACK: {
+                    float c1 = 1.70158f;
+                    float c3 = c1 + 1;
+                    return c3 * t * t * t - c1 * t * t;
+                }
+                case EASE_OUT_BACK: {
+                    float c1 = 1.70158f;
+                    float c3 = c1 + 1;
+                    return (float)(1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2));
+                }
+                case EASE_IN_OUT_BACK: {
+                    float c1 = 1.70158f;
+                    float c2 = c1 * 1.525f;
+                    return t < 0.5f
+                            ? (float)(Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
+                            : (float)((Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2);
+                }
+
+                // Elastic
+                case EASE_IN_ELASTIC:
+                    if (t == 0) return 0;
+                    if (t == 1) return 1;
+                    return (float)(-Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * ((2 * Math.PI) / 3)));
+                case EASE_OUT_ELASTIC:
+                    if (t == 0) return 0;
+                    if (t == 1) return 1;
+                    return (float)(Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1);
+                case EASE_IN_OUT_ELASTIC:
+                    if (t == 0) return 0;
+                    if (t == 1) return 1;
+                    return t < 0.5f
+                            ? (float)(-(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * ((2 * Math.PI) / 4.5))) / 2)
+                            : (float)((Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * ((2 * Math.PI) / 4.5))) / 2 + 1);
+
+                // Bounce
+                case EASE_IN_BOUNCE: return 1 - ease(1 - t, EasingType.EASE_OUT_BOUNCE);
+                case EASE_OUT_BOUNCE:
+                    if (t < 1 / 2.75f) {
+                        return 7.5625f * t * t;
+                    } else if (t < 2 / 2.75f) {
+                        t -= 1.5f / 2.75f;
+                        return 7.5625f * t * t + 0.75f;
+                    } else if (t < 2.5 / 2.75) {
+                        t -= 2.25f / 2.75f;
+                        return 7.5625f * t * t + 0.9375f;
+                    } else {
+                        t -= 2.625f / 2.75f;
+                        return 7.5625f * t * t + 0.984375f;
+                    }
+                case EASE_IN_OUT_BOUNCE:
+                    return t < 0.5f
+                            ? (1 - ease(1 - 2 * t, EasingType.EASE_OUT_BOUNCE)) / 2
+                            : (1 + ease(2 * t - 1, EasingType.EASE_OUT_BOUNCE)) / 2;
+
                 default: return t;
             }
         }
+
 
     }
 //    public static class SpringProperty implements Serializable {
@@ -3610,8 +3724,60 @@ frameRate = 60;
 //    }
 
     public enum EasingType {
-        LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT, EXPONENTIAL, SPRING, QUADRATIC
+        // Linear
+        LINEAR,
+
+        // Sine
+        EASE_IN_SINE,
+        EASE_OUT_SINE,
+        EASE_IN_OUT_SINE,
+
+        // Quadratic
+        EASE_IN_QUAD,
+        EASE_OUT_QUAD,
+        EASE_IN_OUT_QUAD,
+
+        // Cubic
+        EASE_IN_CUBIC,
+        EASE_OUT_CUBIC,
+        EASE_IN_OUT_CUBIC,
+
+        // Quartic
+        EASE_IN_QUART,
+        EASE_OUT_QUART,
+        EASE_IN_OUT_QUART,
+
+        // Quintic
+        EASE_IN_QUINT,
+        EASE_OUT_QUINT,
+        EASE_IN_OUT_QUINT,
+
+        // Exponential
+        EASE_IN_EXPO,
+        EASE_OUT_EXPO,
+        EASE_IN_OUT_EXPO,
+
+        // Circular
+        EASE_IN_CIRC,
+        EASE_OUT_CIRC,
+        EASE_IN_OUT_CIRC,
+
+        // Back
+        EASE_IN_BACK,
+        EASE_OUT_BACK,
+        EASE_IN_OUT_BACK,
+
+        // Elastic
+        EASE_IN_ELASTIC,
+        EASE_OUT_ELASTIC,
+        EASE_IN_OUT_ELASTIC,
+
+        // Bounce
+        EASE_IN_BOUNCE,
+        EASE_OUT_BOUNCE,
+        EASE_IN_OUT_BOUNCE
     }
+
 
 
     public static class ClipRenderer {

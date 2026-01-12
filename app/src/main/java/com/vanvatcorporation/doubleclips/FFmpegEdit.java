@@ -518,17 +518,27 @@ public class FFmpegEdit {
             }
         }
 
+        // Use for previous full render
+//        for (EditingActivity.Track track : timeline.tracks) {
+//            List<EditingActivity.Clip> clipList = track.clips;
+//            for (int i = 0; i < clipList.size() - 1; i++) {
+//                EditingActivity.Clip clipA = clipList.get(i);
+//                EditingActivity.Clip clipB = clipList.get(i + 1);
+//
+//                if (clipA.isClipTransitionAvailable())
+//                    filterComplex.append(FXCommandEmitter.emitTransition(clipA, clipB, clipA.endTransition, tags));
+//            }
+//        }
 
-        for (EditingActivity.Track track : timeline.tracks) {
-            List<EditingActivity.Clip> clipList = track.clips;
-            for (int i = 0; i < clipList.size() - 1; i++) {
-                EditingActivity.Clip clipA = clipList.get(i);
-                EditingActivity.Clip clipB = clipList.get(i + 1);
+        for (int i = 0; i < clips.length - 1; i++) {
+            EditingActivity.Clip clipA = clips[i];
+            EditingActivity.Clip clipB = clips[i + 1];
 
-                if (clipA.isClipTransitionAvailable())
-                    filterComplex.append(FXCommandEmitter.emitTransition(clipA, clipB, clipA.endTransition, tags));
-            }
+            if (clipA.isClipTransitionAvailable())
+                filterComplex.append(FXCommandEmitter.emitTransition(clipA, clipB, clipA.endTransition, tags));
+
         }
+
 
 
 
@@ -682,58 +692,193 @@ public class FFmpegEdit {
     {
         return generateEasing(prevKey.value.getValue(type), nextKey.value.getValue(type), prevKey.getLocalTime(), (nextKey.getLocalTime() - prevKey.getLocalTime()), prevKey.easing, timeUnit);
     }
-    public static String generateEasing(float prevValue, float nextValue, float offset, float duration, EditingActivity.EasingType type, String timeUnit)
-    {
+
+    public static String generateEasing(float prevValue, float nextValue, float offset, float duration, EditingActivity.EasingType type, String timeUnit) {
         StringBuilder expr = new StringBuilder();
-        switch (type)
-        {
+        String r = getClipRatio(offset, duration, timeUnit); // clip((t-offset)/duration,0,1)
+
+        String start = Float.toString(prevValue);
+        String end = Float.toString(nextValue);
+        String delta = "(" + end + "-" + start + ")";
+
+        switch (type) {
+            // Linear
             case LINEAR:
-                return expr.append(prevValue).append("+(").append(nextValue).append("-").append(prevValue)
-                        .append(")*").append(getClipRatio(offset, duration, timeUnit)).toString();
-            case EASE_IN:
-                return expr.append(prevValue).append("+(").append(nextValue).append("-").append(prevValue)
-                        .append(")*pow(").append(getClipRatio(offset, duration, timeUnit)).append(",2)").toString();
-            case EASE_OUT:
-                return expr.append(prevValue).append("+(").append(nextValue).append("-").append(prevValue)
-                        .append(")*(1-pow(1-").append(getClipRatio(offset, duration, timeUnit)).append(",2))").toString();
-            case EASE_IN_OUT:
-                break;
-            case EXPONENTIAL:
-                break;
-            case QUADRATIC:
-                break;
-            case SPRING:
-                break;
+                return expr.append(start).append("+").append(delta).append("*").append(r).toString();
 
+            // Sine
+            case EASE_IN_SINE:
+                return expr.append(start).append("+").append(delta).append("*").append("(1-cos(").append(r).append("*PI/2))").toString();
+            case EASE_OUT_SINE:
+                return expr.append(start).append("+").append(delta).append("*").append("sin(").append(r).append("*PI/2)").toString();
+            case EASE_IN_OUT_SINE:
+                return expr.append(start).append("+").append(delta).append("*").append("((1-cos(PI*").append(r).append("))/2)").toString();
+
+            // Quadratic
+            case EASE_IN_QUAD:
+                return expr.append(start).append("+").append(delta).append("*").append("pow(").append(r).append(",2)").toString();
+            case EASE_OUT_QUAD:
+                return expr.append(start).append("+").append(delta).append("*").append("(1-pow(1-").append(r).append(",2))").toString();
+            case EASE_IN_OUT_QUAD:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(").append(r).append("<0.5?2*pow(").append(r).append(",2):1-pow(-2*").append(r).append("+2,2)/2)")
+                        .toString();
+
+            // Cubic
+            case EASE_IN_CUBIC:
+                return expr.append(start).append("+").append(delta).append("*").append("pow(").append(r).append(",3)").toString();
+            case EASE_OUT_CUBIC:
+                return expr.append(start).append("+").append(delta).append("*").append("(1-pow(1-").append(r).append(",3))").toString();
+            case EASE_IN_OUT_CUBIC:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(").append(r).append("<0.5?4*pow(").append(r).append(",3):1-pow(-2*").append(r).append("+2,3)/2)")
+                        .toString();
+
+            // Quartic
+            case EASE_IN_QUART:
+                return expr.append(start).append("+").append(delta).append("*").append("pow(").append(r).append(",4)").toString();
+            case EASE_OUT_QUART:
+                return expr.append(start).append("+").append(delta).append("*").append("(1-pow(1-").append(r).append(",4))").toString();
+            case EASE_IN_OUT_QUART:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(").append(r).append("<0.5?8*pow(").append(r).append(",4):1-pow(-2*").append(r).append("+2,4)/2)")
+                        .toString();
+
+            // Quintic
+            case EASE_IN_QUINT:
+                return expr.append(start).append("+").append(delta).append("*").append("pow(").append(r).append(",5)").toString();
+            case EASE_OUT_QUINT:
+                return expr.append(start).append("+").append(delta).append("*").append("(1-pow(1-").append(r).append(",5))").toString();
+            case EASE_IN_OUT_QUINT:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(").append(r).append("<0.5?16*pow(").append(r).append(",5):1-pow(-2*").append(r).append("+2,5)/2)")
+                        .toString();
+
+            // Exponential
+            case EASE_IN_EXPO:
+                // normalized so r=0 -> 0, r=1 -> 1
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("((pow(2,10*").append(r).append(")-1)/1023)").toString();
+            case EASE_OUT_EXPO:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(1-pow(2,-10*").append(r).append("))").toString();
+            case EASE_IN_OUT_EXPO:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(")
+                        .append(r).append("==0?0:").append(r).append("==1?1:")
+                        .append("(").append(r).append("<0.5?pow(2,20*").append(r).append("-10)/2:(2-pow(2,-20*").append(r).append("+10))/2)")
+                        .append(")")
+                        .toString();
+
+            // Circular
+            case EASE_IN_CIRC:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(1-sqrt(1-").append(r).append("*").append(r).append("))").toString();
+            case EASE_OUT_CIRC:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("sqrt(1-pow(").append(r).append("-1,2))").toString();
+            case EASE_IN_OUT_CIRC:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(").append(r).append("<0.5?(1-sqrt(1-pow(2*").append(r).append(",2)))/2:(sqrt(1-pow(-2*").append(r).append("+2,2))+1)/2)")
+                        .toString();
+
+            // Back
+            case EASE_IN_BACK:
+                // c1 = 1.70158, c3 = c1 + 1 = 2.70158
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(2.70158*pow(").append(r).append(",3)-1.70158*pow(").append(r).append(",2))")
+                        .toString();
+            case EASE_OUT_BACK:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(1+2.70158*pow(").append(r).append("-1,3)+1.70158*pow(").append(r).append("-1,2))")
+                        .toString();
+            case EASE_IN_OUT_BACK:
+                // c1=1.70158, c2=c1*1.525=2.5949099999999997
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(")
+                        .append(r).append("<0.5? (pow(2*").append(r).append(",2)*(((2.5949099999999997)+1)*2*").append(r).append("-2.5949099999999997))/2")
+                        .append(": (pow(2*").append(r).append("-2,2)*(((2.5949099999999997)+1)*(2*").append(r).append("-2)+2.5949099999999997)+2)/2")
+                        .append(")")
+                        .toString();
+
+            // Elastic
+            case EASE_IN_ELASTIC:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(")
+                        .append(r).append("==0?0:").append(r).append("==1?1:-pow(2,10*").append(r).append("-10)*sin((").append(r).append("*10-10.75)*(2*PI/3))")
+                        .append(")")
+                        .toString();
+            case EASE_OUT_ELASTIC:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(")
+                        .append(r).append("==0?0:").append(r).append("==1?1:pow(2,-10*").append(r).append(")*sin((").append(r).append("*10-0.75)*(2*PI/3))+1")
+                        .append(")")
+                        .toString();
+            case EASE_IN_OUT_ELASTIC:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(")
+                        .append(r).append("==0?0:").append(r).append("==1?1:")
+                        .append("(").append(r).append("<0.5?-(pow(2,20*").append(r).append("-10)*sin((20*").append(r).append("-11.125)*(2*PI/4.5)))/2:(pow(2,-20*").append(r).append("+10)*sin((20*").append(r).append("-11.125)*(2*PI/4.5)))/2+1)")
+                        .append(")")
+                        .toString();
+
+            // Bounce (using piecewise bounceOut)
+            case EASE_OUT_BOUNCE: {
+                // bounceOut piecewise
+                String bo =
+                        "(" + r + "<" + (1f/2.75f) + "?" +
+                                (7.5625f) + "*" + r + "*" + r +
+                                ":" + r + "<" + (2f/2.75f) + "?" +
+                                (7.5625f) + "*pow(" + r + "-" + (1.5f/2.75f) + ",2)+" + 0.75f +
+                                ":" + r + "<" + (2.5f/2.75f) + "?" +
+                                (7.5625f) + "*pow(" + r + "-" + (2.25f/2.75f) + ",2)+" + 0.9375f +
+                                ":" +
+                                (7.5625f) + "*pow(" + r + "-" + (2.625f/2.75f) + ",2)+" + 0.984375f +
+                                ")";
+                return expr.append(start).append("+").append(delta).append("*").append(bo).toString();
+            }
+            case EASE_IN_BOUNCE:
+                // 1 - bounceOut(1 - r)
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(1-(")
+                        .append("(").append("(").append("1-").append(r).append(")<").append(1f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(1-").append(r).append(",2):")
+                        .append("(").append("1-").append(r).append(")<").append(2f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(1.5f/2.75f).append(",2)+0.75:")
+                        .append("(").append("1-").append(r).append(")<").append(2.5f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(2.25f/2.75f).append(",2)+0.9375:")
+                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(2.625f/2.75f).append(",2)+0.984375")
+                        .append(")")
+                        .append("))")
+                        .toString();
+            case EASE_IN_OUT_BOUNCE:
+                return expr.append(start).append("+").append(delta).append("*")
+                        .append("(").append(r).append("<0.5?(1-(")
+                        .append("(").append("1-2*").append(r).append(")<").append(1f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(1-2*").append(r).append(",2):")
+                        .append("(").append("1-2*").append(r).append(")<").append(2f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(1-2*").append(r).append("-").append(1.5f/2.75f).append(",2)+0.75:")
+                        .append("(").append("1-2*").append(r).append(")<").append(2.5f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(1-2*").append(r).append("-").append(2.25f/2.75f).append(",2)+0.9375:")
+                        .append(7.5625f).append("*pow(1-2*").append(r).append("-").append(2.625f/2.75f).append(",2)+0.984375")
+                        .append(")")
+                        .append("))/2:(1+(")
+                        .append("(").append("2*").append(r).append("-1)<").append(1f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(2*").append(r).append("-1,2):")
+                        .append("(").append("2*").append(r).append("-1)<").append(2f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(2*").append(r).append("-1-").append(1.5f/2.75f).append(",2)+0.75:")
+                        .append("(").append("2*").append(r).append("-1)<").append(2.5f/2.75f).append("?")
+                        .append(7.5625f).append("*pow(2*").append(r).append("-1-").append(2.25f/2.75f).append(",2)+0.9375:")
+                        .append(7.5625f).append("*pow(2*").append(r).append("-1-").append(2.625f/2.75f).append(",2)+0.984375")
+                        .append(")")
+                        .append("))/2)")
+                        .toString();
+
+            default:
+                return expr.append(start).append("+").append(delta).append("*").append(r).toString();
         }
-        /**
-         * Linear
-         * expr='start + (end-start) * clip((t-offset)/duration,0,1)'
-         *
-         * Quadratic (Ease in)
-         * expr='start + (end-start) * pow(clip((t-offset)/duration,0,1),2)'
-         *
-         * Quadratic (Ease out)
-         * expr='start + (end-start) * (1 - pow(1-clip((t-offset)/duration,0,1),2))'
-         *
-         * Quadratic (Ease in out)
-         * expr='start + (end-start) * (clip((t-offset)/duration,0,1)<0.5 ?
-         *     2*pow(clip((t-offset)/duration,0,1),2) :
-         *     1 - pow(-2*clip((t-offset)/duration,0,1)+2,2)/2)'
-         *
-         * Exponential (Ease in)
-         * expr='start + (end-start) * (pow(2,10*clip((t-offset)/duration,0,1))-1)/1023'
-         *
-         * Exponential (Ease out)
-         * expr='start + (end-start) * (1 - pow(2,-10*clip((t-offset)/duration,0,1)))'
-         *
-         * Spring
-         * expr='start + (end-start) * (sin(clip((t-offset)/duration)*PI*(0.2+2.5*pow(clip((t-offset)/duration),3)))
-         *     * pow(1-clip((t-offset)/duration),2) + clip((t-offset)/duration))'
-         */
-
-        return "";
     }
+
     public static String getClipRatio(float offset, float duration, String timeUnit)
     {
         return "clip((" + timeUnit + "-" + offset + ")/" + duration + ",0,1)";
@@ -945,3 +1090,175 @@ public class FFmpegEdit {
     }
 
 }
+
+
+/**
+ * Below are old code that don't have much easing type
+
+
+ public static String generateEasing(float prevValue, float nextValue, float offset, float duration, EditingActivity.EasingType type, String timeUnit)
+ {
+ StringBuilder expr = new StringBuilder();
+ switch (type)
+ {
+ case LINEAR:
+ return expr.append(prevValue).append("+(").append(nextValue).append("-").append(prevValue)
+ .append(")*").append(getClipRatio(offset, duration, timeUnit)).toString();
+ case EASE_IN:
+ return expr.append(prevValue).append("+(").append(nextValue).append("-").append(prevValue)
+ .append(")*pow(").append(getClipRatio(offset, duration, timeUnit)).append(",2)").toString();
+ case EASE_OUT:
+ return expr.append(prevValue).append("+(").append(nextValue).append("-").append(prevValue)
+ .append(")*(1-pow(1-").append(getClipRatio(offset, duration, timeUnit)).append(",2))").toString();
+ case EASE_IN_OUT:
+ break;
+ case EXPONENTIAL:
+ break;
+ case QUADRATIC:
+ break;
+ case SPRING:
+ break;
+
+ }
+ /**
+ * Linear
+ * expr='start + (end-start) * clip((t-offset)/duration,0,1)'
+ *
+ * Quadratic (Ease in)
+ * expr='start + (end-start) * pow(clip((t-offset)/duration,0,1),2)'
+ *
+ * Quadratic (Ease out)
+ * expr='start + (end-start) * (1 - pow(1-clip((t-offset)/duration,0,1),2))'
+ *
+ * Quadratic (Ease in out)
+ * expr='start + (end-start) * (clip((t-offset)/duration,0,1)<0.5 ?
+ *     2*pow(clip((t-offset)/duration,0,1),2) :
+ *     1 - pow(-2*clip((t-offset)/duration,0,1)+2,2)/2)'
+ *
+ * Exponential (Ease in)
+ * expr='start + (end-start) * (pow(2,10*clip((t-offset)/duration,0,1))-1)/1023'
+ *
+ * Exponential (Ease out)
+ * expr='start + (end-start) * (1 - pow(2,-10*clip((t-offset)/duration,0,1)))'
+ *
+ * Spring
+ * expr='start + (end-start) * (sin(clip((t-offset)/duration)*PI*(0.2+2.5*pow(clip((t-offset)/duration),3)))
+ *     * pow(1-clip((t-offset)/duration),2) + clip((t-offset)/duration))'
+ *\/
+
+        return "";
+                }
+
+
+ */
+
+
+
+
+/**
+ * Below are the failed prompt that looks good enough
+ *
+ *
+ *
+ * public static String generateEasing(float prevValue, float nextValue, float offset, float duration,
+ *                                     EditingActivity.EasingType type, String timeUnit) {
+ *     String r = "clip((t-" + offset + ")/" + duration + ",0,1)";
+ *     StringBuilder expr = new StringBuilder();
+ *
+ *     switch (type) {
+ *         // Linear
+ *         case LINEAR:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*" + r;
+ *
+ *         // Sine
+ *         case EASE_IN_SINE:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(1-cos(" + r + "*PI/2))";
+ *         case EASE_OUT_SINE:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*sin(" + r + "*PI/2)";
+ *         case EASE_IN_OUT_SINE:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(-(cos(PI*" + r + ")-1)/2)";
+ *
+ *         // Quadratic
+ *         case EASE_IN_QUAD:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*pow(" + r + ",2)";
+ *         case EASE_OUT_QUAD:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(1-pow(1-" + r + ",2))";
+ *         case EASE_IN_OUT_QUAD:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "<0.5 ? 2*pow(" + r + ",2) : 1-pow(-2*" + r + "+2,2)/2)";
+ *
+ *         // Cubic
+ *         case EASE_IN_CUBIC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*pow(" + r + ",3)";
+ *         case EASE_OUT_CUBIC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(1-pow(1-" + r + ",3))";
+ *         case EASE_IN_OUT_CUBIC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "<0.5 ? 4*pow(" + r + ",3) : 1-pow(-2*" + r + "+2,3)/2)";
+ *
+ *         // Quartic
+ *         case EASE_IN_QUART:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*pow(" + r + ",4)";
+ *         case EASE_OUT_QUART:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(1-pow(1-" + r + ",4))";
+ *         case EASE_IN_OUT_QUART:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "<0.5 ? 8*pow(" + r + ",4) : 1-pow(-2*" + r + "+2,4)/2)";
+ *
+ *         // Quintic
+ *         case EASE_IN_QUINT:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*pow(" + r + ",5)";
+ *         case EASE_OUT_QUINT:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(1-pow(1-" + r + ",5))";
+ *         case EASE_IN_OUT_QUINT:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "<0.5 ? 16*pow(" + r + ",5) : 1-pow(-2*" + r + "+2,5)/2)";
+ *
+ *         // Exponential
+ *         case EASE_IN_EXPO:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "==0?0:pow(2,10*" + r + "-10))";
+ *         case EASE_OUT_EXPO:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "==1?1:1-pow(2,-10*" + r + "))";
+ *         case EASE_IN_OUT_EXPO:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "==0?0:" + r + "==1?1:" + r + "<0.5?pow(2,20*" + r + "-10)/2:(2-pow(2,-20*" + r + "+10))/2)";
+ *
+ *         // Circular
+ *         case EASE_IN_CIRC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(1-sqrt(1-pow(" + r + ",2)))";
+ *         case EASE_OUT_CIRC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*sqrt(1-pow(" + r + "-1,2))";
+ *         case EASE_IN_OUT_CIRC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "<0.5?(1-sqrt(1-pow(2*" + r + ",2)))/2:(sqrt(1-pow(-2*" + r + "+2,2))+1)/2)";
+ *
+ *         // Back
+ *         case EASE_IN_BACK:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*((2.70158*" + r + "*"+ r + "*"+ r + ")-(1.70158*" + r + "*"+ r + "))";
+ *         case EASE_OUT_BACK:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(1+2.70158*pow(" + r + "-1,3)+1.70158*pow(" + r + "-1,2))";
+ *         case EASE_IN_OUT_BACK:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "<0.5?pow(2*" + r + ",2)*((1.525*2*" + r + ")+1.525)/2:(pow(2*" + r + "-2,2)*((1.525*(2*" + r + "-2))+1.525)+2)/2)";
+ *
+ *         // Elastic
+ *         case EASE_IN_ELASTIC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "==0?0:" + r + "==1?1:-pow(2,10*" + r + "-10)*sin((" + r + "*10-10.75)*(2*PI/3)))";
+ *         case EASE_OUT_ELASTIC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "==0?0:" + r + "==1?1:pow(2,-10*" + r + ")*sin((" + r + "*10-0.75)*(2*PI/3))+1)";
+ *         case EASE_IN_OUT_ELASTIC:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "==0?0:" + r + "==1?1:" + r + "<0.5?-pow(2,20*" + r + "-10)*sin((20*" + r + "-11.125)*(2*PI/4.5))/2:(pow(2,-20*" + r + "+10)*sin((20*" + r + "-11.125)*(2*PI/4.5))/2+1))";
+ *
+ *         // Bounce
+ *         case EASE_IN_BOUNCE:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(1-((" + generateBounce(r) + ")))";
+ *         case EASE_OUT_BOUNCE:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + generateBounce(r) + ")";
+ *         case EASE_IN_OUT_BOUNCE:
+ *             return prevValue + "+(" + (nextValue - prevValue) + ")*(" + r + "<0.5?(1-" + generateBounce("1-2*" + r) + ")/2:(1+" + generateBounce("2*" + r + "-1") + ")/2)";
+ *
+ *         default:
+ *             return prevValue + "";
+ *     }
+ * }
+ *
+ * // Helper for Bounce piecewise
+ * private static String generateBounce(String r) {
+ *     return "(" + r + "<1/2.75?7.5625*"+r+"*"+r+":" +
+ *            r + "<2/2.75?7.5625*("+r+"-1.5/2.75)*("+r+"-1.5/2.75)+0.75:" +
+ *            r + "<2.5/2.75?7.5625*("+r+"-2.25/2.75)*("+r+"-2.25/2.75)+0.9375:" +
+ *            "7.5625*("+r+"-2.625/2.75)*("+r+"-2.625/2.75)+0
+ */

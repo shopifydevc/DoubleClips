@@ -3,11 +3,13 @@ package com.vanvatcorporation.doubleclips.activities.editing;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.vanvatcorporation.doubleclips.R;
@@ -20,6 +22,8 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
     public CheckBox muteAudioCheckbox, lockMediaForTemplateCheckbox;
     public LinearLayout keyframeScrollFrame;
     public Button clearKeyframeButton;
+    public ArrayAdapter<EditingActivity.EasingType> easingTypeArrayAdapter;
+    public Spinner easingSpinner;
 
 
     public ClipEditSpecificAreaScreen(Context context) {
@@ -57,6 +61,11 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
         speedField = findViewById(R.id.speedField);
         muteAudioCheckbox = findViewById(R.id.muteAudioCheckbox);
         lockMediaForTemplateCheckbox = findViewById(R.id.lockMediaForTemplateCheckbox);
+
+        easingSpinner = findViewById(R.id.easingContent);
+        easingTypeArrayAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, EditingActivity.EasingType.values());
+        easingSpinner.setAdapter(easingTypeArrayAdapter);
+
 
         // Clear focus after edit
         onClose.add(() -> {
