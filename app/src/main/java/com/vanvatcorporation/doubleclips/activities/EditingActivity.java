@@ -1119,7 +1119,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             {
                 for (Clip clip : selectedClips) {
                     float defaultValue = clip.duration;
-                    clip.duration = ParserHelper.TryParse(clipsEditSpecificAreaScreen.clipsDurationContent.getText().toString(), defaultValue);
+                    clip.setDuration(ParserHelper.TryParse(clipsEditSpecificAreaScreen.clipsDurationContent.getText().toString(), defaultValue));
                 }
                 updateClipLayouts();
                 updateCurrentClipEnd();
@@ -1141,7 +1141,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             if(selectedClip != null)
             {
                 selectedClip.setClipName(clipEditSpecificAreaScreen.clipNameField.getText().toString(), properties);
-                selectedClip.duration = ParserHelper.TryParse(clipEditSpecificAreaScreen.durationContent.getText().toString(), selectedClip.duration);
+                selectedClip.setDuration(ParserHelper.TryParse(clipEditSpecificAreaScreen.durationContent.getText().toString(), selectedClip.getDuration()));
                 selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionXField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosX)), VideoProperties.ValueType.PosX);
                 selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionYField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosY)), VideoProperties.ValueType.PosY);
                 selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.rotationField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Rot)), VideoProperties.ValueType.Rot);
@@ -2721,6 +2721,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public transient LinearLayout clipPropertiesLinearLayoutGroup;
         public transient ImageView templateLockViewRef;
         public transient HorizontalScrollView timelineScrollViewRef;
+        public transient TextView durationText;
 
 
         public Clip(String clipName, float startTime, float duration, int trackIndex, ClipType type, boolean isVideoHasAudio, int width, int height) {
@@ -2868,7 +2869,8 @@ public class EditingActivity extends AppCompatActivityImpl {
 
                                     clip.startTime = (clipView.getX() - centerOffset) / pixelsPerSecond;
                                     clip.startClipTrim += (deltaX) / pixelsPerSecond;
-                                    clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
+                                    clip.setDuration(clip.originalDuration - clip.endClipTrim - clip.startClipTrim);//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
+
                                     break;
 
                                 case MotionEvent.ACTION_UP:
@@ -2938,8 +2940,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                                     rightHandle.setX(rightHandle.getX() + deltaX);
 
                                     clip.endClipTrim -= (deltaX) / pixelsPerSecond;
-                                    clip.duration = clip.originalDuration - clip.endClipTrim - clip.startClipTrim;//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
-
+                                    clip.setDuration(clip.originalDuration - clip.endClipTrim - clip.startClipTrim);//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
                                     break;
 
                                 case MotionEvent.ACTION_UP:
@@ -2979,17 +2980,17 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             // Lock display for isLockedForTemplate
             templateLockViewRef = new ImageView(activity);
-            LinearLayout.LayoutParams templateLockLayoutParams = new LinearLayout.LayoutParams(40, 40);
+            LinearLayout.LayoutParams templateLockLayoutParams = new LinearLayout.LayoutParams(50, 50);
             templateLockLayoutParams.setMargins(5, 5, 0, 0);
             templateLockViewRef.setLayoutParams(templateLockLayoutParams);
             templateLockViewRef.setImageResource(R.drawable.baseline_lock_24);
             clipPropertiesLinearLayoutGroup.addView(templateLockViewRef);
             templateLockViewRef.setVisibility(isLockedForTemplate ? View.VISIBLE : View.GONE);
 
-            TextView durationText = new TextView(activity);
+            durationText = new TextView(activity);
             durationText.setBackgroundResource(R.drawable.rounded_rectangle);
             durationText.setBackgroundColor(0x88888888);
-            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 24);
+            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 26);
             durationText.setText(StringFormatHelper.smartRound(duration, 2, true) + "s");
             LinearLayout.LayoutParams durationLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 30);
             durationLayoutParams.setMargins(5, 5, 0, 0);
@@ -3062,12 +3063,12 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             // Primary clip
             endClipTrim = originalDuration - (translatedLocalCurrentTime + oldStartClipTrim);
-            duration = originalDuration - endClipTrim - startClipTrim;
+            setDuration(originalDuration - endClipTrim - startClipTrim);
 
             // Secondary clip
             secondaryClip.startClipTrim = translatedLocalCurrentTime + oldStartClipTrim;
             secondaryClip.endClipTrim = oldEndClipTrim;
-            secondaryClip.duration = secondaryClip.originalDuration - secondaryClip.endClipTrim - secondaryClip.startClipTrim;
+            secondaryClip.setDuration(secondaryClip.originalDuration - secondaryClip.endClipTrim - secondaryClip.startClipTrim);
 
             activity.addClipToTrack(currentTrack, secondaryClip);
             activity.revalidationClipView(this);
@@ -3201,6 +3202,17 @@ public class EditingActivity extends AppCompatActivityImpl {
                 this.clipName = clipName;
             else
                 ; // Operation failed
+        }
+
+        public float getDuration()
+        {
+            return duration;
+        }
+        public void setDuration(float value)
+        {
+            duration = value;
+            if(durationText != null)
+                durationText.setText(StringFormatHelper.smartRound(duration, 2, true) + "s");
         }
 
     }

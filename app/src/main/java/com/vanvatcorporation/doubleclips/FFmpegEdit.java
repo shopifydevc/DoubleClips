@@ -675,10 +675,11 @@ public class FFmpegEdit {
 //                .append("*")
 //                .append("lte(").append(timeUnit).append(",").append(nextKeyframe.getLocalTime()).append(")").append(",")
 
-                .append("between(").append(timeUnit).append(",")
-                .append(prevKeyframe.getLocalTime()).append(",")
-                .append(nextKeyframe.getLocalTime())
-                .append(")").append(",")
+                .append(getConditionThree(
+                        timeUnit,
+                        String.valueOf(prevKeyframe.getLocalTime()),
+                        String.valueOf(nextKeyframe.getLocalTime()), "~")
+                ).append(",")
                 // insert the expr here
                 // previous: nextKeyframe.value.getValue(valueType)
                 .append(generateEasing(prevKeyframe, nextKeyframe, clip, valueType, timeUnit)).append(",")
@@ -721,7 +722,10 @@ public class FFmpegEdit {
                 return expr.append(start).append("+").append(delta).append("*").append("(1-pow(1-").append(r).append(",2))").toString();
             case EASE_IN_OUT_QUAD:
                 return expr.append(start).append("+").append(delta).append("*")
-                        .append("(").append(r).append("<0.5?2*pow(").append(r).append(",2):1-pow(-2*").append(r).append("+2,2)/2)")
+                        .append("(")
+                        //.append(r).append("<0.5? 2*pow(").append(r).append(",2) :1-pow(-2*").append(r).append("+2,2)/2")
+                        .append(getIfExpr(getConditionTwo(r, "<", "0.5"),"2*pow(" + r + ",2)","1-pow(-2*" + r + "+2,2)/2"))
+                        .append(")")
                         .toString();
 
             // Cubic
@@ -731,7 +735,10 @@ public class FFmpegEdit {
                 return expr.append(start).append("+").append(delta).append("*").append("(1-pow(1-").append(r).append(",3))").toString();
             case EASE_IN_OUT_CUBIC:
                 return expr.append(start).append("+").append(delta).append("*")
-                        .append("(").append(r).append("<0.5?4*pow(").append(r).append(",3):1-pow(-2*").append(r).append("+2,3)/2)")
+                        .append("(")
+                        //.append(r).append("<0.5?4*pow(").append(r).append(",3):1-pow(-2*").append(r).append("+2,3)/2")
+                        .append(getIfExpr(getConditionTwo(r, "<", "0.5"),"4*pow(" + r + ",3)","1-pow(-2*" + r + "+2,3)/2"))
+                        .append(")")
                         .toString();
 
             // Quartic
@@ -741,7 +748,10 @@ public class FFmpegEdit {
                 return expr.append(start).append("+").append(delta).append("*").append("(1-pow(1-").append(r).append(",4))").toString();
             case EASE_IN_OUT_QUART:
                 return expr.append(start).append("+").append(delta).append("*")
-                        .append("(").append(r).append("<0.5?8*pow(").append(r).append(",4):1-pow(-2*").append(r).append("+2,4)/2)")
+                        .append("(")
+                        //.append(r).append("<0.5?8*pow(").append(r).append(",4):1-pow(-2*").append(r).append("+2,4)/2")
+                        .append(getIfExpr(getConditionTwo(r, "<", "0.5"),"8*pow(" + r + ",4)","1-pow(-2*" + r + "+2,4)/2"))
+                        .append(")")
                         .toString();
 
             // Quintic
@@ -751,7 +761,10 @@ public class FFmpegEdit {
                 return expr.append(start).append("+").append(delta).append("*").append("(1-pow(1-").append(r).append(",5))").toString();
             case EASE_IN_OUT_QUINT:
                 return expr.append(start).append("+").append(delta).append("*")
-                        .append("(").append(r).append("<0.5?16*pow(").append(r).append(",5):1-pow(-2*").append(r).append("+2,5)/2)")
+                        .append("(")
+                        //.append(r).append("<0.5?16*pow(").append(r).append(",5):1-pow(-2*").append(r).append("+2,5)/2")
+                        .append(getIfExpr(getConditionTwo(r, "<", "0.5"),"16*pow(" + r + ",5)","1-pow(-2*" + r + "+2,5)/2"))
+                        .append(")")
                         .toString();
 
             // Exponential
@@ -765,8 +778,23 @@ public class FFmpegEdit {
             case EASE_IN_OUT_EXPO:
                 return expr.append(start).append("+").append(delta).append("*")
                         .append("(")
-                        .append(r).append("==0?0:").append(r).append("==1?1:")
-                        .append("(").append(r).append("<0.5?pow(2,20*").append(r).append("-10)/2:(2-pow(2,-20*").append(r).append("+10))/2)")
+//                        .append(r).append("==0?0:").append(r).append("==1?1:")
+//                        .append("(").append(r).append("<0.5?pow(2,20*").append(r).append("-10)/2:(2-pow(2,-20*").append(r).append("+10))/2").append(")")
+                        .append(
+                                getIfExpr(
+                                        getConditionTwo(r, "==", "0"),
+                                        "0",
+                                        getIfExpr(
+                                                getConditionTwo(r, "==", "1"),
+                                                "1",
+                                                getIfExpr(
+                                                        getConditionTwo(r, "<", "0.5"),
+                                                        "pow(2,20*" + r + "-10)/2",
+                                                        "(2-pow(2,-20*" + r + "+10))/2"
+                                                )
+                                                )
+                                )
+                        )
                         .append(")")
                         .toString();
 
@@ -779,7 +807,8 @@ public class FFmpegEdit {
                         .append("sqrt(1-pow(").append(r).append("-1,2))").toString();
             case EASE_IN_OUT_CIRC:
                 return expr.append(start).append("+").append(delta).append("*")
-                        .append("(").append(r).append("<0.5?(1-sqrt(1-pow(2*").append(r).append(",2)))/2:(sqrt(1-pow(-2*").append(r).append("+2,2))+1)/2)")
+                        //.append("(").append(r).append("<0.5?(1-sqrt(1-pow(2*").append(r).append(",2)))/2:(sqrt(1-pow(-2*").append(r).append("+2,2))+1)/2").append(")")
+                        .append(getIfExpr(getConditionTwo(r, "<", "0.5"),"(1-sqrt(1-pow(2*" + r + ",2)))/2","(sqrt(1-pow(-2*" + r + "+2,2))+1)/2"))
                         .toString();
 
             // Back
@@ -796,8 +825,11 @@ public class FFmpegEdit {
                 // c1=1.70158, c2=c1*1.525=2.5949099999999997
                 return expr.append(start).append("+").append(delta).append("*")
                         .append("(")
-                        .append(r).append("<0.5? (pow(2*").append(r).append(",2)*(((2.5949099999999997)+1)*2*").append(r).append("-2.5949099999999997))/2")
-                        .append(": (pow(2*").append(r).append("-2,2)*(((2.5949099999999997)+1)*(2*").append(r).append("-2)+2.5949099999999997)+2)/2")
+//                        .append(r).append("<0.5? (pow(2*").append(r).append(",2)*(((2.5949099999999997)+1)*2*").append(r).append("-2.5949099999999997))/2")
+//                        .append(": (pow(2*").append(r).append("-2,2)*(((2.5949099999999997)+1)*(2*").append(r).append("-2)+2.5949099999999997)+2)/2")
+                        .append(getIfExpr(getConditionTwo(r, "<", "0.5"),
+                                "(pow(2*" + r + ",2)*(((2.5949099999999997)+1)*2*" + r + "-2.5949099999999997))/2",
+                                "(pow(2*" + r + "-2,2)*(((2.5949099999999997)+1)*(2*" + r + "-2)+2.5949099999999997)+2)/2"))
                         .append(")")
                         .toString();
 
@@ -805,53 +837,106 @@ public class FFmpegEdit {
             case EASE_IN_ELASTIC:
                 return expr.append(start).append("+").append(delta).append("*")
                         .append("(")
-                        .append(r).append("==0?0:").append(r).append("==1?1:-pow(2,10*").append(r).append("-10)*sin((").append(r).append("*10-10.75)*(2*PI/3))")
+//                        .append(r).append("==0?0:").append(r).append("==1?1:-pow(2,10*").append(r).append("-10)*sin((").append(r).append("*10-10.75)*(2*PI/3))")
+                        .append(getIfExpr(getConditionTwo(r, "==", "0"),"0",
+                                getIfExpr(getConditionTwo(r, "==", "1"),"1",
+                                        "-pow(2,10*" + r + "-10)*sin((" + r + "*10-10.75)*(2*PI/3))"
+                                )))
                         .append(")")
                         .toString();
             case EASE_OUT_ELASTIC:
                 return expr.append(start).append("+").append(delta).append("*")
                         .append("(")
-                        .append(r).append("==0?0:").append(r).append("==1?1:pow(2,-10*").append(r).append(")*sin((").append(r).append("*10-0.75)*(2*PI/3))+1")
+//                        .append(r).append("==0?0:").append(r).append("==1?1:pow(2,-10*").append(r).append(")*sin((").append(r).append("*10-0.75)*(2*PI/3))+1")
+                        .append(getIfExpr(getConditionTwo(r, "==", "0"),"0",
+                                getIfExpr(getConditionTwo(r, "==", "1"),"1",
+                                        "pow(2,-10*" + r + ")*sin((" + r + "*10-0.75)*(2*PI/3))+1"
+                                )))
                         .append(")")
                         .toString();
             case EASE_IN_OUT_ELASTIC:
                 return expr.append(start).append("+").append(delta).append("*")
                         .append("(")
-                        .append(r).append("==0?0:").append(r).append("==1?1:")
-                        .append("(").append(r).append("<0.5?-(pow(2,20*").append(r).append("-10)*sin((20*").append(r).append("-11.125)*(2*PI/4.5)))/2:(pow(2,-20*").append(r).append("+10)*sin((20*").append(r).append("-11.125)*(2*PI/4.5)))/2+1)")
+//                        .append(r).append("==0?0:").append(r).append("==1?1:")
+//                        .append("(").append(r).append("<0.5?-(pow(2,20*").append(r).append("-10)*sin((20*").append(r).append("-11.125)*(2*PI/4.5)))/2:(pow(2,-20*").append(r).append("+10)*sin((20*").append(r).append("-11.125)*(2*PI/4.5)))/2+1").append(")")
+                        .append(getIfExpr(getConditionTwo(r, "==", "0"),"0",
+                                getIfExpr(getConditionTwo(r, "==", "1"),"1",
+                                getIfExpr(getConditionTwo(r, "<", "0.5"),"-(pow(2,20*" + r + "-10)*sin((20*" + r + "-11.125)*(2*PI/4.5)))/2", "(pow(2,-20*" + r + "+10)*sin((20*" + r + "-11.125)*(2*PI/4.5)))/2+1"
+                                ))))
                         .append(")")
                         .toString();
 
+
+            // TODO: Bounce easing error. Code too long to fix.
             // Bounce (using piecewise bounceOut)
             case EASE_OUT_BOUNCE: {
                 // bounceOut piecewise
-                String bo =
-                        "(" + r + "<" + (1f/2.75f) + "?" +
-                                (7.5625f) + "*" + r + "*" + r +
-                                ":" + r + "<" + (2f/2.75f) + "?" +
-                                (7.5625f) + "*pow(" + r + "-" + (1.5f/2.75f) + ",2)+" + 0.75f +
-                                ":" + r + "<" + (2.5f/2.75f) + "?" +
-                                (7.5625f) + "*pow(" + r + "-" + (2.25f/2.75f) + ",2)+" + 0.9375f +
-                                ":" +
-                                (7.5625f) + "*pow(" + r + "-" + (2.625f/2.75f) + ",2)+" + 0.984375f +
-                                ")";
+//                String bo =
+//                        "(" + r + "<" + (1f/2.75f) + "?" +
+//                                (7.5625f) + "*" + r + "*" + r +
+//                                ":" + r + "<" + (2f/2.75f) + "?" +
+//                                (7.5625f) + "*pow(" + r + "-" + (1.5f/2.75f) + ",2)+" + 0.75f +
+//                                ":" + r + "<" + (2.5f/2.75f) + "?" +
+//                                (7.5625f) + "*pow(" + r + "-" + (2.25f/2.75f) + ",2)+" + 0.9375f +
+//                                ":" +
+//                                (7.5625f) + "*pow(" + r + "-" + (2.625f/2.75f) + ",2)+" + 0.984375f +
+//                                ")";
+                String bo = getIfExpr(getConditionTwo(r, "<", Float.toString(1f/2.75f)),
+                        (7.5625f) + "*" + r + "*" + r,
+                        getIfExpr(getConditionTwo(r, "<", Float.toString(2f/2.75f)),
+                        (7.5625f) + "*pow(" + r + "-" + (1.5f/2.75f) + ",2)+" + 0.75f,
+                        getIfExpr(getConditionTwo(r, "<", Float.toString(2.5f/2.75f)),
+                                (7.5625f) + "*pow(" + r + "-" + (2.25f/2.75f) + ",2)+" + 0.9375f,
+                                (7.5625f) + "*pow(" + r + "-" + (2.625f/2.75f) + ",2)+" + 0.984375f
+                                )));
                 return expr.append(start).append("+").append(delta).append("*").append(bo).toString();
             }
             case EASE_IN_BOUNCE:
                 // 1 - bounceOut(1 - r)
                 return expr.append(start).append("+").append(delta).append("*")
-                        .append("(1-(")
-                        .append("(").append("(").append("1-").append(r).append(")<").append(1f/2.75f).append("?")
-                        .append(7.5625f).append("*pow(1-").append(r).append(",2):")
-                        .append("(").append("1-").append(r).append(")<").append(2f/2.75f).append("?")
-                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(1.5f/2.75f).append(",2)+0.75:")
-                        .append("(").append("1-").append(r).append(")<").append(2.5f/2.75f).append("?")
-                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(2.25f/2.75f).append(",2)+0.9375:")
-                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(2.625f/2.75f).append(",2)+0.984375")
-                        .append(")")
-                        .append("))")
+//                        .append("(1-(")
+//                        .append("(").append("(").append("1-").append(r).append(")<").append(1f/2.75f).append("?")
+//                        .append(7.5625f).append("*pow(1-").append(r).append(",2):")
+//                        .append("(").append("1-").append(r).append(")<").append(2f/2.75f).append("?")
+//                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(1.5f/2.75f).append(",2)+0.75:")
+//                        .append("(").append("1-").append(r).append(")<").append(2.5f/2.75f).append("?")
+//                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(2.25f/2.75f).append(",2)+0.9375:").
+//                        .append(7.5625f).append("*pow(1-").append(r).append("-").append(2.625f/2.75f).append(",2)+0.984375")
+//                        .append(")")
+//                        .append("))")
+
+                        .append(getIfExpr(getConditionTwo("(1-(((1-" + r + ")", "<", Float.toString(1f/2.75f)),
+                                7.5625f + "*pow(1-" + r + ",2)",
+                                getIfExpr(getConditionTwo("(1-" + r + ")", "<", Float.toString(2f/2.75f)),
+                                        7.5625f + "*pow(1-" + r + "-" + (1.5f/2.75f) + ",2)+0.75",
+                                getIfExpr(getConditionTwo("(1-" + r + ")", "<", Float.toString(2.5f/2.75f)),
+                                        7.5625f + "*pow(1-" + r + "-" + (2.25f/2.75f) + ",2)+0.9375",
+                                        7.5625f + "*pow(1-" + r + "-" + (2.625f/2.75f) + ",2)+0.984375"
+                                        )
+                                        )
+                        ))
                         .toString();
             case EASE_IN_OUT_BOUNCE:
+                String bo = getIfExpr(getConditionTwo(r, "<", Float.toString(1f/2.75f)),
+                        (7.5625f) + "*" + r + "*" + r,
+                        getIfExpr(getConditionTwo(r, "<", Float.toString(2f/2.75f)),
+                                (7.5625f) + "*pow(" + r + "-" + (1.5f/2.75f) + ",2)+" + 0.75f,
+                                getIfExpr(getConditionTwo(r, "<", Float.toString(2.5f/2.75f)),
+                                        (7.5625f) + "*pow(" + r + "-" + (2.25f/2.75f) + ",2)+" + 0.9375f,
+                                        (7.5625f) + "*pow(" + r + "-" + (2.625f/2.75f) + ",2)+" + 0.984375f
+                                )));
+                String bi = getIfExpr(getConditionTwo("(1-(((1-" + r + ")", "<", Float.toString(1f/2.75f)),
+                        7.5625f + "*pow(1-" + r + ",2)",
+                        getIfExpr(getConditionTwo("(1-" + r + ")", "<", Float.toString(2f/2.75f)),
+                                7.5625f + "*pow(1-" + r + "-" + (1.5f/2.75f) + ",2)+0.75",
+                                getIfExpr(getConditionTwo("(1-" + r + ")", "<", Float.toString(2.5f/2.75f)),
+                                        7.5625f + "*pow(1-" + r + "-" + (2.25f/2.75f) + ",2)+0.9375",
+                                        7.5625f + "*pow(1-" + r + "-" + (2.625f/2.75f) + ",2)+0.984375"
+                                )
+                        )
+                );
+
+
                 return expr.append(start).append("+").append(delta).append("*")
                         .append("(").append(r).append("<0.5?(1-(")
                         .append("(").append("1-2*").append(r).append(")<").append(1f/2.75f).append("?")
@@ -872,6 +957,8 @@ public class FFmpegEdit {
                         .append(7.5625f).append("*pow(2*").append(r).append("-1-").append(2.625f/2.75f).append(",2)+0.984375")
                         .append(")")
                         .append("))/2)")
+
+                        .append(getIfExpr(getConditionTwo(r, "<", "0.5"), bi, bo))
                         .toString();
 
             default:
@@ -883,6 +970,44 @@ public class FFmpegEdit {
     {
         return "clip((" + timeUnit + "-" + offset + ")/" + duration + ",0,1)";
     }
+    public static String getIfExpr(String condition, String thenExpr, String elseExpr)
+    {
+        return "if(" + condition + "," + thenExpr + "," + elseExpr +")";
+    }
+    public static String getConditionTwo(String a, String operator, String b)
+    {
+        switch (operator) {
+            case "<":
+                return "lt(" + a + "," + b + ")";
+            case "<=":
+                return "lte(" + a + "," + b + ")";
+            case ">":
+                return "gt(" + a + "," + b + ")";
+            case ">=":
+                return "gte(" + a + "," + b + ")";
+            case "==":
+                return "eq(" + a + "," + b + ")";
+            case "!=":
+                return "neq(" + a + "," + b + ")";
+            case "&&":
+                return "and(" + a + "," + b + ")";
+            case "||":
+                return "or(" + a + "," + b + ")";
+            default:
+                return "";
+        }
+    }
+    public static String getConditionThree(String a, String b, String c, String operator)
+    {
+        switch (operator)
+        {
+            case "~":
+                return "between(" + a + "," + b + "," + c +")";
+            default:
+                return "";
+        }
+    }
+
 
 
 
