@@ -1710,6 +1710,12 @@ public class EditingActivity extends AppCompatActivityImpl {
                         break;
 
                     case MotionEvent.ACTION_MOVE:
+
+
+                        if(dragContext.clip != null) {
+                            dragContext.clip.toggleHandlesVisibility(false);
+                        }
+
                         if (dragContext.ghost != null) {
                             float newX = event.getRawX() + dX;
                             if (newX < centerOffset) newX = centerOffset; // ⛔ Prevent going past 0s
@@ -1806,6 +1812,10 @@ public class EditingActivity extends AppCompatActivityImpl {
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
                         timelineScroll.requestDisallowInterceptTouchEvent(false);
+
+                        if(dragContext.clip != null) {
+                            dragContext.clip.toggleHandlesVisibility(true);
+                        }
 
                         if (dragContext.ghost != null) {
                             float finalX = dragContext.ghost.getX();
@@ -2775,6 +2785,11 @@ public class EditingActivity extends AppCompatActivityImpl {
             leftHandle.setX(viewRef.getX() - 35);
             rightHandle.setX(viewRef.getX() + viewRef.getWidth());
         }
+        public void toggleHandlesVisibility(boolean isVisible)
+        {
+            leftHandle.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+            rightHandle.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+        }
 
         public void registerClipHandles(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
             leftHandle = new View(clipView.getContext());
@@ -2782,6 +2797,8 @@ public class EditingActivity extends AppCompatActivityImpl {
             RelativeLayout.LayoutParams leftParams = new RelativeLayout.LayoutParams(35, ViewGroup.LayoutParams.MATCH_PARENT);
             //leftParams.addRule(RelativeLayout.ALIGN_PARENT_START);
             //leftParams.setMarginStart(-35);   for rendering the part outside of clip to match Capcut
+            // For beginning initization
+            leftHandle.setX(activity.getTimeInX(startTime) - 35);
             leftHandle.setLayoutParams(leftParams);
 
             rightHandle = new View(clipView.getContext());
@@ -2789,9 +2806,10 @@ public class EditingActivity extends AppCompatActivityImpl {
             RelativeLayout.LayoutParams rightParams = new RelativeLayout.LayoutParams(35, ViewGroup.LayoutParams.MATCH_PARENT);
             //rightParams.addRule(RelativeLayout.ALIGN_PARENT_END);
             //rightParams.setMarginEnd(-35);   for rendering the part outside of clip to match Capcut
+            rightHandle.setX(activity.getTimeInX(startTime + duration));
             rightHandle.setLayoutParams(rightParams);
-
-            resetHandlesPosition();
+            // No need to reset in the beginning, above code do more accurate before viewRef being scale.
+//            resetHandlesPosition();
 
             leftHandle.setOnTouchListener(
                     new View.OnTouchListener() {
