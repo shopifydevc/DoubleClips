@@ -1142,13 +1142,28 @@ public class EditingActivity extends AppCompatActivityImpl {
             {
                 selectedClip.setClipName(clipEditSpecificAreaScreen.clipNameField.getText().toString(), properties);
                 selectedClip.setDuration(ParserHelper.TryParse(clipEditSpecificAreaScreen.durationContent.getText().toString(), selectedClip.getDuration()));
-                selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionXField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosX)), VideoProperties.ValueType.PosX);
-                selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionYField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosY)), VideoProperties.ValueType.PosY);
-                selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.rotationField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Rot)), VideoProperties.ValueType.Rot);
-                selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleXField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.ScaleX)), VideoProperties.ValueType.ScaleX);
-                selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleYField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.ScaleY)), VideoProperties.ValueType.ScaleY);
-                selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.opacityField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Opacity)), VideoProperties.ValueType.Opacity);
-                selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
+
+                // Apply to the keyframe if possible
+                Keyframe selectedKeyframe = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
+                if(selectedKeyframe != null)
+                {
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionXField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.PosX)), VideoProperties.ValueType.PosX);
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionYField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.PosY)), VideoProperties.ValueType.PosY);
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.rotationField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Rot)), VideoProperties.ValueType.Rot);
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleXField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.ScaleX)), VideoProperties.ValueType.ScaleX);
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleYField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.ScaleY)), VideoProperties.ValueType.ScaleY);
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.opacityField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Opacity)), VideoProperties.ValueType.Opacity);
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
+                }
+                else {
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionXField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosX)), VideoProperties.ValueType.PosX);
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionYField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosY)), VideoProperties.ValueType.PosY);
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.rotationField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Rot)), VideoProperties.ValueType.Rot);
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleXField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.ScaleX)), VideoProperties.ValueType.ScaleX);
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleYField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.ScaleY)), VideoProperties.ValueType.ScaleY);
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.opacityField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Opacity)), VideoProperties.ValueType.Opacity);
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
+                }
 
                 selectedClip.isMute = clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked();
                 selectedClip.setIsLockedForTemplate(clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.isChecked());
@@ -1172,20 +1187,21 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipEditSpecificAreaScreen.totalDurationText.setText(String.valueOf(selectedClip.originalDuration));
             clipEditSpecificAreaScreen.clipNameField.setText(String.valueOf(selectedClip.getClipName()));
             clipEditSpecificAreaScreen.durationContent.setText(String.valueOf(selectedClip.duration));
-            clipEditSpecificAreaScreen.positionXField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosX)));
-            clipEditSpecificAreaScreen.positionYField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosY)));
-            clipEditSpecificAreaScreen.rotationField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.Rot)));
-            clipEditSpecificAreaScreen.scaleXField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.ScaleX)));
-            clipEditSpecificAreaScreen.scaleYField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.ScaleY)));
-            clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.Opacity)));
-            clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)));
+            clipEditSpecificAreaScreen.positionXField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.PosX)));
+            clipEditSpecificAreaScreen.positionYField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.PosY)));
+            clipEditSpecificAreaScreen.rotationField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Rot)));
+            clipEditSpecificAreaScreen.scaleXField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.ScaleX)));
+            clipEditSpecificAreaScreen.scaleYField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.ScaleY)));
+            clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Opacity)));
+            clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Speed)));
 
             clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute);
             clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.setChecked(selectedClip.isLockedForTemplate);
 
             Keyframe k = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
-            if(k != null)
+            if(k != null) {
                 clipEditSpecificAreaScreen.easingSpinner.setSelection(clipEditSpecificAreaScreen.easingTypeArrayAdapter.getPosition(k.easing));
+            }
             else LoggingManager.LogToToast(this, "There are 0 keyframe to show at this time.");
 
 
@@ -1193,6 +1209,17 @@ public class EditingActivity extends AppCompatActivityImpl {
             {
                 clipEditSpecificAreaScreen.createKeyframeElement(selectedClip, keyframe, () -> {
                     setCurrentTime(keyframe.getGlobalTime(selectedClip));
+
+
+                    clipEditSpecificAreaScreen.positionXField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.PosX)));
+                    clipEditSpecificAreaScreen.positionYField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.PosY)));
+                    clipEditSpecificAreaScreen.rotationField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Rot)));
+                    clipEditSpecificAreaScreen.scaleXField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.ScaleX)));
+                    clipEditSpecificAreaScreen.scaleYField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.ScaleY)));
+                    clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Opacity)));
+                    clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Speed)));
+
+
                 }, () -> {
                     removeKeyframe(selectedClip, keyframe);
                 });
