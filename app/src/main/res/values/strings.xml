@@ -11,6 +11,8 @@
     <string name="advanced">Advanced</string>
     <string name="log">Log</string>
     <string name="clips">Clips</string>
+    <string name="properties">Properties</string>
+    <string name="keyframe">Keyframe</string>
 
     <string name="attribution_audio_playback">Template media player</string>
 

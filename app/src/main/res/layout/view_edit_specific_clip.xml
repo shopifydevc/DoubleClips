@@ -2,29 +2,31 @@
 <com.vanvatcorporation.doubleclips.activities.editing.ClipEditSpecificAreaScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/editMultipleArea"
-    android:layout_below="@id/timestampBar"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:layout_below="@id/timestampBar">
+
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/windowBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/colorPalette1_4"
         android:focusable="true"
+
         android:focusableInTouchMode="true"
 
-        android:background="@color/colorPalette1_4"
-
+        app:shapeAppearanceOverlay="@style/lowerRoundedImageView"
         app:strokeColor="@color/colorSoftBackground"
-        app:strokeWidth="1dp"
-        app:shapeAppearanceOverlay="@style/lowerRoundedImageView"/>
+        app:strokeWidth="1dp" />
+
     <ImageButton
         android:id="@+id/closeWindowButton"
         android:layout_width="40dp"
         android:layout_height="40dp"
+        android:layout_alignParentEnd="true"
         android:layout_marginTop="5dp"
         android:layout_marginEnd="5dp"
-        android:layout_alignParentEnd="true"
-        android:src="@drawable/baseline_close_24"/>
+        android:src="@drawable/baseline_close_24" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -37,7 +39,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="15dp"
             android:layout_marginEnd="15dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="20dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -61,8 +64,8 @@
                     android:textSize="18sp" />
 
 
-
             </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -75,6 +78,7 @@
                     android:layout_marginStart="15dp"
                     android:text="Duration"
                     android:textSize="18sp" />
+
                 <EditText
                     android:id="@+id/durationContent"
                     android:layout_width="wrap_content"
@@ -83,7 +87,8 @@
                     android:layout_marginEnd="15dp"
                     android:background="@null"
                     android:hint="1"
-                    android:textSize="18sp"/>
+                    android:textSize="18sp" />
+
                 <TextView
                     android:id="@+id/slash"
                     android:layout_width="wrap_content"
@@ -92,7 +97,8 @@
                     android:layout_marginEnd="15dp"
                     android:background="@null"
                     android:text="/"
-                    android:textSize="18sp"/>
+                    android:textSize="18sp" />
+
                 <TextView
                     android:id="@+id/totalDurationText"
                     android:layout_width="wrap_content"
@@ -101,252 +107,286 @@
                     android:layout_marginEnd="15dp"
                     android:background="@null"
                     android:text="-"
-                    android:textSize="18sp"/>
+                    android:textSize="18sp" />
 
 
             </LinearLayout>
-            <LinearLayout
+            <com.vanvatcorporation.doubleclips.impl.SectionView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                app:sectionTitle="@string/keyframe">
 
-                <TextView
-                    android:id="@+id/keyframeText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Keyframe"
-                    android:textSize="18sp" />
-
-                <ScrollView
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="150dp"
-                    android:layout_margin="10dp"
-                    android:backgroundTint="@color/colorPalette1_1">
-                    <LinearLayout
-                        android:id="@+id/keyframeScrollFrame"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="100dp"
+                        android:layout_margin="10dp"
+                        android:backgroundTint="@color/colorPalette1_1">
+
+                        <LinearLayout
+                            android:id="@+id/keyframeScrollFrame"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </ScrollView>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/clearKeyframeButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical" />
-                </ScrollView>
+                        android:text="Clear Keyframes" />
 
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                </LinearLayout>
 
-                <Button
-                    android:id="@+id/clearKeyframeButton"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Clear Keyframes"/>
+                    android:orientation="horizontal">
 
-            </LinearLayout>
-            <LinearLayout
+                    <TextView
+                        android:id="@+id/easingText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Easing"
+                        android:textSize="18sp" />
+
+                    <Spinner
+                        android:id="@+id/easingContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:layout_marginEnd="15dp"
+                        android:background="@null"
+                        android:textSize="18sp" />
+
+                </LinearLayout>
+            </com.vanvatcorporation.doubleclips.impl.SectionView>
+
+            <com.vanvatcorporation.doubleclips.impl.SectionView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                app:sectionTitle="@string/properties">
 
-                <TextView
-                    android:id="@+id/positionText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Position:"
-                    android:textSize="18sp" />
-                <TextView
-                    android:id="@+id/positionXText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="X:"
-                    android:textSize="18sp" />
-                <EditText
-                    android:id="@+id/positionXField"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:hint="1366"
-                    android:textSize="18sp" />
-                <TextView
-                    android:id="@+id/positionYText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Y:"
-                    android:textSize="18sp" />
-                <EditText
-                    android:id="@+id/positionYField"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:hint="768"
-                    android:textSize="18sp" />
-
-
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/rotationText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Rotation:"
-                    android:textSize="18sp" />
-                <EditText
-                    android:id="@+id/rotationField"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:hint="90"
-                    android:textSize="18sp" />
-
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/scaleText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Scale:"
-                    android:textSize="18sp" />
-                <TextView
-                    android:id="@+id/scaleXText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="X:"
-                    android:textSize="18sp" />
-                <EditText
-                    android:id="@+id/scaleXField"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:hint="1"
-                    android:textSize="18sp" />
-                <TextView
-                    android:id="@+id/scaleYText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Y:"
-                    android:textSize="18sp" />
-                <EditText
-                    android:id="@+id/scaleYField"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:hint="1"
-                    android:textSize="18sp" />
-
-
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/opacityText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Opacity:"
-                    android:textSize="18sp" />
-                <EditText
-                    android:id="@+id/opacityField"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:hint="1"
-                    android:textSize="18sp" />
-
-
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/speedText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Speed:"
-                    android:textSize="18sp" />
-                <EditText
-                    android:id="@+id/speedField"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:hint="1"
-                    android:textSize="18sp" />
-
-
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <CheckBox
-                    android:id="@+id/muteAudioCheckbox"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Mute audio"
-                    android:textSize="18sp" />
-
-
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-                <CheckBox
-                    android:id="@+id/lockMediaForTemplateCheckbox"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Lock media for Template"
-                    android:textSize="18sp" />
-
-
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/easingText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Easing"
-                    android:textSize="18sp" />
-                <Spinner
-                    android:id="@+id/easingContent"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginEnd="15dp"
-                    android:background="@null"
-                    android:textSize="18sp"/>
+                    android:orientation="horizontal">
 
-            </LinearLayout>
+                    <TextView
+                        android:id="@+id/positionText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Position:"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/positionXText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="X:"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/positionXField"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:hint="1366"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/positionYText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Y:"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/positionYField"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:hint="768"
+                        android:textSize="18sp" />
+
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/rotationText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Rotation:"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/rotationField"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:hint="90"
+                        android:textSize="18sp" />
+
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/scaleText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Scale:"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/scaleXText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="X:"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/scaleXField"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:hint="1"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/scaleYText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Y:"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/scaleYField"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:hint="1"
+                        android:textSize="18sp" />
+
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/opacityText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Opacity:"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/opacityField"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:hint="1"
+                        android:textSize="18sp" />
+
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/speedText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Speed:"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/speedField"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:hint="1"
+                        android:textSize="18sp" />
+
+                </LinearLayout>
+            </com.vanvatcorporation.doubleclips.impl.SectionView>
+
+
+
+            <com.vanvatcorporation.doubleclips.impl.SectionView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:sectionTitle="@string/clips">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <CheckBox
+                        android:id="@+id/muteAudioCheckbox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Mute audio"
+                        android:textSize="18sp" />
+
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <CheckBox
+                        android:id="@+id/lockMediaForTemplateCheckbox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Lock media for Template"
+                        android:textSize="18sp" />
+
+
+                </LinearLayout>
+
+            </com.vanvatcorporation.doubleclips.impl.SectionView>
 
         </LinearLayout>
 
