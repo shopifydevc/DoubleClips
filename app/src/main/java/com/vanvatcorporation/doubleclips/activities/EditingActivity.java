@@ -450,6 +450,11 @@ public class EditingActivity extends AppCompatActivityImpl {
                     () -> EditingActivity.this.runOnUiThread(() -> {
                         dialog.dismiss();
                         previewRenderQueue.taskCompleted();
+                        if(clip.viewRef != null)
+                        {
+                            // After preview process, render the thumbnail
+                            clip.viewRef.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, clip.getAbsolutePreviewPath(properties), clip)));
+                        }
                     }), () -> {
                         processingDescription.post(() -> {
                             processingDescription.setTextColor(0xFFFF0000);
@@ -1448,7 +1453,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         );
         trackInfoView.setLayoutParams(trackInfoParams);
         trackInfoView.setGravity(Gravity.CENTER);
-        trackInfoView.setText("Track " + trackCount);
+        trackInfoView.setText( "Track " + trackCount);
 
 
 
@@ -1483,12 +1488,13 @@ public class EditingActivity extends AppCompatActivityImpl {
         clipView.setX(getTimeInX(data.startTime));
         clipView.setLayoutParams(params);
         clipView.setBackgroundColor(0xFF000000);
-//        Executors.newSingleThreadExecutor().execute(() -> {
-//            clipView.post(() -> {
-//                clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
-//            });
-//        });
-        clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
+        // Set the thumbnail using preview for less resource consumption.
+        Executors.newSingleThreadExecutor().execute(() -> {
+            clipView.post(() -> {
+                clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
+            });
+        });
+//        clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
         clipView.setTag(data);
 
 
@@ -1514,15 +1520,17 @@ public class EditingActivity extends AppCompatActivityImpl {
     public void addKnotTransition(TransitionClip clip, Clip clipA)
     {
         ImageView knotView = new ImageView(this);
-        knotView.setBackgroundColor(Color.RED);
+        knotView.setBackgroundColor(Color.WHITE);
+
         knotView.setImageResource(R.drawable.baseline_local_movies_24);
+
         knotView.setVisibility(View.VISIBLE);
 
         knotView.setTag(R.id.transition_knot_tag, clip);
         knotView.setTag(R.id.clip_knot_tag, clipA);
         // Position it between clips
-        int width = 30;
-        int height = 30;
+        int width = 40;
+        int height = 40;
 
         knotView.setPivotX((float) width /2);
         knotView.setPivotY((float) height /2);
@@ -2363,6 +2371,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                     retriever.close();
                 } catch (Exception e) {
                     LoggingManager.LogExceptionToNoteOverlay(context, e);
+                    drawable.setColorFilter(0x33FF0000, PorterDuff.Mode.SRC_ATOP);
+                    thumbnails.add(ImageHelper.createBitmapFromDrawable(drawable));
                 }
                 break;
             case IMAGE:
@@ -3659,7 +3669,7 @@ frameRate = 60;
             return null;
         }
         public float getValueAtTime(Clip clip, float playheadTime, VideoProperties.ValueType valueType) {
-            if (keyframes.isEmpty()) return -1;
+            if (keyframes.isEmpty()) return clip.videoProperties.getValue(valueType); // previously return -1, but it's not suitable for fallback
 
             // preprocessing the global time to match the local time of the clip
             playheadTime -= clip.startTime;
@@ -4000,6 +4010,7 @@ frameRate = 60;
 
                         MediaFormat audioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
 
+                        // TODO: Uninitialized AudioTrack when splitting too many Clip. No reason.
                         if(Objects.requireNonNull(audioFormat.getString(MediaFormat.KEY_MIME)).startsWith("audio/"))
                         {
                             int sampleRate = audioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
