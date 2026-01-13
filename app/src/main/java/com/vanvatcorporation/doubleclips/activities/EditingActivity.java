@@ -1513,8 +1513,9 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     public void addKnotTransition(TransitionClip clip, Clip clipA)
     {
-        View knotView = new View(this);
+        ImageView knotView = new ImageView(this);
         knotView.setBackgroundColor(Color.RED);
+        knotView.setImageResource(R.drawable.baseline_local_movies_24);
         knotView.setVisibility(View.VISIBLE);
 
         knotView.setTag(R.id.transition_knot_tag, clip);
