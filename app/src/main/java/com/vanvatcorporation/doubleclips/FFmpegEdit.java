@@ -492,7 +492,7 @@ public class FFmpegEdit {
             }
 
             // 🔊 Handle embedded audio in VIDEO
-            if (clip.type == EditingActivity.ClipType.VIDEO && clip.isVideoHasAudio && !clip.isMute) {
+            if (clip.type == EditingActivity.ClipType.VIDEO && clip.isVideoHasAudio() && !clip.isMute()) {
 
                 // Transition extension: Same for clip
                 int delayMs = (int) (clip.startTime * 1000);
@@ -703,6 +703,8 @@ public class FFmpegEdit {
         String delta = "(" + end + "-" + start + ")";
 
         switch (type) {
+            // TODO: Add visualizer for these type like CapCut
+
             // Linear
             case LINEAR:
                 return expr.append(start).append("+").append(delta).append("*").append(r).toString();

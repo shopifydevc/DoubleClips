@@ -26,8 +26,31 @@
                 android:layout_height="match_parent"
                 android:clipChildren="false"
                 android:clipToPadding="false">
-
             </FrameLayout>
+            <RelativeLayout
+                android:id="@+id/pausedCanvasAlertPanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@color/gray"/>
+                <TextView
+                    android:id="@+id/pausedCanvasAlertPanelTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Canvas was paused to save resource."/>
+                <Button
+                    android:id="@+id/pausedCanvasAlertResumeButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:layout_below="@id/pausedCanvasAlertPanelTitle"
+                    android:text="Resume"/>
+            </RelativeLayout>
+
 
         </RelativeLayout>
 

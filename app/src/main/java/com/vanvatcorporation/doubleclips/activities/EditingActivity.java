@@ -113,7 +113,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     VideoSettings settings;
 
     private LinearLayout timelineTracksContainer, rulerContainer, trackInfoLayout;
-    private RelativeLayout timelineWrapper, editingZone, previewZone, editingToolsZone, outerPreviewViewGroup;
+    private RelativeLayout timelineWrapper, editingZone, previewZone, editingToolsZone, outerPreviewViewGroup, pausedCanvasAlertPanel;
     private HorizontalScrollView timelineScroll, rulerScroll;
     private ScrollView timelineVerticalScroll, trackInfoVerticalScroll;
     private TextView currentTimePosText, durationTimePosText, textCanvasControllerInfo;
@@ -619,6 +619,11 @@ public class EditingActivity extends AppCompatActivityImpl {
             previewAvailableHeight = outerPreviewViewGroup.getHeight();
         });
 
+        pausedCanvasAlertPanel = findViewById(R.id.pausedCanvasAlertPanel);
+        findViewById(R.id.pausedCanvasAlertResumeButton).setOnClickListener(v -> {
+            regeneratingTimelineRenderer();
+        });
+
         playPauseButton = findViewById(R.id.playPauseButton);
         playPauseButton.setOnClickListener(v -> {
 
@@ -628,7 +633,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                 startPlayback();
                 playPauseButton.setImageResource(R.drawable.baseline_pause_circle_24);
             } else {
-                stopPlayback();
+                stopPlayback(true);
             }
         });
         exportButton = findViewById(R.id.exportButton);
@@ -1165,7 +1170,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
                 }
 
-                selectedClip.isMute = clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked();
+                selectedClip.setMute(clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked());
                 selectedClip.setIsLockedForTemplate(clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.isChecked());
 
                 Keyframe k = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
@@ -1195,7 +1200,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Opacity)));
             clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Speed)));
 
-            clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute);
+            clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute());
             clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.setChecked(selectedClip.isLockedForTemplate);
 
             Keyframe k = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
@@ -1302,7 +1307,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                 if (currentTime >= timeline.duration) {
                     isPlaying = false;
                     currentTime = 0f;
-                    stopPlayback();
+                    stopPlayback(true);
                 }
 
 
@@ -1312,13 +1317,14 @@ public class EditingActivity extends AppCompatActivityImpl {
         playbackHandler.post(playbackLoop);
     }
 
-    private void stopPlayback() {
+    private void stopPlayback(boolean recreateTimeline) {
         isPlaying = false;
 
         playbackHandler.removeCallbacks(playbackLoop);
         playPauseButton.setImageResource(R.drawable.baseline_play_circle_24);
 
-        regeneratingTimelineRenderer();
+        if(recreateTimeline)
+            regeneratingTimelineRenderer();
     }
     private void regeneratingTimelineRenderer()
     {
@@ -1329,6 +1335,13 @@ public class EditingActivity extends AppCompatActivityImpl {
         // TODO: Tested for dragging back and forth clips. They're doing fine with the extractor SYNC_EXACT
         //  Limit the time of refreshing entire timeline like this.
         timelineRenderer.buildTimeline(timeline, properties, settings, this, previewViewGroup, textCanvasControllerInfo);
+
+        pausedCanvasAlertPanel.setVisibility(View.GONE);
+    }
+    private void releaseTimelineRenderer()
+    {
+        timelineRenderer.release();
+        pausedCanvasAlertPanel.setVisibility(View.VISIBLE);
     }
     private void setCurrentTime(float value)
     {
@@ -1384,24 +1397,20 @@ public class EditingActivity extends AppCompatActivityImpl {
     public void finish() {
         super.finish();
 
-        timelineRenderer.release();
+        releaseTimelineRenderer();
         Timeline.saveTimeline(this, timeline, properties, settings);
     }
     @Override
     public void onPause() {
         super.onPause();
 
-        timelineRenderer.releasePause();
+        stopPlayback(false);
+        releaseTimelineRenderer();
         Timeline.saveTimeline(this, timeline, properties, settings);
     }
     @Override
     public void onResume() {
         super.onResume();
-        if(timelineRenderer.isPauseReleased) {
-            regeneratingTimelineRenderer();
-            // Resuming
-            timelineRenderer.isPauseReleased = false;
-        }
     }
 
     private Track addNewTrack() {
@@ -1474,11 +1483,12 @@ public class EditingActivity extends AppCompatActivityImpl {
         clipView.setX(getTimeInX(data.startTime));
         clipView.setLayoutParams(params);
         clipView.setBackgroundColor(0xFF000000);
-        Executors.newSingleThreadExecutor().execute(() -> {
-            clipView.post(() -> {
-                clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
-            });
-        });
+//        Executors.newSingleThreadExecutor().execute(() -> {
+//            clipView.post(() -> {
+//                clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
+//            });
+//        });
+        clipView.setFilledImageBitmap(combineThumbnails(extractThumbnail(this, data.getAbsolutePreviewPath(properties), data)));
         clipView.setTag(data);
 
 
@@ -1620,7 +1630,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             {
                 case MotionEvent.ACTION_MOVE:
                     if(isPlaying)
-                        stopPlayback();
+                        stopPlayback(true);
                     break;
                 // ACTION_UP is the action that invoke only if we clicked
                 // that's mean its invoke if we didn't ACTION_MOVE
@@ -2746,7 +2756,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public transient View leftHandle, rightHandle;
         public transient ImageGroupView viewRef;
         public transient LinearLayout clipPropertiesLinearLayoutGroup;
-        public transient ImageView templateLockViewRef;
+        public transient ImageView templateLockViewRef, noSoundViewRef, muteViewRef;
         public transient HorizontalScrollView timelineScrollViewRef;
         public transient TextView durationText;
 
@@ -2827,6 +2837,8 @@ public class EditingActivity extends AppCompatActivityImpl {
         {
             leftHandle.setVisibility(isVisible ? View.VISIBLE : View.GONE);
             rightHandle.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+            if(isVisible)
+                resetHandlesPosition();
         }
 
         public void registerClipHandles(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
@@ -2887,12 +2899,17 @@ public class EditingActivity extends AppCompatActivityImpl {
                                         newWidth = clipView.getWidth() - (int) deltaX;
                                     }
 
+                                    // Clamp for small width, if user want to shrink media further, consider zooming for more detailed edit
+                                    if(newWidth < Constants.TRACK_CLIPS_SHRINK_LIMIT_PIXEL) return true;
 
                                     clipView.getLayoutParams().width = newWidth;
                                     clipView.setX(clipView.getX() + deltaX);
                                     clipView.requestLayout();
 
-                                    leftHandle.setX(leftHandle.getX() + deltaX);
+                                    // TODO: Inaccurate, research later.
+//                                    leftHandle.setX(leftHandle.getX() + deltaX);
+                                    // TODO: Too resource consuming.
+                                    resetHandlesPosition();
 
                                     clip.startTime = (clipView.getX() - centerOffset) / pixelsPerSecond;
                                     clip.startClipTrim += (deltaX) / pixelsPerSecond;
@@ -2959,12 +2976,17 @@ public class EditingActivity extends AppCompatActivityImpl {
                                         newWidth = clipView.getWidth() + (int) deltaX;
                                     }
 
+                                    // Clamp for small width, if user want to shrink media further, consider zooming for more detailed edit
+                                    if(newWidth < Constants.TRACK_CLIPS_SHRINK_LIMIT_PIXEL) return true;
 
 
                                     clipView.getLayoutParams().width = newWidth;
                                     clipView.requestLayout();
 
-                                    rightHandle.setX(rightHandle.getX() + deltaX);
+                                    // TODO: Inaccurate, research later.
+                                    //rightHandle.setX(rightHandle.getX() + deltaX);
+                                    // TODO: Too resource consuming.
+                                    resetHandlesPosition();
 
                                     clip.endClipTrim -= (deltaX) / pixelsPerSecond;
                                     clip.setDuration(clip.originalDuration - clip.endClipTrim - clip.startClipTrim);//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
@@ -2997,30 +3019,43 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             // Group for properties like duration, template lock, effect, etc...
             clipPropertiesLinearLayoutGroup = new LinearLayout(activity);
-            ImageGroupView.LayoutParams clipPropertiesLinearLayoutGroupLayoutParams = new ImageGroupView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 40);
+            ImageGroupView.LayoutParams clipPropertiesLinearLayoutGroupLayoutParams = new ImageGroupView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 50);
             clipPropertiesLinearLayoutGroupLayoutParams.setMargins(5, 5, 0, 0);
             clipPropertiesLinearLayoutGroup.setLayoutParams(clipPropertiesLinearLayoutGroupLayoutParams);
             clipPropertiesLinearLayoutGroup.setOrientation(LinearLayout.HORIZONTAL);
             viewRef.addView(clipPropertiesLinearLayoutGroup);
 
 
+            LinearLayout.LayoutParams clipPropertiesLayoutParams = new LinearLayout.LayoutParams(50, 50);
+            clipPropertiesLayoutParams.setMargins(0, 0, 5, 0);
 
             // Lock display for isLockedForTemplate
             templateLockViewRef = new ImageView(activity);
-            LinearLayout.LayoutParams templateLockLayoutParams = new LinearLayout.LayoutParams(50, 50);
-            templateLockLayoutParams.setMargins(5, 5, 0, 0);
-            templateLockViewRef.setLayoutParams(templateLockLayoutParams);
+            templateLockViewRef.setLayoutParams(clipPropertiesLayoutParams);
             templateLockViewRef.setImageResource(R.drawable.baseline_lock_24);
             clipPropertiesLinearLayoutGroup.addView(templateLockViewRef);
             templateLockViewRef.setVisibility(isLockedForTemplate ? View.VISIBLE : View.GONE);
 
+            // No sound display
+            noSoundViewRef = new ImageView(activity);
+            noSoundViewRef.setLayoutParams(clipPropertiesLayoutParams);
+            noSoundViewRef.setImageResource(R.drawable.baseline_music_off_24);
+            clipPropertiesLinearLayoutGroup.addView(noSoundViewRef);
+            noSoundViewRef.setVisibility(!isVideoHasAudio ? View.VISIBLE : View.GONE);
+
+            // No sound display
+            muteViewRef = new ImageView(activity);
+            muteViewRef.setLayoutParams(clipPropertiesLayoutParams);
+            muteViewRef.setImageResource(R.drawable.baseline_volume_off_24);
+            clipPropertiesLinearLayoutGroup.addView(muteViewRef);
+            muteViewRef.setVisibility(isMute ? View.VISIBLE : View.GONE);
+
             durationText = new TextView(activity);
             durationText.setBackgroundResource(R.drawable.rounded_rectangle);
             durationText.setBackgroundColor(0x88888888);
-            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 26);
+            durationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 32);
             durationText.setText(StringFormatHelper.smartRound(duration, 2, true) + "s");
-            LinearLayout.LayoutParams durationLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 30);
-            durationLayoutParams.setMargins(5, 5, 0, 0);
+            LinearLayout.LayoutParams durationLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 50);
             durationText.setLayoutParams(durationLayoutParams);
             clipPropertiesLinearLayoutGroup.addView(durationText);
 
@@ -3046,8 +3081,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public void select() {
             viewRef.getFilledImageView().setColorFilter(0x77AAAAAA);
 
-            leftHandle.setVisibility(View.VISIBLE);
-            rightHandle.setVisibility(View.VISIBLE);
+            toggleHandlesVisibility(true);
             clipPropertiesLinearLayoutGroup.setVisibility(View.VISIBLE);
 
             // Starting point when selecting clip
@@ -3058,8 +3092,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public void deselect() {
             viewRef.getFilledImageView().setColorFilter(0x00000000);
 
-            leftHandle.setVisibility(View.GONE);
-            rightHandle.setVisibility(View.GONE);
+            toggleHandlesVisibility(false);
             clipPropertiesLinearLayoutGroup.setVisibility(View.GONE);
         }
 
@@ -3213,6 +3246,24 @@ public class EditingActivity extends AppCompatActivityImpl {
         {
             isLockedForTemplate = value;
             templateLockViewRef.setVisibility(value ? View.VISIBLE : View.GONE);
+        }
+
+        public boolean isMute() {
+            return isMute;
+        }
+
+        public void setMute(boolean mute) {
+            isMute = mute;
+            muteViewRef.setVisibility(mute ? View.VISIBLE : View.GONE);
+        }
+
+        public boolean isVideoHasAudio() {
+            return isVideoHasAudio;
+        }
+
+        public void setVideoHasAudio(boolean videoHasAudio) {
+            isVideoHasAudio = videoHasAudio;
+            noSoundViewRef.setVisibility(!videoHasAudio ? View.VISIBLE : View.GONE);
         }
 
         public String getClipName()
@@ -3948,21 +3999,24 @@ frameRate = 60;
 
                         MediaFormat audioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
 
-                        int sampleRate = audioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-                        int channelConfig = (audioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT) == 1) ?
-                                AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO;
-                        int audioFormatPCM = AudioFormat.ENCODING_PCM_16BIT;
-                        int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormatPCM);
+                        if(Objects.requireNonNull(audioFormat.getString(MediaFormat.KEY_MIME)).startsWith("audio/"))
+                        {
+                            int sampleRate = audioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+                            int channelConfig = (audioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT) == 1) ?
+                                    AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO;
+                            int audioFormatPCM = AudioFormat.ENCODING_PCM_16BIT;
+                            int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormatPCM);
 
-                        audioTrack = new AudioTrack(
-                                AudioManager.STREAM_MUSIC,
-                                sampleRate,
-                                channelConfig,
-                                audioFormatPCM,
-                                minBufferSize,
-                                AudioTrack.MODE_STREAM
-                        );
-                        audioTrack.play();
+                            audioTrack = new AudioTrack(
+                                    AudioManager.STREAM_MUSIC,
+                                    sampleRate,
+                                    channelConfig,
+                                    audioFormatPCM,
+                                    minBufferSize,
+                                    AudioTrack.MODE_STREAM
+                            );
+                            audioTrack.play();
+                        }
 
 
                         break;
@@ -4192,7 +4246,7 @@ frameRate = 60;
 //                        }
                         renderThreadExecutorVideo.execute(() -> pumpDecoderVideoSeek(playheadTime));
 
-                        if(clip.isVideoHasAudio)
+                        if(clip.isVideoHasAudio())
                             renderThreadExecutorAudio.execute(() -> pumpDecoderAudioSeek(playheadTime));
                         break;
                     }
@@ -4466,27 +4520,14 @@ frameRate = 60;
         private final Context context;
         private List<List<ClipRenderer>> trackLayers = new ArrayList<>();
 
-
-        public boolean isPauseReleased;
-
         public TimelineRenderer(Context context) {
             this.context = context;
         }
 
         public void buildTimeline(Timeline timeline, MainAreaScreen.ProjectData properties, VideoSettings settings, EditingActivity editingActivity, FrameLayout previewViewGroup, TextView textCanvasControllerInfo)
         {
-            for (List<ClipRenderer> trackRenderer : trackLayers) {
-                for (ClipRenderer clipRenderer : trackRenderer) {
-                    if(clipRenderer != null)
-                    {
-                        clipRenderer.release();
-                    }
-                }
-            }
-//            for (int i = 0; i < previewViewGroup.getChildCount(); i++) {
-//                SurfaceView view = (SurfaceView) previewViewGroup.getChildAt(i);
-//                view.release?
-//            }
+            // Release the previous render session
+            release();
 
             previewViewGroup.removeAllViews();
 
@@ -4567,11 +4608,7 @@ frameRate = 60;
             for (List<ClipRenderer> track : trackLayers) {
                 for (ClipRenderer cr : track) cr.release();
             }
-        }
-
-        public void releasePause() {
-            release();
-            isPauseReleased = true;
+            trackLayers.clear();
         }
     }
 

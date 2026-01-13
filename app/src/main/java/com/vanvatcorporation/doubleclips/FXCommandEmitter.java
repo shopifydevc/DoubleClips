@@ -61,7 +61,7 @@ public class FXCommandEmitter {
                 // Overlap mean both the overlap clip lost the transition duration amount of time
                 // (end first clip sooner than half of transition and start second clip sooner than half of transition)
                 (transition.mode == EditingActivity.TransitionClip.TransitionMode.OVERLAP ? transition.duration : 0)
-                , clipA.trackIndex, clipA.type, clipA.isVideoHasAudio || clipB.isVideoHasAudio, clipA.width, clipA.height);
+                , clipA.trackIndex, clipA.type, clipA.isVideoHasAudio() || clipB.isVideoHasAudio(), clipA.width, clipA.height);
 
         FFmpegEdit.FfmpegFilterComplexTags.FilterComplexInfo fromTag = tags.useTag(clipA, mergedClip);
         FFmpegEdit.FfmpegFilterComplexTags.FilterComplexInfo toTag = tags.useTag(clipB, mergedClip);
