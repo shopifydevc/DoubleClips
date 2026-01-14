@@ -380,7 +380,13 @@ public class FFmpegEdit {
                         String scaleXExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.ScaleX);
                         String scaleYExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.ScaleY);
 
+
+                        String speedExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Speed);
+
                         String rotationExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.RotInRadians);
+
+                        String hueExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Hue);
+                        String saturationExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Saturation);
 
                         String scaleXCmd = settings.isStretchToFull() ?
                                 String.valueOf(settings.getRenderVideoWidth(isTemplateCommand)) :
@@ -395,9 +401,11 @@ public class FFmpegEdit {
                                 //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
                                 .append("rotate='").append(rotationExpr).append("':ow=rotw('").append(rotationExpr).append("'):oh=roth('").append(rotationExpr).append("')")
                                 .append(":fillcolor=0x00000000").append(",")
+                                .append("hue=h='").append(hueExpr)
+                                .append("':s='").append(saturationExpr).append("',")
                                 .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
                                 .append("zoompan=z=zoom*'").append(scaleXExpr).append("':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'").append(scaleZoompan).append(",")
-                                .append("setpts='(PTS-STARTPTS)/").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed)).append("+").append(clip.startTime).append("/TB'").append(",");
+                                .append("setpts='(PTS-STARTPTS)/").append(speedExpr).append("+").append(clip.startTime).append("/TB'").append(",");
                     }
                     else
                     {
@@ -418,6 +426,8 @@ public class FFmpegEdit {
                         filterComplex.append("scale=").append(scaleXCmd).append(":").append(scaleYCmd).append(",")                                //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
                                 .append("rotate=").append(radiansRotation).append(":ow=rotw(").append(radiansRotation).append("):oh=roth(").append(radiansRotation).append(")")
                                 .append(":fillcolor=0x00000000").append(",")
+                                .append("hue=h=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Hue))
+                                .append(":s=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Saturation)).append(",")
                                 .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed)).append("+").append(clip.startTime).append("/TB'").append(",");
                     }
@@ -677,8 +687,11 @@ public class FFmpegEdit {
         // Input time for zoompan expression, time for other.
         String timeUnit =
                 (valueType == EditingActivity.VideoProperties.ValueType.ScaleX || valueType == EditingActivity.VideoProperties.ValueType.ScaleY) ?
-                        "it" : "t";
+                        "it" : valueType == EditingActivity.VideoProperties.ValueType.Speed ? "T" : "t";
 
+        // Skipping matching element
+        if(prevKeyframe.getLocalTime() == nextKeyframe.getLocalTime())
+            return String.valueOf(prevKeyframe.getLocalTime());
 
         keyframeExprString
                 .append("if(")
@@ -702,7 +715,15 @@ public class FFmpegEdit {
 
     public static String generateEasing(EditingActivity.Keyframe prevKey, EditingActivity.Keyframe nextKey, EditingActivity.Clip clip, EditingActivity.VideoProperties.ValueType type, String timeUnit)
     {
-        return generateEasing(prevKey.value.getValue(type), nextKey.value.getValue(type), prevKey.getLocalTime(), (nextKey.getLocalTime() - prevKey.getLocalTime()), prevKey.easing, timeUnit);
+        // Get global time for Speed as it use T as Timebase, global Time.
+        return generateEasing(prevKey.value.getValue(type),
+                nextKey.value.getValue(type),
+                type == EditingActivity.VideoProperties.ValueType.Speed ?
+                        prevKey.getGlobalTime(clip) :
+                        prevKey.getLocalTime(),
+                (nextKey.getLocalTime() - prevKey.getLocalTime()),
+                prevKey.easing,
+                timeUnit);
     }
 
     public static String generateEasing(float prevValue, float nextValue, float offset, float duration, EditingActivity.EasingType type, String timeUnit) {
