@@ -3,7 +3,6 @@ package com.vanvatcorporation.doubleclips.activities;
 import static com.vanvatcorporation.doubleclips.FFmpegEdit.generateCmdFull;
 import static com.vanvatcorporation.doubleclips.FFmpegEdit.runAnyCommand;
 
-import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -12,16 +11,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.transition.AutoTransition;
-import android.transition.TransitionManager;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
@@ -42,7 +36,6 @@ import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.ParserHelper;
-import com.vanvatcorporation.doubleclips.helper.WebHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
 import com.vanvatcorporation.doubleclips.impl.SectionView;
 import com.vanvatcorporation.doubleclips.impl.java.RunnableImpl;
@@ -228,7 +221,7 @@ public class ExportActivity extends AppCompatActivityImpl {
             settings.clipCap = ParserHelper.TryParse(videoPropertiesExportSpecificAreaScreen.clipCapText.getText().toString(), settings.clipCap);
             settings.preset = videoPropertiesExportSpecificAreaScreen.presetSpinner.getSelectedItem().toString();
             settings.tune = videoPropertiesExportSpecificAreaScreen.tuneSpinner.getSelectedItem().toString();
-            settings.isStretchToFull = videoPropertiesExportSpecificAreaScreen.stretchToFullCheckbox.isChecked();
+            settings.isStretchToFull = videoPropertiesExportSpecificAreaScreen.stretchMediaToFullCheckbox.isChecked();
 
             settings.saveSettings(this, properties);
 
@@ -257,7 +250,7 @@ public class ExportActivity extends AppCompatActivityImpl {
             videoPropertiesExportSpecificAreaScreen.clipCapText.setText(String.valueOf(settings.getClipCap()));
             videoPropertiesExportSpecificAreaScreen.presetSpinner.setSelection(videoPropertiesExportSpecificAreaScreen.presetAdapter.getPosition(settings.getPreset()));
             videoPropertiesExportSpecificAreaScreen.tuneSpinner.setSelection(videoPropertiesExportSpecificAreaScreen.tuneAdapter.getPosition(settings.getTune()));
-            videoPropertiesExportSpecificAreaScreen.stretchToFullCheckbox.setChecked(settings.isStretchToFull());
+            videoPropertiesExportSpecificAreaScreen.stretchMediaToFullCheckbox.setChecked(settings.isStretchToFull());
 
         });
 

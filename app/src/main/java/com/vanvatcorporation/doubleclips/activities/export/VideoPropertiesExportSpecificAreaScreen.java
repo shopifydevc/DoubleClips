@@ -18,7 +18,7 @@ public class VideoPropertiesExportSpecificAreaScreen extends BaseEditSpecificAre
 
     public Spinner presetSpinner, tuneSpinner;
     public EditText resolutionXField, resolutionYField, frameRateText, crfText, clipCapText;
-    public CheckBox stretchToFullCheckbox;
+    public CheckBox stretchMediaToFullCheckbox;
 
 
 
@@ -77,7 +77,7 @@ public class VideoPropertiesExportSpecificAreaScreen extends BaseEditSpecificAre
         tuneSpinner.setAdapter(tuneAdapter);
         tuneSpinner.setSelection(5); // ZEROLATENCY
 
-        stretchToFullCheckbox = findViewById(R.id.stretchToFullCheckbox);
+        stretchMediaToFullCheckbox = findViewById(R.id.stretchToFullCheckbox);
 
 
         onClose.add(() -> {

@@ -1,7 +1,9 @@
 package com.vanvatcorporation.doubleclips.ext.rajawali;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -26,6 +28,9 @@ import org.rajawali3d.primitives.Cube;
 import org.rajawali3d.renderer.Renderer;
 import org.rajawali3d.view.SurfaceView;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -54,7 +59,7 @@ public class RajawaliExample extends AppCompatActivityImpl {
         button.setOnClickListener(v -> {
 
             SurfaceView surface = new SurfaceView(this);
-            surface.setFrameRate(60);
+            surface.setFrameRate(1);
             surface.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
             CubeRenderer renderer = new CubeRenderer(this, 1920, 1080);
             surface.setSurfaceRenderer(renderer);
@@ -80,7 +85,7 @@ public class RajawaliExample extends AppCompatActivityImpl {
 
         public CubeRenderer(Context context, int width, int height) {
             super(context);
-            setFrameRate(60);
+            setFrameRate(30);
 
             this.width = width;
             this.height = height;
@@ -137,13 +142,35 @@ public class RajawaliExample extends AppCompatActivityImpl {
         public void onRenderFrame(GL10 glUnused) {
             super.onRenderFrame(glUnused);
 
+            // Allocate buffer for pixels
             ByteBuffer pixelBuffer = ByteBuffer.allocateDirect(width * height * 4);
             pixelBuffer.order(ByteOrder.nativeOrder());
 
+            // Read pixels from OpenGL framebuffer
             GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixelBuffer);
 
-            // Now pixelBuffer contains the image data
+            // Create Bitmap from buffer
+            Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            pixelBuffer.rewind();
+            bmp.copyPixelsFromBuffer(pixelBuffer);
+
+            // Flip vertically (OpenGL origin is bottom-left, Android Bitmap is top-left)
+            Matrix flip = new Matrix();
+            flip.postScale(1f, -1f);
+            Bitmap flipped = Bitmap.createBitmap(bmp, 0, 0, width, height, flip, true);
+
+            // Save as JPG
+            try {
+                File file = new File(getContext().getExternalFilesDir(null),
+                        "render_" + System.currentTimeMillis() + ".jpg");
+                FileOutputStream fos = new FileOutputStream(file);
+                flipped.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+
 
 
         @Override

@@ -159,6 +159,14 @@ public class FFmpegEdit {
     }
 
 
+    public static void generateSolidColorImage(Context context, String projectClipPath, String colorHex)
+    {
+        String emptyImagePath = IOHelper.getNextIndexPathInFolder(context, IOHelper.CombinePath(projectClipPath), "solid_color_", ".png", false);
+        runAnyCommand(context,
+                "-f lavfi -i color=c=#" + colorHex + ":s=100x100 -frames:v 1 \"" + emptyImagePath + "\"",
+                "Solid Image Generation");
+    }
+
 
     public static String generateExportCmdPartially(Context context, EditingActivity.VideoSettings settings, EditingActivity.Timeline timeline, MainAreaScreen.ProjectData data,
                                                     int clipCount, int clipOffset, int renderingIndex, boolean isFinal, boolean isTemplateCommand) {
@@ -380,12 +388,15 @@ public class FFmpegEdit {
                         String scaleYCmd = settings.isStretchToFull() ?
                                 String.valueOf(settings.getRenderVideoHeight(isTemplateCommand)) :
                                 "ih*" + clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.ScaleX); // in the ih* here, it should be ValueType.ScaleY, but for the temporal scaling then it will be scaleX too
+
+                        String scaleZoompan = settings.isStretchToFull() ? ":s=" + scaleXCmd + "x" + scaleYCmd : "";
+
                         filterComplex.append("scale=").append(scaleXCmd).append(":").append(scaleYCmd).append(",")
                                 //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
                                 .append("rotate='").append(rotationExpr).append("':ow=rotw('").append(rotationExpr).append("'):oh=roth('").append(rotationExpr).append("')")
                                 .append(":fillcolor=0x00000000").append(",")
                                 .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
-                                .append("zoompan=z=zoom*'").append(scaleXExpr).append("':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'").append(":s=").append(scaleXCmd).append("x").append(scaleYCmd).append(",")
+                                .append("zoompan=z=zoom*'").append(scaleXExpr).append("':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'").append(scaleZoompan).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed)).append("+").append(clip.startTime).append("/TB'").append(",");
                     }
                     else
@@ -704,6 +715,10 @@ public class FFmpegEdit {
 
         switch (type) {
             // TODO: Add visualizer for these type like CapCut
+
+            // None
+            case NONE:
+                return expr.append(start).toString();
 
             // Linear
             case LINEAR:

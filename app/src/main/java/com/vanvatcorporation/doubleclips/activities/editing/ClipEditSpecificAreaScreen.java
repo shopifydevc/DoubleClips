@@ -18,7 +18,7 @@ import com.vanvatcorporation.doubleclips.activities.EditingActivity;
 public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
 
     public TextView totalDurationText;
-    public EditText clipNameField, durationContent, positionXField, positionYField, rotationField, scaleXField, scaleYField, opacityField, speedField;
+    public EditText clipNameField, durationContent, positionXField, positionYField, rotationField, scaleXField, scaleYField, opacityField, speedField, hueField, saturationField;
     public CheckBox muteAudioCheckbox, lockMediaForTemplateCheckbox;
     public LinearLayout keyframeScrollFrame;
     public Button clearKeyframeButton;
@@ -59,6 +59,8 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
         scaleYField = findViewById(R.id.scaleYField);
         opacityField = findViewById(R.id.opacityField);
         speedField = findViewById(R.id.speedField);
+        hueField = findViewById(R.id.hueField);
+        saturationField = findViewById(R.id.saturationField);
         muteAudioCheckbox = findViewById(R.id.muteAudioCheckbox);
         lockMediaForTemplateCheckbox = findViewById(R.id.lockMediaForTemplateCheckbox);
 
@@ -78,6 +80,8 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
             scaleYField.clearFocus();
             opacityField.clearFocus();
             speedField.clearFocus();
+            hueField.clearFocus();
+            saturationField.clearFocus();
         });
     }
 

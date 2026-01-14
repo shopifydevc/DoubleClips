@@ -30,6 +30,13 @@
             android:layout_margin="5dp"
             app:navIcon="@drawable/baseline_content_cut_24"
             app:navText="Cut"/>
+        <com.vanvatcorporation.doubleclips.impl.NavigationIconLayout
+            android:id="@+id/projectFilesViewerButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="5dp"
+            app:navIcon="@drawable/baseline_folder_24"
+            app:navText="Files"/>
 
     </LinearLayout>
 </HorizontalScrollView>

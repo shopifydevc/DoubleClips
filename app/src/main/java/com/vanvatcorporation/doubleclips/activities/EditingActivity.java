@@ -69,6 +69,7 @@ import com.vanvatcorporation.doubleclips.activities.editing.BaseEditSpecificArea
 import com.vanvatcorporation.doubleclips.activities.editing.ClipEditSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.editing.ClipsEditSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.editing.EffectEditSpecificAreaScreen;
+import com.vanvatcorporation.doubleclips.activities.editing.ProjectFilesEditSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.editing.TextEditSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.editing.TransitionEditSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.editing.VideoPropertiesEditSpecificAreaScreen;
@@ -93,6 +94,7 @@ import com.vanvatcorporation.doubleclips.utils.TimelineUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -131,6 +133,7 @@ public class EditingActivity extends AppCompatActivityImpl {
     private ClipsEditSpecificAreaScreen clipsEditSpecificAreaScreen;
     private ClipEditSpecificAreaScreen clipEditSpecificAreaScreen;
     private VideoPropertiesEditSpecificAreaScreen videoPropertiesEditSpecificAreaScreen;
+    private ProjectFilesEditSpecificAreaScreen projectFilesEditSpecificAreaScreen;
 
 
 
@@ -154,7 +157,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
     static TransitionClip selectedKnot = null;
     static Clip selectedClip = null;
-    static Track selectedTrack = null;
+    public static Track selectedTrack = null;
 
     static ArrayList<Clip> selectedClips = new ArrayList<>();
     boolean isClipSelectMultiple;
@@ -359,6 +362,88 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
         return offsetTime;
+    }
+
+    public void addProjectFileMediaToTrack(String filename, String filepath)
+    {
+        if(filepath == null) return;
+        if(selectedTrack == null) return;
+        float duration = 3f; // fallback default if needed
+
+        String mimeType = URLConnection.guessContentTypeFromName(filename);
+
+        if(mimeType == null) return;
+
+
+        ClipType type;
+
+        if (mimeType.startsWith("audio/")) type = ClipType.AUDIO;
+        else if (mimeType.startsWith("image/")) type = ClipType.IMAGE;
+        else if (mimeType.startsWith("video/")) type = ClipType.VIDEO;
+        else type = ClipType.EFFECT; // if effect or unknown
+
+
+
+        if(type == ClipType.VIDEO || type == ClipType.AUDIO)
+            try {
+                MediaExtractor extractor = new MediaExtractor();
+                extractor.setDataSource(filepath);
+
+
+
+                for (int i = 0; i < extractor.getTrackCount(); i++) {
+                    MediaFormat format = extractor.getTrackFormat(i);
+                    String trackMime = format.getString(MediaFormat.KEY_MIME);
+                    if (trackMime != null) {
+                        // For MOV type, it has 2 track, so before this version, this applied to the below ClipType, which turn MOV to audio type
+                        //mimeType = trackMime;
+
+                        if (format.containsKey(MediaFormat.KEY_DURATION)) {
+                            long d = format.getLong(MediaFormat.KEY_DURATION);
+                            duration = d / 1_000_000f; // microseconds to seconds
+                            break;
+                        }
+                    }
+                }
+
+                extractor.release();
+            } catch (Exception e) {
+                LoggingManager.LogExceptionToNoteOverlay(this, e);
+            }
+
+
+        boolean isVideoHasAudio = false;
+        int width = 0, height = 0;
+        // Video check
+        if(type == ClipType.VIDEO)
+        {
+            try {
+                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                retriever.setDataSource(filepath);
+
+                width = Integer.parseInt(Objects.requireNonNull(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)));
+                height = Integer.parseInt(Objects.requireNonNull(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)));
+
+                isVideoHasAudio = "yes".equals(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
+                retriever.close();
+            } catch (IOException e) {
+                LoggingManager.LogExceptionToNoteOverlay(this, e);
+            }
+        }
+        if(type == ClipType.IMAGE)
+        {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true; // Don't load the full bitmap
+            BitmapFactory.decodeFile(filepath, options);
+            width = options.outWidth;
+            height = options.outHeight;
+        }
+
+
+        Clip newClip = new Clip(filename, currentTime, duration, selectedTrack.trackIndex, type, isVideoHasAudio, width, height);
+
+
+        addClipToTrack(selectedTrack, newClip);
     }
 
     void processingPreview(Clip clip, String originalClipPath, String previewClipPath)
@@ -798,6 +883,9 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             }
         });
+        toolbarDefault.findViewById(R.id.projectFilesViewerButton).setOnClickListener(v -> {
+            projectFilesEditSpecificAreaScreen.open();
+        });
 
 
         // ===========================       DEFAULT ZONE       ====================================
@@ -1028,6 +1116,14 @@ public class EditingActivity extends AppCompatActivityImpl {
         // ===========================       VIDEO PROPERTIES ZONE       ====================================
 
 
+        // ===========================       PROJECT FILES ZONE       ====================================
+        projectFilesEditSpecificAreaScreen = (ProjectFilesEditSpecificAreaScreen) LayoutInflater.from(this).inflate(R.layout.view_edit_project_files, null);
+        projectFilesEditSpecificAreaScreen.properties = properties;
+        projectFilesEditSpecificAreaScreen.activityInstance = this;
+        previewZone.addView(projectFilesEditSpecificAreaScreen);
+        // ===========================       PROJECT FILES ZONE       ====================================
+
+
 
 
 
@@ -1164,6 +1260,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                     selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleYField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.ScaleY)), VideoProperties.ValueType.ScaleY);
                     selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.opacityField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Opacity)), VideoProperties.ValueType.Opacity);
                     selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.hueField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Hue)), VideoProperties.ValueType.Hue);
+                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.saturationField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Saturation)), VideoProperties.ValueType.Saturation);
                 }
                 else {
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionXField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosX)), VideoProperties.ValueType.PosX);
@@ -1173,6 +1271,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.scaleYField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.ScaleY)), VideoProperties.ValueType.ScaleY);
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.opacityField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Opacity)), VideoProperties.ValueType.Opacity);
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.hueField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Hue)), VideoProperties.ValueType.Hue);
+                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.saturationField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Saturation)), VideoProperties.ValueType.Saturation);
                 }
 
                 selectedClip.setMute(clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked());
@@ -1204,6 +1304,8 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipEditSpecificAreaScreen.scaleYField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.ScaleY)));
             clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Opacity)));
             clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Speed)));
+            clipEditSpecificAreaScreen.hueField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Hue)));
+            clipEditSpecificAreaScreen.saturationField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Saturation)));
 
             clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute());
             clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.setChecked(selectedClip.isLockedForTemplate);
@@ -1228,6 +1330,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                     clipEditSpecificAreaScreen.scaleYField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.ScaleY)));
                     clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Opacity)));
                     clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Speed)));
+                    clipEditSpecificAreaScreen.hueField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Hue)));
+                    clipEditSpecificAreaScreen.saturationField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Saturation)));
 
 
                 }, () -> {
@@ -1270,6 +1374,17 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
         // ===========================       VIDEO PROPERTIES ZONE       ====================================
+
+
+
+        // ===========================       PROJECT FILES ZONE       ====================================
+        projectFilesEditSpecificAreaScreen.onClose.add(() -> {
+
+        });
+        projectFilesEditSpecificAreaScreen.onOpen.add(() -> {
+
+        });
+        // ===========================       PROJECT FILES ZONE       ====================================
 
 
     }
@@ -1551,8 +1666,9 @@ public class EditingActivity extends AppCompatActivityImpl {
                 clip.videoProperties.getValue(VideoProperties.ValueType.PosX), clip.videoProperties.getValue(VideoProperties.ValueType.PosY),
                 clip.videoProperties.getValue(VideoProperties.ValueType.Rot),
                 clip.videoProperties.getValue(VideoProperties.ValueType.ScaleX), clip.videoProperties.getValue(VideoProperties.ValueType.ScaleY),
-                clip.videoProperties.getValue(VideoProperties.ValueType.Opacity), clip.videoProperties.getValue(VideoProperties.ValueType.Speed)
-        ), EasingType.LINEAR));
+                clip.videoProperties.getValue(VideoProperties.ValueType.Opacity), clip.videoProperties.getValue(VideoProperties.ValueType.Speed),
+                clip.videoProperties.getValue(VideoProperties.ValueType.Hue), clip.videoProperties.getValue(VideoProperties.ValueType.Saturation)
+        ), EasingType.NONE));
     }
     public void addKeyframe(Clip clip, Keyframe keyframe)
     {
@@ -1884,13 +2000,15 @@ public class EditingActivity extends AppCompatActivityImpl {
                                 // Move original to new track and position
                                 ViewGroup oldParent = (ViewGroup) v.getParent();
                                 oldParent.removeView(v);
-                                oldParent.removeView(dragContext.clip.leftHandle);
-                                oldParent.removeView(dragContext.clip.rightHandle);
+//                                oldParent.removeView(dragContext.clip.leftHandle);
+//                                oldParent.removeView(dragContext.clip.rightHandle);
 
                                 // Add to new track
                                 dragContext.currentTrack.viewRef.addView(v);
-                                dragContext.currentTrack.viewRef.addView(dragContext.clip.leftHandle);
-                                dragContext.currentTrack.viewRef.addView(dragContext.clip.rightHandle);
+//                                dragContext.currentTrack.viewRef.addView(dragContext.clip.leftHandle);
+//                                dragContext.currentTrack.viewRef.addView(dragContext.clip.rightHandle);
+                                dragContext.clip.forceAddHandlesToTrack(dragContext.currentTrack.viewRef);
+
                                 v.setX(finalX1);
                                 v.setVisibility(View.VISIBLE);
 
@@ -2786,7 +2904,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.width = width;
             this.height = height;
 
-            this.videoProperties = new VideoProperties(0, 0, 0, 1, 1, 1, 1);
+            this.videoProperties = new VideoProperties(0, 0, 0, 1, 1, 1, 1, 0, 1);
             this.isMute = false;
         }
 
@@ -2843,6 +2961,19 @@ public class EditingActivity extends AppCompatActivityImpl {
         {
             leftHandle.setX(viewRef.getX() - 35);
             rightHandle.setX(viewRef.getX() + viewRef.getWidth());
+        }
+        public void addHandlesToTrack(TrackFrameLayout trackViewRef)
+        {
+            if(leftHandle.getParent() == null)
+                trackViewRef.addView(leftHandle);
+            if(rightHandle.getParent() == null)
+                trackViewRef.addView(rightHandle);
+        }
+        public void forceAddHandlesToTrack(TrackFrameLayout trackViewRef)
+        {
+            if(leftHandle.getParent() != null) ((ViewGroup)leftHandle.getParent()).removeView(leftHandle);
+            if(rightHandle.getParent() != null) ((ViewGroup)rightHandle.getParent()).removeView(rightHandle);
+            addHandlesToTrack(trackViewRef);
         }
         public void toggleHandlesVisibility(boolean isVisible)
         {
@@ -3018,10 +3149,9 @@ public class EditingActivity extends AppCompatActivityImpl {
             );
 
 
-            new Handler().postDelayed(() -> {
-                activity.timeline.getTrackFromClip(this).viewRef.addView(leftHandle);
-                activity.timeline.getTrackFromClip(this).viewRef.addView(rightHandle);
-            }, 2000);
+//            new Handler().postDelayed(() -> {
+//                addHandlesToTrack(activity.timeline.getTrackFromClip(this).viewRef);
+//            }, 2000);
         }
 
         public void initClip(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
@@ -3092,6 +3222,10 @@ public class EditingActivity extends AppCompatActivityImpl {
         public void select() {
             viewRef.getFilledImageView().setColorFilter(0x77AAAAAA);
 
+            // If handles isn't being added yet
+            if(viewRef.getParent() instanceof TrackFrameLayout)
+                addHandlesToTrack(((TrackFrameLayout) viewRef.getParent()));
+
             toggleHandlesVisibility(true);
             clipPropertiesLinearLayoutGroup.setVisibility(View.VISIBLE);
 
@@ -3145,7 +3279,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             activity.revalidationClipView(this);
         }
         public void restate() {
-            videoProperties = new VideoProperties(0, 0, 0, 1, 1, 1, 1);
+            videoProperties = new VideoProperties(0, 0, 0, 1, 1, 1, 1, 0, 1);
         }
 
         public void mergingVideoPropertiesFromSingleKeyframe() {
@@ -3524,6 +3658,10 @@ frameRate = 60;
         public float valueOpacity;
         @Expose
         public float valueSpeed;
+        @Expose
+        public float valueHue;
+        @Expose
+        public float valueSaturation;
 
         public VideoProperties()
         {
@@ -3534,11 +3672,14 @@ frameRate = 60;
             this.valueScaleY = 1;
             this.valueOpacity = 1;
             this.valueSpeed = 1;
+            this.valueHue = 1;
+            this.valueSaturation = 1;
         }
         public VideoProperties(float valuePosX, float valuePosY,
                                float valueRot,
                                float valueScaleX, float valueScaleY,
-                               float valueOpacity, float valueSpeed)
+                               float valueOpacity, float valueSpeed,
+                               float valueHue, float valueSaturation)
         {
             this.valuePosX = valuePosX;
             this.valuePosY = valuePosY;
@@ -3547,6 +3688,8 @@ frameRate = 60;
             this.valueScaleY = valueScaleY;
             this.valueOpacity = valueOpacity;
             this.valueSpeed = valueSpeed;
+            this.valueHue = valueHue;
+            this.valueSaturation = valueSaturation;
         }
 
         public VideoProperties(VideoProperties properties)
@@ -3558,6 +3701,8 @@ frameRate = 60;
             this.valueScaleY = properties.valueScaleY;
             this.valueOpacity = properties.valueOpacity;
             this.valueSpeed = properties.valueSpeed;
+            this.valueHue = properties.valueHue;
+            this.valueSaturation = properties.valueSaturation;
         }
 
         public float getValue(ValueType valueType) {
@@ -3580,6 +3725,10 @@ frameRate = 60;
                     return valueOpacity;
                 case Speed:
                     return valueSpeed;
+                case Hue:
+                    return valueHue;
+                case Saturation:
+                    return valueSaturation;
                 default:
                     return 1;
 
@@ -3611,12 +3760,18 @@ frameRate = 60;
                 case Speed:
                     valueSpeed = v;
                     break;
+                case Hue:
+                    valueHue = v;
+                    break;
+                case Saturation:
+                    valueSaturation = v;
+                    break;
 
             }
         }
 
         public enum ValueType {
-            PosX, PosY, Rot, RotInRadians, ScaleX, ScaleY, Opacity, Speed
+            PosX, PosY, Rot, RotInRadians, ScaleX, ScaleY, Opacity, Speed, Hue, Saturation
         }
     }
     public static class Keyframe implements Serializable {
@@ -3625,7 +3780,7 @@ frameRate = 60;
         @Expose
         public VideoProperties value;
         @Expose
-        public EasingType easing = EasingType.LINEAR;
+        public EasingType easing;
 
 
         public Keyframe(float time, VideoProperties value, EasingType easing)
@@ -3706,6 +3861,9 @@ frameRate = 60;
 
         private float ease(float t, EasingType type) {
             switch (type) {
+                // None
+                case NONE: return 0;
+
                 // Linear
                 case LINEAR: return t;
 
@@ -3825,6 +3983,9 @@ frameRate = 60;
 //    }
 
     public enum EasingType {
+        // None
+        NONE,
+
         // Linear
         LINEAR,
 
