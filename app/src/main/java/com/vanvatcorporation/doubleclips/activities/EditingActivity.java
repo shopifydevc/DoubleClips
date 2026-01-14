@@ -1261,7 +1261,9 @@ public class EditingActivity extends AppCompatActivityImpl {
                     selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.opacityField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Opacity)), VideoProperties.ValueType.Opacity);
                     selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
                     selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.hueField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Hue)), VideoProperties.ValueType.Hue);
-                    selectedKeyframe.value.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.saturationField.getText().toString(), selectedKeyframe.value.getValue(VideoProperties.ValueType.Saturation)), VideoProperties.ValueType.Saturation);
+
+                    selectedKeyframe.value.setValue(Math.clamp(((clipEditSpecificAreaScreen.saturationSeekbar.getProgress() - 1000f) / 100f), -10, 10), VideoProperties.ValueType.Saturation);
+                    selectedKeyframe.value.setValue(Math.clamp(((clipEditSpecificAreaScreen.brightnessSeekbar.getProgress() - 1000f) / 100f), -10, 10), VideoProperties.ValueType.Brightness);
                 }
                 else {
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.positionXField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.PosX)), VideoProperties.ValueType.PosX);
@@ -1272,7 +1274,9 @@ public class EditingActivity extends AppCompatActivityImpl {
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.opacityField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Opacity)), VideoProperties.ValueType.Opacity);
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.speedField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Speed)), VideoProperties.ValueType.Speed);
                     selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.hueField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Hue)), VideoProperties.ValueType.Hue);
-                    selectedClip.videoProperties.setValue(ParserHelper.TryParse(clipEditSpecificAreaScreen.saturationField.getText().toString(), selectedClip.videoProperties.getValue(VideoProperties.ValueType.Saturation)), VideoProperties.ValueType.Saturation);
+
+                    selectedClip.videoProperties.setValue(Math.clamp(((clipEditSpecificAreaScreen.saturationSeekbar.getProgress() - 1000f) / 100f), -10, 10), VideoProperties.ValueType.Saturation);
+                    selectedClip.videoProperties.setValue(Math.clamp(((clipEditSpecificAreaScreen.brightnessSeekbar.getProgress() - 1000f) / 100f), -10, 10), VideoProperties.ValueType.Brightness);
                 }
 
                 selectedClip.setMute(clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked());
@@ -1305,7 +1309,9 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Opacity)));
             clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Speed)));
             clipEditSpecificAreaScreen.hueField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Hue)));
-            clipEditSpecificAreaScreen.saturationField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Saturation)));
+
+            clipEditSpecificAreaScreen.saturationSeekbar.setProgress((int)(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Saturation) * 100) + 1000);
+            clipEditSpecificAreaScreen.brightnessSeekbar.setProgress((int)(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Brightness) * 100) + 1000);
 
             clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute());
             clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.setChecked(selectedClip.isLockedForTemplate);
@@ -1331,8 +1337,9 @@ public class EditingActivity extends AppCompatActivityImpl {
                     clipEditSpecificAreaScreen.opacityField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Opacity)));
                     clipEditSpecificAreaScreen.speedField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Speed)));
                     clipEditSpecificAreaScreen.hueField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Hue)));
-                    clipEditSpecificAreaScreen.saturationField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Saturation)));
 
+                    clipEditSpecificAreaScreen.saturationSeekbar.setProgress((int)(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Saturation) * 100) + 1000);
+                    clipEditSpecificAreaScreen.brightnessSeekbar.setProgress((int)(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Brightness) * 100) + 1000);
 
                 }, () -> {
                     removeKeyframe(selectedClip, keyframe);
@@ -1667,7 +1674,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                 clip.videoProperties.getValue(VideoProperties.ValueType.Rot),
                 clip.videoProperties.getValue(VideoProperties.ValueType.ScaleX), clip.videoProperties.getValue(VideoProperties.ValueType.ScaleY),
                 clip.videoProperties.getValue(VideoProperties.ValueType.Opacity), clip.videoProperties.getValue(VideoProperties.ValueType.Speed),
-                clip.videoProperties.getValue(VideoProperties.ValueType.Hue), clip.videoProperties.getValue(VideoProperties.ValueType.Saturation)
+                clip.videoProperties.getValue(VideoProperties.ValueType.Hue), clip.videoProperties.getValue(VideoProperties.ValueType.Saturation),
+                clip.videoProperties.getValue(VideoProperties.ValueType.Brightness)
         ), EasingType.NONE));
     }
     public void addKeyframe(Clip clip, Keyframe keyframe)
@@ -2904,7 +2912,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.width = width;
             this.height = height;
 
-            this.videoProperties = new VideoProperties(0, 0, 0, 1, 1, 1, 1, 0, 1);
+            this.videoProperties = new VideoProperties();
             this.isMute = false;
         }
 
@@ -3279,7 +3287,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             activity.revalidationClipView(this);
         }
         public void restate() {
-            videoProperties = new VideoProperties(0, 0, 0, 1, 1, 1, 1, 0, 1);
+            videoProperties = new VideoProperties();
         }
 
         public void mergingVideoPropertiesFromSingleKeyframe() {
@@ -3662,6 +3670,8 @@ frameRate = 60;
         public float valueHue;
         @Expose
         public float valueSaturation;
+        @Expose
+        public float valueBrightness;
 
         public VideoProperties()
         {
@@ -3672,14 +3682,16 @@ frameRate = 60;
             this.valueScaleY = 1;
             this.valueOpacity = 1;
             this.valueSpeed = 1;
-            this.valueHue = 1;
+            this.valueHue = 0;
             this.valueSaturation = 1;
+            this.valueBrightness = 0;
         }
         public VideoProperties(float valuePosX, float valuePosY,
                                float valueRot,
                                float valueScaleX, float valueScaleY,
                                float valueOpacity, float valueSpeed,
-                               float valueHue, float valueSaturation)
+                               float valueHue, float valueSaturation,
+                               float valueBrightness)
         {
             this.valuePosX = valuePosX;
             this.valuePosY = valuePosY;
@@ -3690,6 +3702,7 @@ frameRate = 60;
             this.valueSpeed = valueSpeed;
             this.valueHue = valueHue;
             this.valueSaturation = valueSaturation;
+            this.valueBrightness = valueBrightness;
         }
 
         public VideoProperties(VideoProperties properties)
@@ -3703,6 +3716,7 @@ frameRate = 60;
             this.valueSpeed = properties.valueSpeed;
             this.valueHue = properties.valueHue;
             this.valueSaturation = properties.valueSaturation;
+            this.valueBrightness = properties.valueBrightness;
         }
 
         public float getValue(ValueType valueType) {
@@ -3729,6 +3743,8 @@ frameRate = 60;
                     return valueHue;
                 case Saturation:
                     return valueSaturation;
+                case Brightness:
+                    return valueBrightness;
                 default:
                     return 1;
 
@@ -3766,12 +3782,15 @@ frameRate = 60;
                 case Saturation:
                     valueSaturation = v;
                     break;
+                case Brightness:
+                    valueBrightness = v;
+                    break;
 
             }
         }
 
         public enum ValueType {
-            PosX, PosY, Rot, RotInRadians, ScaleX, ScaleY, Opacity, Speed, Hue, Saturation
+            PosX, PosY, Rot, RotInRadians, ScaleX, ScaleY, Opacity, Speed, Hue, Saturation, Brightness
         }
     }
     public static class Keyframe implements Serializable {

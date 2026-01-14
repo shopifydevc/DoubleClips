@@ -382,15 +382,95 @@
                         android:text="Saturation:"
                         android:textSize="18sp" />
 
-                    <EditText
-                        android:id="@+id/saturationField"
+                </LinearLayout>
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/saturationMinText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
+                        android:layout_alignParentStart="true"
+                        android:text="-10"
+                        android:textSize="18sp" />
+
+                    <SeekBar
+                        android:id="@+id/saturationSeekbar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/saturationMinText"
+                        android:layout_toStartOf="@id/saturationMaxText"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="15dp"
+                        android:max="2000"
+                        android:progress="1000"
+                        android:progressDrawable="@drawable/tooltip_seekbar_style"
+                        android:splitTrack="false"
+                        android:thumb="@drawable/tooltip_seekbar_thum"
                         android:hint="1"
+                        android:textSize="18sp"/>
+                    <TextView
+                        android:id="@+id/saturationMaxText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:layout_alignParentEnd="true"                        android:text="+10"
+                        android:textSize="18sp" />
+
+                </RelativeLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/brightnessText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Brightness:"
                         android:textSize="18sp" />
 
                 </LinearLayout>
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/brightnessMinText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:layout_alignParentStart="true"
+                        android:text="-10"
+                        android:textSize="18sp" />
+
+                    <SeekBar
+                        android:id="@+id/brightnessSeekbar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/brightnessMinText"
+                        android:layout_toStartOf="@id/brightnessMaxText"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="15dp"
+                        android:max="2000"
+                        android:progress="1000"
+                        android:progressDrawable="@drawable/tooltip_seekbar_style"
+                        android:splitTrack="false"
+                        android:thumb="@drawable/tooltip_seekbar_thum"
+                        android:hint="1"
+                        android:textSize="18sp"/>
+                    <TextView
+                        android:id="@+id/brightnessMaxText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:layout_alignParentEnd="true"                        android:text="+10"
+                        android:textSize="18sp" />
+
+                </RelativeLayout>
             </com.vanvatcorporation.doubleclips.impl.SectionView>
 
 

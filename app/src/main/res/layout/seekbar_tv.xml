@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- Tooltip TextView that moves with the SeekBar thumb -->
+    <TextView
+        android:id="@+id/seekbar_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textSize="14sp"
+        android:background="@drawable/tooltip_border_shadow"
+        android:padding="4dp"
+        android:layout_marginBottom="8dp"
+        android:layout_alignParentTop="true"/>
+
+    <!-- SeekBar itself -->
+    <SeekBar
+        android:id="@+id/seekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/seekbar_tv"
+        android:max="100"/>
+
+    <!-- Static TextView to show progress value -->
+    <TextView
+        android:id="@+id/tvProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Progress: 0"
+        android:textSize="16sp"
+        android:layout_below="@id/seekBar"
+        android:layout_marginTop="16dp"/>
+</RelativeLayout>
