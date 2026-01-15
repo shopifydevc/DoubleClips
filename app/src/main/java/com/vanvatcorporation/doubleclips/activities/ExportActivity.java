@@ -221,7 +221,7 @@ public class ExportActivity extends AppCompatActivityImpl {
             settings.clipCap = ParserHelper.TryParse(videoPropertiesExportSpecificAreaScreen.clipCapText.getText().toString(), settings.clipCap);
             settings.preset = videoPropertiesExportSpecificAreaScreen.presetSpinner.getSelectedItem().toString();
             settings.tune = videoPropertiesExportSpecificAreaScreen.tuneSpinner.getSelectedItem().toString();
-            settings.isStretchToFull = videoPropertiesExportSpecificAreaScreen.stretchMediaToFullCheckbox.isChecked();
+            settings.isStretchToFull = videoPropertiesExportSpecificAreaScreen.stretchToFullCheckbox.isChecked();
 
             settings.saveSettings(this, properties);
 
@@ -250,7 +250,7 @@ public class ExportActivity extends AppCompatActivityImpl {
             videoPropertiesExportSpecificAreaScreen.clipCapText.setText(String.valueOf(settings.getClipCap()));
             videoPropertiesExportSpecificAreaScreen.presetSpinner.setSelection(videoPropertiesExportSpecificAreaScreen.presetAdapter.getPosition(settings.getPreset()));
             videoPropertiesExportSpecificAreaScreen.tuneSpinner.setSelection(videoPropertiesExportSpecificAreaScreen.tuneAdapter.getPosition(settings.getTune()));
-            videoPropertiesExportSpecificAreaScreen.stretchMediaToFullCheckbox.setChecked(settings.isStretchToFull());
+            videoPropertiesExportSpecificAreaScreen.stretchToFullCheckbox.setChecked(settings.isStretchToFull());
 
         });
 

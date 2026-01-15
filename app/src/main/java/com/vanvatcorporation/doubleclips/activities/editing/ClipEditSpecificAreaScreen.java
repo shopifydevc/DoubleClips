@@ -23,12 +23,13 @@ import androidx.appcompat.widget.TooltipCompat;
 
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.activities.EditingActivity;
+import com.warkiz.widget.IndicatorSeekBar;
 
 public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
 
     public TextView totalDurationText;
-    public EditText clipNameField, durationContent, positionXField, positionYField, rotationField, scaleXField, scaleYField, opacityField, speedField, hueField;
-    public SeekBar saturationSeekbar, brightnessSeekbar;
+    public EditText clipNameField, durationContent, positionXField, positionYField, rotationField, scaleXField, scaleYField, hueField;
+    public IndicatorSeekBar opacitySeekbar, speedSeekbar, saturationSeekbar, brightnessSeekbar, temperatureSeekbar;
     public CheckBox muteAudioCheckbox, lockMediaForTemplateCheckbox;
     public LinearLayout keyframeScrollFrame;
     public Button clearKeyframeButton;
@@ -67,70 +68,33 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
         rotationField = findViewById(R.id.rotationField);
         scaleXField = findViewById(R.id.scaleXField);
         scaleYField = findViewById(R.id.scaleYField);
-        opacityField = findViewById(R.id.opacityField);
-        speedField = findViewById(R.id.speedField);
+        opacitySeekbar = findViewById(R.id.opacitySeekbar);
+        speedSeekbar = findViewById(R.id.speedSeekbar);
         hueField = findViewById(R.id.hueField);
         saturationSeekbar = findViewById(R.id.saturationSeekbar);
         brightnessSeekbar = findViewById(R.id.brightnessSeekbar);
+        temperatureSeekbar = findViewById(R.id.temperatureSeekbar);
         muteAudioCheckbox = findViewById(R.id.muteAudioCheckbox);
         lockMediaForTemplateCheckbox = findViewById(R.id.lockMediaForTemplateCheckbox);
+
+        opacitySeekbar.setDecimalScale(2);
+        speedSeekbar.setDecimalScale(2);
+        saturationSeekbar.setDecimalScale(2);
+        brightnessSeekbar.setDecimalScale(2);
+        temperatureSeekbar.setDecimalScale(2);
+
+
+        findViewById(R.id.opacityResetButton).setOnClickListener(v -> opacitySeekbar.setProgress(1));
+        findViewById(R.id.speedResetButton).setOnClickListener(v -> speedSeekbar.setProgress(1));
+        findViewById(R.id.saturationResetButton).setOnClickListener(v -> saturationSeekbar.setProgress(1));
+        findViewById(R.id.brightnessResetButton).setOnClickListener(v -> brightnessSeekbar.setProgress(0));
+        findViewById(R.id.temperatureResetButton).setOnClickListener(v -> temperatureSeekbar.setProgress(6500));
+
+
 
         easingSpinner = findViewById(R.id.easingContent);
         easingTypeArrayAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, EditingActivity.EasingType.values());
         easingSpinner.setAdapter(easingTypeArrayAdapter);
-
-        saturationSeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
-                // TODO: Ugly
-                //seekBar.setThumb(getThumb(progressValue));
-                TooltipCompat.setTooltipText(seekBar, String.valueOf(progressValue));
-
-
-//                yourTextView.setText(progress + " miles");
-//                // Get the thumb bound and get its left value
-//                int x = seekBar.getThumb().getBounds().left;
-//                // set the left value to textview x value
-//                yourTextView.setX(x);
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                //Do nothing
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                //Do nothing
-            }
-        });
-        brightnessSeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
-                // TODO: Ugly
-                //seekBar.setThumb(getThumb(progressValue));
-                TooltipCompat.setTooltipText(seekBar, String.valueOf(progressValue));
-
-
-//                yourTextView.setText(progress + " miles");
-//                // Get the thumb bound and get its left value
-//                int x = seekBar.getThumb().getBounds().left;
-//                // set the left value to textview x value
-//                yourTextView.setX(x);
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                //Do nothing
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                //Do nothing
-            }
-        });
 
 
 
@@ -145,8 +109,6 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
             rotationField.clearFocus();
             scaleXField.clearFocus();
             scaleYField.clearFocus();
-            opacityField.clearFocus();
-            speedField.clearFocus();
             hueField.clearFocus();
         });
     }

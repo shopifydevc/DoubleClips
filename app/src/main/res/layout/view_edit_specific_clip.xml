@@ -299,7 +299,7 @@
 
                 </LinearLayout>
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
@@ -309,21 +309,66 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:text="Opacity:"
+                        android:text="Opacity: (Default: 1)"
+                        android:layout_centerVertical="true"
                         android:textSize="18sp" />
 
-                    <EditText
-                        android:id="@+id/opacityField"
+                    <ImageView
+                        android:id="@+id/opacityResetButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/baseline_restore_24"/>
+
+                </RelativeLayout>
+
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/opacityMinText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:hint="1"
+                        android:layout_alignParentStart="true"
+                        android:text="0"
                         android:textSize="18sp" />
 
+                    <com.warkiz.widget.IndicatorSeekBar
+                        android:id="@+id/opacitySeekbar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/opacityMinText"
+                        android:layout_toStartOf="@id/opacityMaxText"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="15dp"
+                        app:isb_max="1"
+                        app:isb_min="0"
+                        app:isb_progress="1"
+                        app:isb_show_indicator="rounded_rectangle"
+                        app:isb_seek_smoothly="true"
+                        app:isb_progress_value_float="true"
+                        app:isb_track_rounded_corners="true"
+                        app:isb_thumb_color="@color/colorPalette1_1"
+                        app:isb_track_progress_color="@color/colorPalette1_2"
+                        app:isb_indicator_text_color="@android:color/black"
+                        app:isb_indicator_color="@android:color/white"/>
 
-                </LinearLayout>
+                    <TextView
+                        android:id="@+id/opacityMaxText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:layout_alignParentEnd="true"
+                        android:text="1"
+                        android:textSize="18sp" />
 
-                <LinearLayout
+                </RelativeLayout>
+
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
@@ -333,18 +378,63 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:text="Speed:"
+                        android:text="Speed: (Default: 1)"
+                        android:layout_centerVertical="true"
                         android:textSize="18sp" />
 
-                    <EditText
-                        android:id="@+id/speedField"
+                    <ImageView
+                        android:id="@+id/speedResetButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/baseline_restore_24"/>
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/speedMinText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:hint="1"
+                        android:layout_alignParentStart="true"
+                        android:text="0.01"
                         android:textSize="18sp" />
 
-                </LinearLayout>
+                    <com.warkiz.widget.IndicatorSeekBar
+                        android:id="@+id/speedSeekbar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/speedMinText"
+                        android:layout_toStartOf="@id/speedMaxText"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="15dp"
+                        app:isb_max="10"
+                        app:isb_min="0.01"
+                        app:isb_progress="1"
+                        app:isb_show_indicator="rounded_rectangle"
+                        app:isb_seek_smoothly="true"
+                        app:isb_progress_value_float="true"
+                        app:isb_track_rounded_corners="true"
+                        app:isb_thumb_color="@color/colorPalette1_1"
+                        app:isb_track_progress_color="@color/colorPalette1_2"
+                        app:isb_indicator_text_color="@android:color/black"
+                        app:isb_indicator_color="@android:color/white"/>
+
+                    <TextView
+                        android:id="@+id/speedMaxText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:layout_alignParentEnd="true"
+                        android:text="10"
+                        android:textSize="18sp" />
+
+                </RelativeLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -356,7 +446,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:text="Hue (in degrees):"
+                        android:text="Hue (in degrees): (Default: 0)"
                         android:textSize="18sp" />
 
                     <EditText
@@ -369,7 +459,7 @@
 
                 </LinearLayout>
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
@@ -379,10 +469,19 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:text="Saturation:"
+                        android:text="Saturation: (Default: 1)"
+                        android:layout_centerVertical="true"
                         android:textSize="18sp" />
 
-                </LinearLayout>
+                    <ImageView
+                        android:id="@+id/saturationResetButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/baseline_restore_24"/>
+
+                </RelativeLayout>
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
@@ -396,6 +495,7 @@
                         android:text="-10"
                         android:textSize="18sp" />
 
+                    <!--
                     <SeekBar
                         android:id="@+id/saturationSeekbar"
                         android:layout_width="match_parent"
@@ -408,19 +508,41 @@
                         android:progress="1000"
                         android:progressDrawable="@drawable/tooltip_seekbar_style"
                         android:splitTrack="false"
-                        android:thumb="@drawable/tooltip_seekbar_thum"
-                        android:hint="1"
-                        android:textSize="18sp"/>
+                        android:thumb="@drawable/tooltip_seekbar_thum"/>
+                        -->
+
+
+                    <com.warkiz.widget.IndicatorSeekBar
+                        android:id="@+id/saturationSeekbar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/saturationMinText"
+                        android:layout_toStartOf="@id/saturationMaxText"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="15dp"
+                        app:isb_max="10"
+                        app:isb_min="-10"
+                        app:isb_progress="1"
+                        app:isb_show_indicator="rounded_rectangle"
+                        app:isb_seek_smoothly="true"
+                        app:isb_progress_value_float="true"
+                        app:isb_track_rounded_corners="true"
+                        app:isb_thumb_color="@color/colorPalette1_1"
+                        app:isb_track_progress_color="@color/colorPalette1_2"
+                        app:isb_indicator_text_color="@android:color/black"
+                        app:isb_indicator_color="@android:color/white"/>
+
                     <TextView
                         android:id="@+id/saturationMaxText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:layout_alignParentEnd="true"                        android:text="+10"
+                        android:layout_alignParentEnd="true"
+                        android:text="+10"
                         android:textSize="18sp" />
 
                 </RelativeLayout>
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
@@ -430,10 +552,19 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:text="Brightness:"
+                        android:text="Brightness: (Default: 0)"
+                        android:layout_centerVertical="true"
                         android:textSize="18sp" />
 
-                </LinearLayout>
+                    <ImageView
+                        android:id="@+id/brightnessResetButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/baseline_restore_24"/>
+
+                </RelativeLayout>
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
@@ -447,6 +578,7 @@
                         android:text="-10"
                         android:textSize="18sp" />
 
+                    <!--
                     <SeekBar
                         android:id="@+id/brightnessSeekbar"
                         android:layout_width="match_parent"
@@ -459,18 +591,107 @@
                         android:progress="1000"
                         android:progressDrawable="@drawable/tooltip_seekbar_style"
                         android:splitTrack="false"
-                        android:thumb="@drawable/tooltip_seekbar_thum"
-                        android:hint="1"
-                        android:textSize="18sp"/>
+                        android:thumb="@drawable/tooltip_seekbar_thum"/>
+                    -->
+
+                    <com.warkiz.widget.IndicatorSeekBar
+                        android:id="@+id/brightnessSeekbar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/brightnessMinText"
+                        android:layout_toStartOf="@id/brightnessMaxText"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="15dp"
+                        app:isb_max="10"
+                        app:isb_min="-10"
+                        app:isb_progress="0"
+                        app:isb_show_indicator="rounded_rectangle"
+                        app:isb_seek_smoothly="true"
+                        app:isb_progress_value_float="true"
+                        app:isb_track_rounded_corners="true"
+                        app:isb_thumb_color="@color/colorPalette1_1"
+                        app:isb_track_progress_color="@color/colorPalette1_2"
+                        app:isb_indicator_text_color="@android:color/black"
+                        app:isb_indicator_color="@android:color/white"/>
+
                     <TextView
                         android:id="@+id/brightnessMaxText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="15dp"
-                        android:layout_alignParentEnd="true"                        android:text="+10"
+                        android:layout_alignParentEnd="true"
+                        android:text="+10"
                         android:textSize="18sp" />
 
                 </RelativeLayout>
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/temperatureText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:text="Temperature: (Default 6500K)"
+                        android:layout_centerVertical="true"
+                        android:textSize="18sp" />
+
+                    <ImageView
+                        android:id="@+id/temperatureResetButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/baseline_restore_24"/>
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/temperatureMinText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:layout_alignParentStart="true"
+                        android:text="1000"
+                        android:textSize="18sp" />
+
+                    <com.warkiz.widget.IndicatorSeekBar
+                        android:id="@+id/temperatureSeekbar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/temperatureMinText"
+                        android:layout_toStartOf="@id/temperatureMaxText"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="15dp"
+                        app:isb_max="40000"
+                        app:isb_min="1000"
+                        app:isb_progress="6500"
+                        app:isb_show_indicator="rounded_rectangle"
+                        app:isb_seek_smoothly="true"
+                        app:isb_progress_value_float="true"
+                        app:isb_track_rounded_corners="true"
+                        app:isb_thumb_color="@color/colorPalette1_1"
+                        app:isb_track_progress_color="@color/colorPalette1_2"
+                        app:isb_indicator_text_color="@android:color/black"
+                        app:isb_indicator_color="@android:color/white"/>
+
+                    <TextView
+                        android:id="@+id/temperatureMaxText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:layout_alignParentEnd="true"
+                        android:text="40000"
+                        android:textSize="18sp" />
+
+                </RelativeLayout>
+
+
             </com.vanvatcorporation.doubleclips.impl.SectionView>
 
 

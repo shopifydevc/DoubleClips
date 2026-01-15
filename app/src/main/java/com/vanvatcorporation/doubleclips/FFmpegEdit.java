@@ -388,6 +388,7 @@ public class FFmpegEdit {
                         String hueExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Hue);
                         String saturationExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Saturation);
                         String brightnessExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Brightness);
+                        String temperatureExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Temperature);
 
                         String scaleXCmd = settings.isStretchToFull() ?
                                 String.valueOf(settings.getRenderVideoWidth(isTemplateCommand)) :
@@ -398,13 +399,14 @@ public class FFmpegEdit {
 
                         String scaleZoompan = settings.isStretchToFull() ? ":s=" + scaleXCmd + "x" + scaleYCmd : "";
 
-                        filterComplex.append("scale=").append(scaleXCmd).append(":").append(scaleYCmd).append(",")
+                        filterComplex.append("scale=w='").append(scaleXCmd).append("':h='").append(scaleYCmd).append("',")
                                 //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
                                 .append("rotate='").append(rotationExpr).append("':ow=rotw('").append(rotationExpr).append("'):oh=roth('").append(rotationExpr).append("')")
                                 .append(":fillcolor=0x00000000").append(",")
                                 .append("hue=h='").append(hueExpr)
                                 .append("':s='").append(saturationExpr)
                                 .append("':b='").append(brightnessExpr).append("',")
+                                .append("colortemperature=temperature='").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Temperature)).append("',")
                                 .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
                                 .append("zoompan=z=zoom*'").append(scaleXExpr).append("':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'").append(scaleZoompan).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(speedExpr).append("+").append(clip.startTime).append("/TB'").append(",");
@@ -429,7 +431,9 @@ public class FFmpegEdit {
                                 .append("rotate=").append(radiansRotation).append(":ow=rotw(").append(radiansRotation).append("):oh=roth(").append(radiansRotation).append(")")
                                 .append(":fillcolor=0x00000000").append(",")
                                 .append("hue=h=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Hue))
-                                .append(":s=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Saturation)).append(",")
+                                .append(":s=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Saturation))
+                                .append(":b=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Brightness)).append(",")
+                                .append("colortemperature=temperature=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Temperature)).append(",")
                                 .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed)).append("+").append(clip.startTime).append("/TB'").append(",");
                     }
