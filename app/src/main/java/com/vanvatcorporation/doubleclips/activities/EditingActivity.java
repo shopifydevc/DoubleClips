@@ -80,7 +80,6 @@ import com.vanvatcorporation.doubleclips.helper.EdgeScrollHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
-import com.vanvatcorporation.doubleclips.helper.MathHelper;
 import com.vanvatcorporation.doubleclips.helper.ParserHelper;
 import com.vanvatcorporation.doubleclips.helper.StringFormatHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
@@ -412,7 +411,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
 
 
-        boolean isVideoHasAudio = false;
+        boolean isClipHasAudio = false;
         int width = 0, height = 0;
         // Video check
         if(type == ClipType.VIDEO)
@@ -424,11 +423,17 @@ public class EditingActivity extends AppCompatActivityImpl {
                 width = Integer.parseInt(Objects.requireNonNull(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)));
                 height = Integer.parseInt(Objects.requireNonNull(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)));
 
-                isVideoHasAudio = "yes".equals(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
+                isClipHasAudio = "yes".equals(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
                 retriever.close();
             } catch (IOException e) {
                 LoggingManager.LogExceptionToNoteOverlay(this, e);
             }
+        }
+        if(type == ClipType.AUDIO)
+        {
+            // Audio always has audio, of course
+            // Add this to fix the noSound icon appear at Audio Clip, which make no sense
+            isClipHasAudio = true;
         }
         if(type == ClipType.IMAGE)
         {
@@ -440,7 +445,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
 
 
-        Clip newClip = new Clip(filename, currentTime, duration, selectedTrack.trackIndex, type, isVideoHasAudio, width, height);
+        Clip newClip = new Clip(filename, currentTime, duration, selectedTrack.trackIndex, type, isClipHasAudio, width, height);
 
 
         addClipToTrack(selectedTrack, newClip);
@@ -2882,7 +2887,7 @@ public class EditingActivity extends AppCompatActivityImpl {
          * When export, decide to include audio stream or not to prevent "match no stream" ffmpeg error.
          */
         @Expose
-        public boolean isVideoHasAudio;    // for VIDEO type
+        public boolean isClipHasAudio;    // for VIDEO type
 
         /**
          * For VIDEO type.
@@ -2903,7 +2908,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public transient TextView durationText;
 
 
-        public Clip(String clipName, float startTime, float duration, int trackIndex, ClipType type, boolean isVideoHasAudio, int width, int height) {
+        public Clip(String clipName, float startTime, float duration, int trackIndex, ClipType type, boolean isClipHasAudio, int width, int height) {
             this.clipName = clipName;
             this.startTime = startTime;
             this.startClipTrim = 0;
@@ -2912,7 +2917,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.originalDuration = duration;
             this.trackIndex = trackIndex;
             this.type = type;
-            this.isVideoHasAudio = isVideoHasAudio;
+            this.isClipHasAudio = isClipHasAudio;
 
             this.width = width;
             this.height = height;
@@ -2930,7 +2935,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             this.originalDuration = clip.originalDuration;
             this.trackIndex = clip.trackIndex;
             this.type = clip.type;
-            this.isVideoHasAudio = clip.isVideoHasAudio;
+            this.isClipHasAudio = clip.isClipHasAudio;
 
             this.width = clip.width;
             this.height = clip.height;
@@ -3195,7 +3200,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             noSoundViewRef.setLayoutParams(clipPropertiesLayoutParams);
             noSoundViewRef.setImageResource(R.drawable.baseline_music_off_24);
             clipPropertiesLinearLayoutGroup.addView(noSoundViewRef);
-            noSoundViewRef.setVisibility(!isVideoHasAudio ? View.VISIBLE : View.GONE);
+            noSoundViewRef.setVisibility(!isClipHasAudio ? View.VISIBLE : View.GONE);
 
             // No sound display
             muteViewRef = new ImageView(activity);
@@ -3415,13 +3420,13 @@ public class EditingActivity extends AppCompatActivityImpl {
             muteViewRef.setVisibility(mute ? View.VISIBLE : View.GONE);
         }
 
-        public boolean isVideoHasAudio() {
-            return isVideoHasAudio;
+        public boolean isClipHasAudio() {
+            return isClipHasAudio;
         }
 
-        public void setVideoHasAudio(boolean videoHasAudio) {
-            isVideoHasAudio = videoHasAudio;
-            noSoundViewRef.setVisibility(!videoHasAudio ? View.VISIBLE : View.GONE);
+        public void setClipHasAudio(boolean clipHasAudio) {
+            isClipHasAudio = clipHasAudio;
+            noSoundViewRef.setVisibility(!clipHasAudio ? View.VISIBLE : View.GONE);
         }
 
         public String getClipName()
@@ -4453,7 +4458,7 @@ frameRate = 60;
 //                        }
                         renderThreadExecutorVideo.execute(() -> pumpDecoderVideoSeek(playheadTime));
 
-                        if(clip.isVideoHasAudio())
+                        if(clip.isClipHasAudio())
                             renderThreadExecutorAudio.execute(() -> pumpDecoderAudioSeek(playheadTime));
                         break;
                     }

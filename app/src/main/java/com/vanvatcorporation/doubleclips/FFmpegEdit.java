@@ -41,7 +41,6 @@ import com.arthenica.ffmpegkit.FFmpegKit;
 import com.arthenica.ffmpegkit.ReturnCode;
 import com.arthenica.ffmpegkit.Statistics;
 import com.vanvatcorporation.doubleclips.activities.EditingActivity;
-import com.vanvatcorporation.doubleclips.activities.MainActivity;
 import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
@@ -522,7 +521,7 @@ public class FFmpegEdit {
             }
 
             // 🔊 Handle embedded audio in VIDEO
-            if (clip.type == EditingActivity.ClipType.VIDEO && clip.isVideoHasAudio() && !clip.isMute()) {
+            if (clip.type == EditingActivity.ClipType.VIDEO && clip.isClipHasAudio() && !clip.isMute()) {
 
                 // Transition extension: Same for clip
                 int delayMs = (int) (clip.startTime * 1000);
