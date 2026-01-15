@@ -477,9 +477,13 @@ public class FFmpegEdit {
 
                     }
 
-                    filterComplex.append(":enable='between(t,")
-                            .append(clip.startTime).append(",")
-                            .append(clip.startTime + clip.duration + fillingTransitionDuration).append(")'").append(",")
+                    filterComplex.append(":enable='").append(
+                            getConditionThree(
+                                    "t",
+                                    String.valueOf(clip.startTime),
+                                    String.valueOf(clip.startTime + clip.duration + fillingTransitionDuration),
+                                    "~")
+                            ).append("'").append(",")
                             .append("fps=").append(settings.getFrameRate())
                             .append(outputLabel).append(";\n");
 
@@ -496,8 +500,7 @@ public class FFmpegEdit {
                             .append(":text='").append(clip.textContent.replace(":", "\\:").replace("'", "\\'"))
                             .append("':x=").append("(w-text_w)/2")//.append(clip.posX) Centralize text
                             .append(":y=").append("(h-text_h)/2")//.append(clip.posY) Centralize text
-                            .append(":enable='between(t,").append(clip.startTime).append(",")
-                            .append(clip.startTime + clip.duration).append(")'").append(",")
+                            .append(":enable='").append(getConditionThree("t", String.valueOf(clip.startTime), String.valueOf(clip.startTime + clip.duration), "~")).append("'").append(",")
                             .append("fps=").append(settings.getFrameRate())
                             .append(outputLabel).append(";\n");
 
@@ -584,9 +587,12 @@ public class FFmpegEdit {
                 case TEXT:
                     filterComplex.append((layer == 0 ? baseInfo.tag : (tags.useTag(prevOutputLabel).tag))).append(tags.useTag(clip).tag)
                             .append("overlay=")
-                            .append("enable='between(t,")
-                            .append(clip.startTime).append(",")
-                            .append(clip.startTime + clip.duration).append(")'").append(outputLabel).append(";\n");
+                            .append("enable='").append(
+                                    getConditionThree("t",
+                                            String.valueOf(clip.startTime),
+                                            String.valueOf(clip.startTime + clip.duration),
+                                            "~")
+                            ).append("'").append(outputLabel).append(";\n");
 
                     tags.storeTag(outputLabel);
 
