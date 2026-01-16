@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.Executors;
 
@@ -380,6 +381,7 @@ public class FFmpegEdit {
                         String scaleYExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.ScaleY);
 
 
+                        String opacityExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Opacity);
                         String speedExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Speed);
 
                         String rotationExpr = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.RotInRadians);
@@ -406,7 +408,7 @@ public class FFmpegEdit {
                                 .append("':s='").append(saturationExpr)
                                 .append("':b='").append(brightnessExpr).append("',")
                                 .append("colortemperature=temperature='").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Temperature)).append("',")
-                                .append("format=yuva420p,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
+                                .append("format=yuva420p,geq=lum_expr='lum(X,Y)':a='").append(opacityExpr).append("',")
                                 .append("zoompan=z=zoom*'").append(scaleXExpr).append("':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'").append(scaleZoompan).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(speedExpr).append("+").append(clip.startTime).append("/TB'").append(",");
                     }
@@ -433,7 +435,7 @@ public class FFmpegEdit {
                                 .append(":s=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Saturation))
                                 .append(":b=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Brightness)).append(",")
                                 .append("colortemperature=temperature=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Temperature)).append(",")
-                                .append("format=yuva420p,geq=a='if(lt(T,1),lerp(0.5,1,T)*alpha(X,Y),if(lt(T,2),lerp(1,0.2,T-1)*alpha(X,Y),lerp(0.2,1,T-2)*alpha(X,Y)))':r='r(X,Y)',")//.append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
+                                .append("format=yuva420p,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed)).append("+").append(clip.startTime).append("/TB'").append(",");
                     }
 
@@ -698,7 +700,9 @@ public class FFmpegEdit {
         // Input time for zoompan expression, time for other.
         String timeUnit =
                 (valueType == EditingActivity.VideoProperties.ValueType.ScaleX || valueType == EditingActivity.VideoProperties.ValueType.ScaleY) ?
-                        "it" : valueType == EditingActivity.VideoProperties.ValueType.Speed ? "T" : "t";
+                        "it" :
+                        valueType == EditingActivity.VideoProperties.ValueType.Speed || valueType == EditingActivity.VideoProperties.ValueType.Opacity ?
+                                "T" : "t";
 
         // Skipping matching element
         if(prevKeyframe.getLocalTime() == nextKeyframe.getLocalTime())
@@ -729,7 +733,7 @@ public class FFmpegEdit {
         // Get global time for Speed as it use T as Timebase, global Time.
         return generateEasing(prevKey.value.getValue(type),
                 nextKey.value.getValue(type),
-                type == EditingActivity.VideoProperties.ValueType.Speed ?
+                Objects.equals(timeUnit, "T") ?
                         prevKey.getGlobalTime(clip) :
                         prevKey.getLocalTime(),
                 (nextKey.getLocalTime() - prevKey.getLocalTime()),
