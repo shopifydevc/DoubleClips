@@ -236,7 +236,7 @@ public class FFmpegEdit {
                 case IMAGE:
                     cmd.append("-f lavfi -i \"nullsrc=size=")
                             .append(settings.getRenderVideoWidth(isTemplateCommand)).append("x").append(settings.getRenderVideoHeight(isTemplateCommand))
-                            .append(":rate=").append(settings.getFrameRate()).append(",format=rgba\"").append(" ");
+                            .append(":rate=").append(settings.getFrameRate()).append(",format=yuva420p\"").append(" ");
 
                     // Since image is a still image, with only one frame. We need to specify it and manipulate it
                     // some how to behave like a video, that way we can use that as a normal video playback
@@ -255,7 +255,7 @@ public class FFmpegEdit {
                 case TEXT:
                     cmd.append("-f lavfi -i \"nullsrc=size=")
                             .append(settings.getRenderVideoWidth(isTemplateCommand)).append("x").append(settings.getRenderVideoHeight(isTemplateCommand))
-                            .append(":rate=").append(settings.getFrameRate()).append(",format=rgba\"").append(" ");
+                            .append(":rate=").append(settings.getFrameRate()).append(",format=yuva420p\"").append(" ");
                     break;
 
             }
@@ -406,7 +406,7 @@ public class FFmpegEdit {
                                 .append("':s='").append(saturationExpr)
                                 .append("':b='").append(brightnessExpr).append("',")
                                 .append("colortemperature=temperature='").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Temperature)).append("',")
-                                .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
+                                .append("format=yuva420p,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
                                 .append("zoompan=z=zoom*'").append(scaleXExpr).append("':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'").append(scaleZoompan).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(speedExpr).append("+").append(clip.startTime).append("/TB'").append(",");
                     }
@@ -433,7 +433,7 @@ public class FFmpegEdit {
                                 .append(":s=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Saturation))
                                 .append(":b=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Brightness)).append(",")
                                 .append("colortemperature=temperature=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Temperature)).append(",")
-                                .append("format=rgba,colorchannelmixer=aa=").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
+                                .append("format=yuva420p,geq=a='if(lt(T,1),lerp(0.5,1,T)*alpha(X,Y),if(lt(T,2),lerp(1,0.2,T-1)*alpha(X,Y),lerp(0.2,1,T-2)*alpha(X,Y)))':r='r(X,Y)',")//.append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Opacity)).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed)).append("+").append(clip.startTime).append("/TB'").append(",");
                     }
 
