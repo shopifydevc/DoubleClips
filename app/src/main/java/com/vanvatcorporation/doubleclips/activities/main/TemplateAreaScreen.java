@@ -286,20 +286,23 @@ public class TemplateAreaScreen extends BaseAreaScreen {
                 try {
                     Bitmap thumbnailBitmap = ImageHelper.getImageBitmapFromNetwork(context, projectItem.getTemplateSnapshotLink());
 
-                    holder.wholeView.post(() -> {
-                        holder.templatePreview.setImageBitmap(thumbnailBitmap);
-                        int targetWidth = holder.wholeView.getWidth();
+                    if(thumbnailBitmap != null)
+                    {
+                        holder.wholeView.post(() -> {
+                            holder.templatePreview.setImageBitmap(thumbnailBitmap);
+                            int targetWidth = holder.wholeView.getWidth();
 
-                        int imageWidth = thumbnailBitmap.getWidth();
-                        int imageHeight = thumbnailBitmap.getHeight();
+                            int imageWidth = thumbnailBitmap.getWidth();
+                            int imageHeight = thumbnailBitmap.getHeight();
 
-                        int[] res = AlgorithmHelper.scaleByWidth(targetWidth, imageWidth, imageHeight);
+                            int[] res = AlgorithmHelper.scaleByWidth(targetWidth, imageWidth, imageHeight);
 
-                        ViewGroup.LayoutParams imageDimension = holder.templatePreview.getLayoutParams();
-                        imageDimension.width = res[0];
-                        imageDimension.height = res[1];
-                        holder.templatePreview.setLayoutParams(imageDimension);
-                    });
+                            ViewGroup.LayoutParams imageDimension = holder.templatePreview.getLayoutParams();
+                            imageDimension.width = res[0];
+                            imageDimension.height = res[1];
+                            holder.templatePreview.setLayoutParams(imageDimension);
+                        });
+                    }
                 } catch (Exception e) {
                     LoggingManager.LogExceptionToNoteOverlay(context, e);
                 }
