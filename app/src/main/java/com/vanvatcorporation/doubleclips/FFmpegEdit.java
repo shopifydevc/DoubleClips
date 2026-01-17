@@ -705,9 +705,9 @@ public class FFmpegEdit {
                         valueType == EditingActivity.VideoProperties.ValueType.Speed || valueType == EditingActivity.VideoProperties.ValueType.Opacity ?
                                 "T" : "t";
 
-        // Skipping matching element
-        if(prevKeyframe.getLocalTime() == nextKeyframe.getLocalTime())
-            return String.valueOf(prevKeyframe.getLocalTime());
+        // Skipping matching value element
+        if(prevKeyframe.value.getValue(valueType) == nextKeyframe.value.getValue(valueType))
+            return String.valueOf(prevKeyframe.value.getValue(valueType));
 
         keyframeExprString
                 .append("if(")
