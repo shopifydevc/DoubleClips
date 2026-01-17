@@ -281,7 +281,6 @@ public class ProjectFilesEditSpecificAreaScreen extends BaseEditSpecificAreaScre
                 holder.wholeView.performClick();
             });
 
-
             holder.wholeView.setOnClickListener(v -> {
                 if(activityInstance != null)
                     if(EditingActivity.selectedTrack != null) {
@@ -291,6 +290,10 @@ public class ProjectFilesEditSpecificAreaScreen extends BaseEditSpecificAreaScre
                     else new AlertDialog.Builder(getContext()).setTitle("Error").setMessage("Tung Tung Tung Sahur! (EditingActivity instance not initialized!)").show();
             });
             holder.wholeView.setOnLongClickListener(v -> {
+                IOHelper.deleteFile(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_CLIP_DIRECTORY, projectItem.getFileTitle()));
+                IOHelper.deleteFile(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_PREVIEW_CLIP_DIRECTORY, projectItem.getFileTitle()));
+                projectFilesList.remove(position);
+                notifyItemRemoved(position);
                 return true;
             });
         }

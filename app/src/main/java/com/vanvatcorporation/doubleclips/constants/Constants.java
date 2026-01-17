@@ -22,7 +22,8 @@ public class Constants {
     public static final float CANVAS_ROTATE_SNAP_THRESHOLD_DEGREE = 3f; // degrees
     public static final float CANVAS_ROTATE_SNAP_DEGREE = 90f;
     public static float TRACK_CLIPS_SNAP_THRESHOLD_PIXEL = 30f; // pixels;
-    public static float TRACK_CLIPS_SNAP_THRESHOLD_SECONDS = 0.3f; // seconds;
+    public static float TRACK_CLIPS_SNAP_THRESHOLD_SECONDS = 0.1f; // seconds;
+    public static float TRACK_CLIPS_MINIMUM_KEYFRAME_SPACE_SECONDS = 0.01f; // seconds;
     public static float TRACK_CLIPS_SHRINK_LIMIT_PIXEL = 20f; // pixels;
 
 

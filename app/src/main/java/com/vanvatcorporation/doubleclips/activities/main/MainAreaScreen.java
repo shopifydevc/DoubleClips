@@ -189,8 +189,9 @@ public class MainAreaScreen extends BaseAreaScreen {
 
     public void reloadingProject()
     {
+        int beforeRange = projectList.size();
         projectList.clear();
-        projectAdapter.notifyDataSetChanged();
+        projectAdapter.notifyItemRangeRemoved(0, beforeRange);
         String projectsFolderPath = IOHelper.CombinePath(IOHelper.getPersistentDataPath(getContext()), "projects");
         File file = new File(projectsFolderPath);
         if(file.listFiles() == null) {

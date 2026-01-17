@@ -5,6 +5,7 @@ import static com.vanvatcorporation.doubleclips.FFmpegEdit.runAnyCommand;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -199,10 +200,10 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
     @SuppressLint("Range")
-    public String getFileName(Uri uri) {
+    public static String getFileName(ContentResolver contentResolver, Uri uri) {
         String result = null;
         if (uri.getScheme().equals("content")) {
-            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            Cursor cursor = contentResolver.query(uri, null, null, null, null);
             try {
                 if (cursor != null && cursor.moveToFirst()) {
                     result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
@@ -219,6 +220,9 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
         }
         return result;
+    }
+    public String getFileName(Uri uri) {
+        return getFileName(getContentResolver(), uri);
     }
     int getCurrentTimeInX()
     {
@@ -1647,34 +1651,9 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
         trackLayout.addView(clipView);
+        data.addTransitionKnotToTrack(trackLayout);
+
         handleClipInteraction(clipView);
-    }
-    public void addKnotTransition(TransitionClip clip, Clip clipA)
-    {
-        ImageView knotView = new ImageView(this);
-        knotView.setBackgroundColor(Color.WHITE);
-
-        knotView.setImageResource(R.drawable.baseline_local_movies_24);
-
-        knotView.setVisibility(View.VISIBLE);
-
-        knotView.setTag(R.id.transition_knot_tag, clip);
-        knotView.setTag(R.id.clip_knot_tag, clipA);
-        // Position it between clips
-        int width = 40;
-        int height = 40;
-
-        knotView.setPivotX((float) width /2);
-        knotView.setPivotY((float) height /2);
-
-        TrackFrameLayout.LayoutParams params = new TrackFrameLayout.LayoutParams(width, height);
-        //params.leftMargin = clipB.getLeft() - (width / 2); // center between clips
-        params.gravity = Gravity.CENTER_VERTICAL;
-        //params.topMargin = clipA.viewRef.getTop() + (clipA.viewRef.getHeight() / 2) - (height / 2);
-        knotView.setX(clipA.viewRef.getX() + (clipA.duration * pixelsPerSecond) - (width / 2));
-        timeline.tracks.get(clip.trackIndex).viewRef.addView(knotView, params);
-
-        handleKnotInteraction(knotView);
     }
 
     public void addKeyframe(Clip clip, float keyframeTime)
@@ -1692,9 +1671,13 @@ public class EditingActivity extends AppCompatActivityImpl {
     {
         // Clamp keyframe in local time.
         if(!keyframe.isWithinClip(clip)) return;
+        // Prevent duplication
+        if(keyframe.isKeyframeExist(clip)) return;
         addKeyframeUi(clip, keyframe);
 
         clip.keyframes.keyframes.add(keyframe);
+
+        clip.keyframes.sortKeyframe();
     }
     public void addKeyframeUi(Clip clip, Keyframe keyframe)
     {
@@ -2004,7 +1987,9 @@ public class EditingActivity extends AppCompatActivityImpl {
                         timelineScroll.requestDisallowInterceptTouchEvent(false);
 
                         if(dragContext.clip != null) {
-                            dragContext.clip.toggleHandlesVisibility(true);
+                            if(selectedClip == dragContext.clip)
+                                dragContext.clip.toggleHandlesVisibility(true);
+                            dragContext.clip.resetTransitionKnotPosition();
                         }
 
                         if (dragContext.ghost != null) {
@@ -2112,35 +2097,29 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
     void updateTransitionKnot(Track track)
     {
-
-        //TODO: Use endTransition from clipA and toggle visibility and on/off of the transition
-        ArrayList<Clip> snappedClipStart = new ArrayList<>();
-        ArrayList<Clip> snappedClipEnd = new ArrayList<>();
-
-
-//                              ArrayList<View> sortedTrackClips = IntStream.range(0, dragContext.currentTrack.viewRef.getChildCount()).mapToObj(i -> dragContext.currentTrack.viewRef.getChildAt(i)).filter(clipView -> clipView.getTag() instanceof Clip).collect(Collectors.toCollection(ArrayList::new));
-
-//        track.clearTransition();
-        track.disableTransitions();
-
         // Check for snapped track
         for (int i = 1; i < track.clips.size(); i++) {
             Clip at = track.clips.get(i - 1);
             Clip other = track.clips.get(i);
             // Snap ghost start to other end
-            if (Math.abs(at.startTime - (other.startTime + other.duration)) <= Constants.TRACK_CLIPS_SNAP_THRESHOLD_PIXEL / pixelsPerSecond) {
-                snappedClipEnd.add(at);
-                snappedClipStart.add(other);
+            if (Math.abs(at.startTime - (other.startTime + other.duration)) <= Constants.TRACK_CLIPS_SNAP_THRESHOLD_SECONDS) {
+                addTransitionBridge(other, at, 0.2f);
+            }
+            else {
+                other.setEndTransitionEnabled(false);
             }
             // Snap ghost end to other start
-            if (Math.abs((at.startTime + at.duration) - other.startTime) <= Constants.TRACK_CLIPS_SNAP_THRESHOLD_PIXEL / pixelsPerSecond) {
-                snappedClipEnd.add(other);
-                snappedClipStart.add(at);
+            if (Math.abs((at.startTime + at.duration) - other.startTime) <= Constants.TRACK_CLIPS_SNAP_THRESHOLD_SECONDS) {
+                addTransitionBridge(at, other, 0.2f);
+            }
+            else {
+                at.setEndTransitionEnabled(false);
             }
         }
-
-        for (int i = 0; i < snappedClipStart.size(); i++) {
-            addTransitionBridge(snappedClipStart.get(i), snappedClipEnd.get(i), 0.2f);
+        // Fallback if track only has 1 clip element
+        if(track.clips.size() == 1) {
+            Clip other = track.clips.get(0);
+            other.setEndTransitionEnabled(false);
         }
     }
     void updateTrackWidth(Track track)
@@ -2342,26 +2321,23 @@ public class EditingActivity extends AppCompatActivityImpl {
             // If null then define new transition, else keep the transition from the clip.
             if(clipA.endTransition == null)
             {
-                TransitionClip transition = new TransitionClip();
-                transition.trackIndex = clipA.trackIndex;
-                transition.startTime = clipB.startTime - transitionDuration / 2;
-                transition.duration = transitionDuration;
-                transition.effect = new EffectTemplate("fade", transitionDuration, transition.startTime);
-                transition.mode = TransitionClip.TransitionMode.OVERLAP;
-
-                clipA.endTransition = transition;
+                clipA.endTransition = new TransitionClip(clipA, clipB, transitionDuration);
             }
 
-            clipA.endTransitionEnabled = true;
+            if(clipA.transitionKnotViewRef.getParent() instanceof TrackFrameLayout && clipA.viewRef.getParent() instanceof TrackFrameLayout)
+                if(clipA.transitionKnotViewRef.getParent() != clipA.viewRef.getParent()) {
+                    clipA.forceAddTransitionKnotToTrack((TrackFrameLayout) clipA.viewRef.getParent());
+                }
+            clipA.setEndTransitionEnabled(true);
 
-            addTransitionBridgeUi(clipA.endTransition, clipA);
+            //addTransitionBridgeUi(clipA.endTransition, clipA);
         }
 
     }
-    private void addTransitionBridgeUi(TransitionClip transitionClip, Clip clip)
-    {
-        addKnotTransition(transitionClip, clip);
-    }
+//    private void addTransitionBridgeUi(TransitionClip transitionClip, Clip clip)
+//    {
+//        addKnotTransition(transitionClip, clip);
+//    }
 
 
 
@@ -2787,7 +2763,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
         public void disableTransitions() {
             for (Clip clip : clips) {
-                clip.endTransitionEnabled = false;
+                clip.setEndTransitionEnabled(false);
             }
             removeTransitionUi();
         }
@@ -2817,6 +2793,10 @@ public class EditingActivity extends AppCompatActivityImpl {
             for (int i = trackIndex; i < tracks.size(); i++) {
                 Track higherTrack = tracks.get(i);
                 higherTrack.trackIndex--;
+                // Change trackIndex for Clip as well
+                for (Clip clip : higherTrack.clips) {
+                    clip.trackIndex = higherTrack.trackIndex;
+                }
             }
 
             trackContainer.removeView(viewRef);
@@ -2833,6 +2813,10 @@ public class EditingActivity extends AppCompatActivityImpl {
     }
 
     public static class Clip implements Serializable {
+        public static final int ELEVATION_HANDLERS = 2;
+        public static final int ELEVATION_TRANSITION_KNOT = 1;
+
+
         @Expose
         public ClipType type;
         @Expose
@@ -2901,6 +2885,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         //Not serializing
         public transient View leftHandle, rightHandle;
+        public transient ImageView transitionKnotViewRef;
         public transient ImageGroupView viewRef;
         public transient LinearLayout clipPropertiesLinearLayoutGroup;
         public transient ImageView templateLockViewRef, noSoundViewRef, muteViewRef;
@@ -3000,9 +2985,62 @@ public class EditingActivity extends AppCompatActivityImpl {
             if(isVisible)
                 resetHandlesPosition();
         }
+        public void resetTransitionKnotPosition()
+        {
+            transitionKnotViewRef.setX(viewRef.getX() + (duration * pixelsPerSecond) - (transitionKnotViewRef.getWidth() / 2f));
+        }
+        public void addTransitionKnotToTrack(TrackFrameLayout trackViewRef)
+        {
+            if(transitionKnotViewRef.getParent() == null) {
+                trackViewRef.addView(transitionKnotViewRef);
+            }
+        }
+        public void forceAddTransitionKnotToTrack(TrackFrameLayout trackViewRef)
+        {
+            if(transitionKnotViewRef.getParent() != null) ((ViewGroup)transitionKnotViewRef.getParent()).removeView(transitionKnotViewRef);
+            addTransitionKnotToTrack(trackViewRef);
+        }
+        public void toggleTransitionKnotVisibility(boolean isVisible)
+        {
+            transitionKnotViewRef.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+            if(isVisible)
+                resetTransitionKnotPosition();
+        }
+
+
+        public void addKnotTransitionUi(EditingActivity activity, TransitionClip clip, Clip clipA)
+        {
+            transitionKnotViewRef = new ImageView(activity);
+            transitionKnotViewRef.setBackgroundColor(Color.WHITE);
+            transitionKnotViewRef.setElevation(ELEVATION_TRANSITION_KNOT);
+
+            transitionKnotViewRef.setImageResource(R.drawable.baseline_local_movies_24);
+
+            transitionKnotViewRef.setVisibility(View.VISIBLE);
+
+            transitionKnotViewRef.setTag(R.id.transition_knot_tag, clip);
+            transitionKnotViewRef.setTag(R.id.clip_knot_tag, clipA);
+            // Position it between clips
+            int width = 40;
+            int height = 40;
+
+            transitionKnotViewRef.setPivotX((float) width /2);
+            transitionKnotViewRef.setPivotY((float) height /2);
+
+            TrackFrameLayout.LayoutParams params = new TrackFrameLayout.LayoutParams(width, height);
+            //params.leftMargin = clipB.getLeft() - (width / 2); // center between clips
+            params.gravity = Gravity.CENTER_VERTICAL;
+            //params.topMargin = clipA.viewRef.getTop() + (clipA.viewRef.getHeight() / 2) - (height / 2);
+            transitionKnotViewRef.setLayoutParams(params);
+            resetTransitionKnotPosition();
+//            addTransitionKnotToTrack(activity.timeline.tracks.get(clip.trackIndex).viewRef);
+
+            activity.handleKnotInteraction(transitionKnotViewRef);
+        }
 
         public void registerClipHandles(ImageGroupView clipView, EditingActivity activity, HorizontalScrollView timelineScroll) {
             leftHandle = new View(clipView.getContext());
+            leftHandle.setElevation(ELEVATION_HANDLERS);
             leftHandle.setBackgroundColor(Color.WHITE);
             RelativeLayout.LayoutParams leftParams = new RelativeLayout.LayoutParams(35, ViewGroup.LayoutParams.MATCH_PARENT);
             //leftParams.addRule(RelativeLayout.ALIGN_PARENT_START);
@@ -3012,6 +3050,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             leftHandle.setLayoutParams(leftParams);
 
             rightHandle = new View(clipView.getContext());
+            rightHandle.setElevation(ELEVATION_HANDLERS);
             rightHandle.setBackgroundColor(Color.WHITE);
             RelativeLayout.LayoutParams rightParams = new RelativeLayout.LayoutParams(35, ViewGroup.LayoutParams.MATCH_PARENT);
             //rightParams.addRule(RelativeLayout.ALIGN_PARENT_END);
@@ -3062,18 +3101,26 @@ public class EditingActivity extends AppCompatActivityImpl {
                                     // Clamp for small width, if user want to shrink media further, consider zooming for more detailed edit
                                     if(newWidth < Constants.TRACK_CLIPS_SHRINK_LIMIT_PIXEL) return true;
 
+                                    // TODO: Inaccurate, research later.
                                     clipView.getLayoutParams().width = newWidth;
                                     clipView.setX(clipView.getX() + deltaX);
                                     clipView.requestLayout();
+
+                                    // In sync with clip metadata
+//                                    clipView.getLayoutParams().width = (int) (clip.getDuration() * pixelsPerSecond);
+//                                    clipView.setX((startTime + startClipTrim) * pixelsPerSecond + centerOffset);
+//                                    clipView.requestLayout();
+
+                                    clip.startTime = (clipView.getX() - centerOffset) / pixelsPerSecond;
+                                    clip.startClipTrim += (deltaX) / pixelsPerSecond;
+                                    clip.setDuration(clip.originalDuration - clip.endClipTrim - clip.startClipTrim);//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
+
 
                                     // TODO: Inaccurate, research later.
 //                                    leftHandle.setX(leftHandle.getX() + deltaX);
                                     // TODO: Too resource consuming.
                                     resetHandlesPosition();
 
-                                    clip.startTime = (clipView.getX() - centerOffset) / pixelsPerSecond;
-                                    clip.startClipTrim += (deltaX) / pixelsPerSecond;
-                                    clip.setDuration(clip.originalDuration - clip.endClipTrim - clip.startClipTrim);//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
 
                                     break;
 
@@ -3140,16 +3187,23 @@ public class EditingActivity extends AppCompatActivityImpl {
                                     if(newWidth < Constants.TRACK_CLIPS_SHRINK_LIMIT_PIXEL) return true;
 
 
+                                    // TODO: Inaccurate, research later.
                                     clipView.getLayoutParams().width = newWidth;
                                     clipView.requestLayout();
+
+                                    // In sync with clip metadata
+//                                    clipView.getLayoutParams().width = (int) (getDuration() * pixelsPerSecond);
+//                                    clipView.requestLayout();
+
+                                    clip.endClipTrim -= (deltaX) / pixelsPerSecond;
+                                    clip.setDuration(clip.originalDuration - clip.endClipTrim - clip.startClipTrim);//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
+
 
                                     // TODO: Inaccurate, research later.
                                     //rightHandle.setX(rightHandle.getX() + deltaX);
                                     // TODO: Too resource consuming.
                                     resetHandlesPosition();
 
-                                    clip.endClipTrim -= (deltaX) / pixelsPerSecond;
-                                    clip.setDuration(clip.originalDuration - clip.endClipTrim - clip.startClipTrim);//Math.max(MIN_CLIP_DURATION, newWidth / (float) pixelsPerSecond);
                                     break;
 
                                 case MotionEvent.ACTION_UP:
@@ -3219,6 +3273,10 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipPropertiesLinearLayoutGroup.addView(durationText);
 
             registerClipHandles(clipView, activity, timelineScroll);
+            if(endTransition == null)
+                endTransition = new TransitionClip(this);
+            addKnotTransitionUi(activity, endTransition, this);
+
 
             deselect();
         }
@@ -3241,8 +3299,10 @@ public class EditingActivity extends AppCompatActivityImpl {
             viewRef.getFilledImageView().setColorFilter(0x77AAAAAA);
 
             // If handles isn't being added yet
-            if(viewRef.getParent() instanceof TrackFrameLayout)
+            if(viewRef.getParent() instanceof TrackFrameLayout) {
                 addHandlesToTrack(((TrackFrameLayout) viewRef.getParent()));
+                addTransitionKnotToTrack(((TrackFrameLayout) viewRef.getParent()));
+            }
 
             toggleHandlesVisibility(true);
             clipPropertiesLinearLayoutGroup.setVisibility(View.VISIBLE);
@@ -3313,7 +3373,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
         public boolean isClipTransitionAvailable()
         {
-            return endTransitionEnabled && endTransition != null;
+            return isEndTransitionEnabled() && endTransition != null;
         }
 
 
@@ -3398,8 +3458,14 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
 
 
+        public boolean isEndTransitionEnabled() {
+            return endTransitionEnabled;
+        }
 
-
+        public void setEndTransitionEnabled(boolean endTransitionEnabled) {
+            this.endTransitionEnabled = endTransitionEnabled;
+            toggleTransitionKnotVisibility(endTransitionEnabled);
+        }
 
         public boolean getIsLockedForTemplate()
         {
@@ -3510,6 +3576,24 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         @Expose
         public TransitionMode mode;
+
+        public TransitionClip(Clip clipA, Clip clipB, float transitionDuration)
+        {
+            trackIndex = clipA.trackIndex;
+            startTime = clipB.startTime - transitionDuration / 2;
+            duration = transitionDuration;
+            effect = new EffectTemplate("fade", transitionDuration, startTime);
+            mode = TransitionClip.TransitionMode.OVERLAP;
+        }
+
+        public TransitionClip(Clip clipA)
+        {
+            trackIndex = clipA.trackIndex;
+            startTime = 0;
+            duration = 0;
+            effect = new EffectTemplate("fade", 0, startTime);
+            mode = TransitionClip.TransitionMode.OVERLAP;
+        }
 
 
         public enum TransitionMode {
@@ -3841,6 +3925,17 @@ frameRate = 60;
         public boolean isWithinClip(Clip clip) {
             return (time >= 0 && time <= clip.duration);
         }
+        public boolean isKeyframeExist(Clip clip) {
+            boolean isExist = false;
+            for (Keyframe keyframe : clip.keyframes.keyframes) {
+                if(Math.abs(keyframe.time - this.time) <= Constants.TRACK_CLIPS_MINIMUM_KEYFRAME_SPACE_SECONDS)
+                {
+                    isExist = true;
+                    break;
+                }
+            }
+            return isExist;
+        }
     }
     public static class AnimatedProperty implements Serializable {
 
@@ -3858,7 +3953,7 @@ frameRate = 60;
             for (Keyframe k : keyframes) {
                 //if(k.getGlobalTime(clip) == playheadTime) return k;
                 // Adjust tolerance (0.01s)
-                if(Math.abs(k.getGlobalTime(clip) - playheadTime) <= 0.01) return k;
+                if(Math.abs(k.getGlobalTime(clip) - playheadTime) <= Constants.TRACK_CLIPS_MINIMUM_KEYFRAME_SPACE_SECONDS) return k;
             }
             return null;
         }
@@ -4009,6 +4104,9 @@ frameRate = 60;
         }
 
 
+        public void sortKeyframe() {
+            keyframes.sort((o1, o2) -> (Float.compare(o1.time, o2.time)));
+        }
     }
 //    public static class SpringProperty implements Serializable {
 //        public float mass = 1f;

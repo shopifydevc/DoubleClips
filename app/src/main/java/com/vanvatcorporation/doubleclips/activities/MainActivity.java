@@ -230,6 +230,23 @@ public class MainActivity extends AppCompatActivityImpl {
                                         @Override
                                         public void onCompleted() {
                                             dialog.dialog.dismiss();
+
+                                            MainActivity.this.runOnUiThread(() -> {
+
+                                                // TODO: Find a way to get the directory of the exact extracted path.
+//                                            File directory = new File(IOHelper.CombinePath(Constants.DEFAULT_PROJECT_DIRECTORY(MainActivity.this), EditingActivity.getFileName(getContentResolver(), uri)));
+//                                            if(directory.isDirectory())
+//                                            {
+//                                                MainAreaScreen.ProjectData data = MainAreaScreen.ProjectData.loadProperties(MainActivity.this, directory.getAbsolutePath());
+//
+//                                                if(data != null)
+//                                                {
+//                                                    homeAreaScreen.projectList.add(data);
+//                                                    homeAreaScreen.projectAdapter.notifyItemInserted(homeAreaScreen.projectList.size() - 1);
+//                                                }
+//                                            }
+                                                homeAreaScreen.reloadingProject();
+                                            });
                                         }
 
                                         @Override
