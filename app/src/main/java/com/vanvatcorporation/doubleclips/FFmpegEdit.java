@@ -408,7 +408,8 @@ public class FFmpegEdit {
                                 .append("':s='").append(saturationExpr)
                                 .append("':b='").append(brightnessExpr).append("',")
                                 .append("colortemperature=temperature='").append(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Temperature)).append("',")
-                                .append("format=yuva420p,geq=lum_expr='lum(X,Y)':a='").append(opacityExpr).append("',")
+                                // TODO: Use geq is super slow. Research a better way, like only render affected frame.
+                                //.append("format=yuva420p,geq=lum_expr='lum(X,Y)':a='").append(opacityExpr).append("',")
                                 .append("zoompan=z=zoom*'").append(scaleXExpr).append("':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'").append(scaleZoompan).append(",")
                                 .append("setpts='(PTS-STARTPTS)/").append(speedExpr).append("+").append(clip.startTime).append("/TB'").append(",");
                     }

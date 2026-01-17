@@ -9,7 +9,9 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -23,6 +25,9 @@ import com.vanvatcorporation.doubleclips.helper.NumberHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 
+import java.io.IOException;
+import java.util.concurrent.Executors;
+
 public class TemplatePreviewActivity extends AppCompatActivityImpl {
     TemplateAreaScreen.TemplateData data;
 
@@ -30,6 +35,7 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
     SurfaceView surfaceView;
     TextView usernameText, replacementClipCount, durationClipCount;
     TextView heartCount, commentCount, bookmarkCount;
+    ProgressBar mediaLoadingIcon;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -46,6 +52,8 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
         commentCount = findViewById(R.id.commentCount);
         bookmarkCount = findViewById(R.id.bookmarkCount);
 
+        mediaLoadingIcon = findViewById(R.id.mediaLoadingIcon);
+
         usernameText.setText("@" + data.getTemplateAuthor());
         replacementClipCount.setText("" + data.getTemplateClipCount());
 
@@ -61,7 +69,6 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
             intent.putExtra("TemplateData", data);
             startActivity(intent);
         });
-
 
     }
 
@@ -82,31 +89,45 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
         surfaceView.setLayoutParams(surfaceParams);
     }
     void setupMediaPlayer(String httpsPath) {
+        mediaLoadingIcon.setVisibility(View.VISIBLE);
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
+                Executors.newSingleThreadExecutor().execute(() -> {
 
-                Context audioAttributionContext = (Build.VERSION.SDK_INT >= 30) ?
-                        createAttributionContext("audioPlayback") :
-                        TemplatePreviewActivity.this;
+                    // Handle network task.
 
-
-                mediaPlayer = MediaPlayer.create(audioAttributionContext, Uri.parse(httpsPath), holder);
-                try {
-                    mediaPlayer.setOnCompletionListener(MediaPlayer::start);
-                    mediaPlayer.setOnPreparedListener(mp -> {
-                        mp.start();
-                        durationClipCount.setText(DateHelper.convertTimestampToMMSSFormat(mp.getDuration()));
-                        data.setTemplateDuration(mp.getDuration());
-                    });
-                    mediaPlayer.setOnVideoSizeChangedListener((mp, width, height) -> {
-                        adjustMaximumAspectRatio(width, height);
-                    });
+                    try {
+                        Context audioAttributionContext = (Build.VERSION.SDK_INT >= 30) ?
+                                createAttributionContext("audioPlayback") :
+                                TemplatePreviewActivity.this;
 
 
-                } catch (Exception e) {
-                    LoggingManager.LogExceptionToNoteOverlay(TemplatePreviewActivity.this, e);
-                }
+                        mediaPlayer = MediaPlayer.create(audioAttributionContext, Uri.parse(httpsPath), holder);
+                        mediaPlayer.setOnCompletionListener(mp -> {
+                            runOnUiThread(mp::start);
+                        });
+                        mediaPlayer.setOnPreparedListener(mp -> {
+                            runOnUiThread(() -> {
+                                mp.start();
+                                durationClipCount.setText(DateHelper.convertTimestampToMMSSFormat(mp.getDuration()));
+                                data.setTemplateDuration(mp.getDuration());
+
+                                mediaLoadingIcon.setVisibility(View.GONE);
+                            });
+                        });
+                        mediaPlayer.setOnVideoSizeChangedListener((mp, width, height) -> {
+                            runOnUiThread(() -> {
+                                adjustMaximumAspectRatio(width, height);
+                            });
+                        });
+
+
+                    } catch (Exception e) {
+                        LoggingManager.LogExceptionToNoteOverlay(TemplatePreviewActivity.this, e);
+                    }
+
+                });
             }
 
             @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}

@@ -59,8 +59,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -343,50 +345,62 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
 
     }
 
+    // This function block thread.
     void downloadNecessaryResources(String templateLocation, String[] additionalResourcesName)
     {
+        Future<Boolean> fetchFFmpegCommandStatus =
 
-        for (String name : additionalResourcesName) {
-            ExecutorService executorService = Executors.newSingleThreadExecutor();
-            executorService.execute(() -> {
+        // FFmpeg command fetch
+        Executors.newSingleThreadExecutor().submit(() -> {
+            try {
 
-                try {
+                URL url = new URL(
+                        "https://app.vanvatcorp.com/doubleclips/api/fetch-ffmpeg-command/" +
+                                data.getTemplateAuthor() + "/" +
+                                data.getTemplateId()
+                );
+                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
 
-                    URL url = new URL(
-                            "https://app.vanvatcorp.com/doubleclips/api/fetch-ffmpeg-command/" +
-                                    data.getTemplateAuthor() + "/" +
-                                    data.getTemplateId()
-                            );
-                    HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
-
-                    // Read the response
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
-                    reader.close();
-
-
-                    String ffmpegTemplate = response.toString();
-                    if(ffmpegTemplate.contains("\n"))
-                        ffmpegTemplate = ffmpegTemplate.charAt(ffmpegTemplate.length() - 1) == '\n' ? ffmpegTemplate.substring(0, ffmpegTemplate.length() - 1) : ffmpegTemplate;
-
-                    data.setFfmpegCommand(ffmpegTemplate);
-
-                    // Allow edit only if these is a place to replace those alternative resolution
-                    runOnUiThread(() -> {
-                        videoPropertiesExportSpecificAreaScreen.resolutionXField.setEnabled(data.getFfmpegCommand().contains(Constants.DEFAULT_TEMPLATE_CLIP_SCALE_WIDTH_MARK));
-                        videoPropertiesExportSpecificAreaScreen.resolutionYField.setEnabled(data.getFfmpegCommand().contains(Constants.DEFAULT_TEMPLATE_CLIP_SCALE_HEIGHT_MARK));
-                    });
+                // Read the response
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
                 }
-                catch (Exception e)
-                {
-                    LoggingManager.LogExceptionToNoteOverlay(this, e);
-                }
+                reader.close();
 
+
+                String ffmpegTemplate = response.toString();
+                if(ffmpegTemplate.contains("\n"))
+                    ffmpegTemplate = ffmpegTemplate.charAt(ffmpegTemplate.length() - 1) == '\n' ? ffmpegTemplate.substring(0, ffmpegTemplate.length() - 1) : ffmpegTemplate;
+
+                data.setFfmpegCommand(ffmpegTemplate);
+
+                // Allow edit only if these is a place to replace those alternative resolution
+                runOnUiThread(() -> {
+                    videoPropertiesExportSpecificAreaScreen.resolutionXField.setEnabled(data.getFfmpegCommand().contains(Constants.DEFAULT_TEMPLATE_CLIP_SCALE_WIDTH_MARK));
+                    videoPropertiesExportSpecificAreaScreen.resolutionYField.setEnabled(data.getFfmpegCommand().contains(Constants.DEFAULT_TEMPLATE_CLIP_SCALE_HEIGHT_MARK));
+                });
+                return true;
+            }
+            catch (Exception e)
+            {
+                LoggingManager.LogExceptionToNoteOverlay(this, e);
+                return false;
+            }
+
+        });
+
+
+
+
+        Future<Boolean> fetchAdditionalResourcesStatus =
+        Executors.newSingleThreadExecutor().submit(() -> {
+            boolean status = true;
+
+            for (String name : additionalResourcesName) {
                 WebHelper.downloadFile(this,
                         "https://app.vanvatcorp.com/doubleclips/templates" + templateLocation + "/content/" + name,
                         IOHelper.CombinePath(
@@ -394,12 +408,23 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
                                 Constants.DEFAULT_TEMPLATE_CLIP_TEMP_DIRECTORY,
                                 name)
                 );
+            }
 
-                exportButton.post(() -> exportButton.setEnabled(true));
+            return status;
 
-            });
+        });
 
-        }
+//
+//        try {
+//            fetchFFmpegCommandStatus.get();
+//            fetchAdditionalResourcesStatus.get();
+//        } catch (Exception e) {
+//            LoggingManager.LogExceptionToNoteOverlay(this, e);
+//        }
+
+
+        if(!fetchFFmpegCommandStatus.isDone() || !fetchAdditionalResourcesStatus.isDone())
+            exportButton.post(() -> exportButton.setEnabled(true));
 
     }
 
@@ -526,9 +551,10 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         filePickerLauncher.launch(Intent.createChooser(intent, "Select Export"));
 
 
-        // After rendering, set back to default
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    }
+        runOnUiThread(() -> {
+            // After rendering, set back to default
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        });    }
 
     private static Bitmap extractSingleThumbnail(Context context, String filePath) {
         try {
