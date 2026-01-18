@@ -7,14 +7,26 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.media3.common.AudioAttributes;
+import androidx.media3.common.C;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
+import androidx.media3.common.VideoSize;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.LoopingMediaSource;
+import androidx.media3.ui.PlayerView;
 
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.activities.main.TemplateAreaScreen;
@@ -31,11 +43,12 @@ import java.util.concurrent.Executors;
 public class TemplatePreviewActivity extends AppCompatActivityImpl {
     TemplateAreaScreen.TemplateData data;
 
-    MediaPlayer mediaPlayer;
-    SurfaceView surfaceView;
+    private SurfaceView previewSurfaceView;
+    private ExoPlayer exoPlayer;
     TextView usernameText, replacementClipCount, durationClipCount;
     TextView heartCount, commentCount, bookmarkCount;
     ProgressBar mediaLoadingIcon;
+    ImageView mediaPausedIcon;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -44,7 +57,7 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
 
         data = (TemplateAreaScreen.TemplateData) createrBundle.getSerializable("TemplateData");
 
-        surfaceView = findViewById(R.id.previewSurfaceView);
+        previewSurfaceView = findViewById(R.id.previewSurfaceView);
         usernameText = findViewById(R.id.usernameText);
         replacementClipCount = findViewById(R.id.replacementClipCount);
         durationClipCount = findViewById(R.id.durationClipCount);
@@ -53,6 +66,7 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
         bookmarkCount = findViewById(R.id.bookmarkCount);
 
         mediaLoadingIcon = findViewById(R.id.mediaLoadingIcon);
+        mediaPausedIcon = findViewById(R.id.mediaPausedIcon);
 
         usernameText.setText("@" + data.getTemplateAuthor());
         replacementClipCount.setText("" + data.getTemplateClipCount());
@@ -60,6 +74,16 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
         heartCount.setText("" + NumberHelper.abbreviateNumber(Random.Range(1, 80000000))); // data.clipCount
         commentCount.setText("" + NumberHelper.abbreviateNumber(Random.Range(1, 300000))); // data.clipCount
         bookmarkCount.setText("" + NumberHelper.abbreviateNumber(Random.Range(1, 500000))); // data.clipCount
+
+
+        previewSurfaceView.setOnClickListener(v -> {
+            if(exoPlayer != null) {
+                if (exoPlayer.isPlaying())
+                    pausePlayer();
+                else
+                    resumePlayer();
+            }
+        });
 
 
         setupMediaPlayer(data.getTemplateVideoLink());
@@ -83,72 +107,120 @@ public class TemplatePreviewActivity extends AppCompatActivityImpl {
 
         int[] res = AlgorithmHelper.calculateTargetRatio(displayWidth, displayHeight, width, height);
 
-        ViewGroup.LayoutParams surfaceParams = surfaceView.getLayoutParams();
+        ViewGroup.LayoutParams surfaceParams = previewSurfaceView.getLayoutParams();
         surfaceParams.width = res[0];
         surfaceParams.height = res[1];
-        surfaceView.setLayoutParams(surfaceParams);
+        previewSurfaceView.setLayoutParams(surfaceParams);
     }
     void setupMediaPlayer(String httpsPath) {
         mediaLoadingIcon.setVisibility(View.VISIBLE);
-        surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+
+        // Initialize ExoPlayer
+        exoPlayer = new ExoPlayer.Builder(this).build();
+        exoPlayer.setRepeatMode(Player.REPEAT_MODE_ONE);
+        exoPlayer.setVideoSurface(previewSurfaceView.getHolder().getSurface());
+
+        // Prepare media item
+        MediaItem mediaItem = MediaItem.fromUri(Uri.parse(httpsPath));
+        exoPlayer.setMediaItem(mediaItem);
+        exoPlayer.setVolume(1);
+
+        // Add listener for errors
+        exoPlayer.addListener(new Player.Listener() {
             @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                Executors.newSingleThreadExecutor().execute(() -> {
-
-                    // Handle network task.
-
-                    try {
-                        Context audioAttributionContext = (Build.VERSION.SDK_INT >= 30) ?
-                                createAttributionContext("audioPlayback") :
-                                TemplatePreviewActivity.this;
-
-
-                        mediaPlayer = MediaPlayer.create(audioAttributionContext, Uri.parse(httpsPath), holder);
-                        mediaPlayer.setOnCompletionListener(mp -> {
-                            runOnUiThread(mp::start);
-                        });
-                        mediaPlayer.setOnPreparedListener(mp -> {
-                            runOnUiThread(() -> {
-                                mp.start();
-                                durationClipCount.setText(DateHelper.convertTimestampToMMSSFormat(mp.getDuration()));
-                                data.setTemplateDuration(mp.getDuration());
-
-                                mediaLoadingIcon.setVisibility(View.GONE);
-                            });
-                        });
-                        mediaPlayer.setOnVideoSizeChangedListener((mp, width, height) -> {
-                            runOnUiThread(() -> {
-                                adjustMaximumAspectRatio(width, height);
-                            });
-                        });
-
-
-                    } catch (Exception e) {
-                        LoggingManager.LogExceptionToNoteOverlay(TemplatePreviewActivity.this, e);
-                    }
-
-                });
+            public void onPlayerError(@NonNull PlaybackException error) {
+                LoggingManager.LogToToast(TemplatePreviewActivity.this, error.getMessage());
             }
 
-            @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
-            @Override public void surfaceDestroyed(SurfaceHolder holder) {
-                if (mediaPlayer != null) mediaPlayer.setDisplay(null);
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                if (state == Player.STATE_READY) {
+                    // Equivalent to MediaPlayer's onPrepared
+                    // Player is ready to start playback
+                    durationClipCount.setText(DateHelper.convertTimestampToMMSSFormat(exoPlayer.getDuration()));
+                    data.setTemplateDuration(exoPlayer.getDuration());
+
+                    mediaLoadingIcon.setVisibility(View.GONE);
+                }
             }
+
+            @Override
+            public void onVideoSizeChanged(VideoSize videoSize) {
+                Player.Listener.super.onVideoSizeChanged(videoSize);
+                adjustMaximumAspectRatio(videoSize.width, videoSize.height);
+            }
+
+
+
         });
+
+        exoPlayer.setAudioAttributes(
+                new AudioAttributes.Builder()
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                        .setUsage(C.USAGE_MEDIA)
+                        .build(),
+                true
+        );
+
+
+        // Prepare and play
+        exoPlayer.prepare();
+        exoPlayer.setPlayWhenReady(true);
+
     }
 
+    public void resumePlayer() {
+        try {
+            if (exoPlayer != null) {
+                exoPlayer.play();
+                mediaPausedIcon.setVisibility(View.GONE);
+
+                mediaLoadingIcon.setVisibility(View.GONE);
+            }
+        } catch (IllegalStateException e) {
+            LoggingManager.LogExceptionToNoteOverlay(this, e);
+        }
+    }
+    public void pausePlayer() {
+        try {
+            if (exoPlayer != null) {
+                exoPlayer.pause();
+                mediaPausedIcon.setVisibility(View.VISIBLE);
+            }
+        } catch (IllegalStateException e) {
+            LoggingManager.LogExceptionToNoteOverlay(this, e);
+        }
+    }
+
+
     @Override
-    protected void onStop() {
-        super.onStop();
-        if (mediaPlayer != null) mediaPlayer.pause();
+    public void finish() {
+        super.finish();
+
+        if (exoPlayer != null) {
+            exoPlayer.release();
+            exoPlayer = null;
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
+        if (exoPlayer != null) {
+            exoPlayer.release();
+            exoPlayer = null;
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        pausePlayer();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        resumePlayer();
     }
 }

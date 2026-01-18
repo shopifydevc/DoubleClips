@@ -20,6 +20,7 @@
 
 
     <attribution android:tag="audioPlayback" android:label="@string/attribution_audio_playback" />
+    <attribution android:tag=" " android:label="@string/attribution_audio_playback" />
 
 
 
@@ -44,6 +45,9 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-1708105276845874~2243285845" />
 
+        <meta-data
+            android:name="android.content.pm.ATTRIBUTION_TAGS"
+            android:value="" />
 
 
         <activity android:name=".activities.MainActivity"

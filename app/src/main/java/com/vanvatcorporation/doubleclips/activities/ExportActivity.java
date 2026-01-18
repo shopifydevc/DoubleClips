@@ -395,8 +395,8 @@ public class ExportActivity extends AppCompatActivityImpl {
             // After rendering, set back to default
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-            exportButton.setEnabled(false);
-            exportAsTemplateButton.setEnabled(false);
+            exportButton.setEnabled(true);
+            exportAsTemplateButton.setEnabled(true);
         });
     }
 
