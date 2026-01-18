@@ -66,3 +66,14 @@
 
 
 -keep class at.favre.lib.crypto.bcrypt.** { *; }
+
+
+# Keep OkHttp classes
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+
+# Keep Okio classes (dependency of OkHttp)
+-keep class okio.** { *; }
+-keep interface okio.** { *; }
+-dontwarn okio.**

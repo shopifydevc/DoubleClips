@@ -310,7 +310,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
 
 
-        boolean isVideoHasAudio = false;
+        boolean isClipHasAudio = false;
         int width = 0, height = 0;
         // Video check
         if(type == ClipType.VIDEO)
@@ -322,11 +322,17 @@ public class EditingActivity extends AppCompatActivityImpl {
                 width = Integer.parseInt(Objects.requireNonNull(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)));
                 height = Integer.parseInt(Objects.requireNonNull(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)));
 
-                isVideoHasAudio = "yes".equals(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
+                isClipHasAudio = "yes".equals(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
                 retriever.close();
             } catch (IOException e) {
                 LoggingManager.LogExceptionToNoteOverlay(this, e);
             }
+        }
+        if(type == ClipType.AUDIO)
+        {
+            // Audio always has audio, of course
+            // Add this to fix the noSound icon appear at Audio Clip, which make no sense
+            isClipHasAudio = true;
         }
         if(type == ClipType.IMAGE)
         {
@@ -338,7 +344,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
 
 
-        Clip newClip = new Clip(filename, currentTime + offsetTime, duration, selectedTrack.trackIndex, type, isVideoHasAudio, width, height);
+        Clip newClip = new Clip(filename, currentTime + offsetTime, duration, selectedTrack.trackIndex, type, isClipHasAudio, width, height);
 
 
         addClipToTrack(selectedTrack, newClip);
@@ -351,7 +357,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                     processingPreview(newClip, clipPath, previewClipPath);
                 }));
 
-        if(type == ClipType.VIDEO && isVideoHasAudio)
+        if(type == ClipType.VIDEO && isClipHasAudio)
         {
             previewRenderQueue.enqueue(new FFmpegEdit.FfmpegRenderQueue.FfmpegRenderQueueInfo("Preview Generation",
                     () -> {
@@ -1291,7 +1297,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                 }
 
                 selectedClip.setMute(clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked());
-                selectedClip.setIsLockedForTemplate(clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.isChecked());
+                selectedClip.setLockedForTemplate(clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.isChecked());
 
                 Keyframe k = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
                 if(k != null)
@@ -2709,6 +2715,33 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
             return clipCount;
         }
+        public Clip[] getStreamOfClip() {
+            Clip[] clips = new Clip[getAllClipCount()];
+            int i = 0;
+            for (EditingActivity.Track track : tracks) {
+                for (Clip clip : track.clips) {
+                    clips[i] = clip;
+                    i++;
+                }
+            }
+            return clips;
+        }
+
+        public int getAllReplacementClipCount() {
+            return getAllClipCount() - getLockedForTemplateClip().length;
+        }
+
+        public Clip[] getLockedForTemplateClip() {
+            List<Clip> clips = new ArrayList<>();
+            for (EditingActivity.Clip clip : getStreamOfClip()) {
+                if(clip.isLockedForTemplate())
+                {
+                    clips.add(clip);
+                }
+            }
+
+            return clips.toArray(new Clip[0]);
+        }
     }
 
     public static class Track implements Serializable {
@@ -3467,11 +3500,11 @@ public class EditingActivity extends AppCompatActivityImpl {
             toggleTransitionKnotVisibility(endTransitionEnabled);
         }
 
-        public boolean getIsLockedForTemplate()
+        public boolean isLockedForTemplate()
         {
             return isLockedForTemplate;
         }
-        public void setIsLockedForTemplate(boolean value)
+        public void setLockedForTemplate(boolean value)
         {
             isLockedForTemplate = value;
             templateLockViewRef.setVisibility(value ? View.VISIBLE : View.GONE);

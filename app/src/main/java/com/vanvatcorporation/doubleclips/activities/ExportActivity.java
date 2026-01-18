@@ -14,6 +14,7 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -41,22 +42,22 @@ import com.vanvatcorporation.doubleclips.impl.SectionView;
 import com.vanvatcorporation.doubleclips.impl.java.RunnableImpl;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.URL;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.HttpsURLConnection;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class ExportActivity extends AppCompatActivityImpl {
 
@@ -74,6 +75,7 @@ public class ExportActivity extends AppCompatActivityImpl {
     EditText commandText;
     ScrollView logScroll;
     CheckBox logCheckbox, truncateCheckbox, scrollLockCheckbox;
+    Button exportButton, exportAsTemplateButton;
 
     SectionView logSection, advancedSection;
 
@@ -152,10 +154,12 @@ public class ExportActivity extends AppCompatActivityImpl {
         findViewById(R.id.generateTemplateCmdButton).setOnClickListener(v -> {
             generateTemplateCommand();
         });
-        findViewById(R.id.exportButton).setOnClickListener(v -> {
+        exportButton = findViewById(R.id.exportButton);
+        exportButton.setOnClickListener(v -> {
             exportClip(false);
         });
-        findViewById(R.id.exportAsTemplateButton).setOnClickListener(v -> {
+        exportAsTemplateButton = findViewById(R.id.exportAsTemplateButton);
+        exportAsTemplateButton.setOnClickListener(v -> {
             exportClip(true);
         });
 
@@ -278,9 +282,13 @@ public class ExportActivity extends AppCompatActivityImpl {
 
     private void exportClip(boolean exportAsTemplate) {
 
-        // Keep the screen on for rendering process
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        runOnUiThread(() -> {
+            // Keep the screen on for rendering process
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            exportButton.setEnabled(false);
+            exportAsTemplateButton.setEnabled(false);
+        });
 
         logText.post(() -> logText.setTextIsSelectable(false));
         FFmpegKit.cancel();
@@ -294,6 +302,9 @@ public class ExportActivity extends AppCompatActivityImpl {
         AdsHandler.loadBothAds(this, this);
 
         List<File> videoFiles = new ArrayList<>();
+        for (EditingActivity.Clip clip : timeline.getLockedForTemplateClip()) {
+            videoFiles.add(new File(clip.getAbsolutePath(properties)));
+        }
 
         List<File> previewFiles = Arrays.asList(new File(IOHelper.CombinePath(properties.getProjectPath(), "preview.png")),
                 new File(IOHelper.CombinePath(properties.getProjectPath(), "preview.mp4")));
@@ -302,7 +313,7 @@ public class ExportActivity extends AppCompatActivityImpl {
         String[] cmdAfterSplit = cmd.split(Constants.DEFAULT_MULTI_FFMPEG_COMMAND_REGEX);
         for (int i = 0; i < cmdAfterSplit.length; i++) {
             String cmdEach = cmdAfterSplit[i];
-            runAnyCommand(this, cmdEach, "Exporting Video", (i == cmdAfterSplit.length - 1 ? () -> exportClipTo(exportAsTemplate, cmd, timeline.getAllClipCount(), videoFiles, previewFiles) : () -> {
+            runAnyCommand(this, cmdEach, "Exporting Video", (i == cmdAfterSplit.length - 1 ? () -> exportClipTo(exportAsTemplate, cmd, timeline.getAllReplacementClipCount(), videoFiles, previewFiles) : () -> {
                     }), () -> {
                         logText.post(() -> logText.setTextIsSelectable(true));
                     }
@@ -365,6 +376,7 @@ public class ExportActivity extends AppCompatActivityImpl {
             new File(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_EXPORT_CLIP_FILENAME))
                     .renameTo(new File(IOHelper.CombinePath(properties.getProjectPath(), "preview.mp4")));
 
+            ffmpegCommand = generateCmdFull(this, settings, timeline, properties, true);
 
             Map<String, String> field = new HashMap<>();
             field.put("accountUsername", "viet2007ht");
@@ -372,7 +384,6 @@ public class ExportActivity extends AppCompatActivityImpl {
             field.put("templateTitle", properties.getProjectTitle());
             field.put("templateDescription", properties.getProjectTitle());
             field.put("ffmpegCommand", ffmpegCommand);
-            field.put("templateDate", new Date().toString());
             field.put("templateTotalClips", String.valueOf(totalClip));
 
             uploadTemplateNecessityItems(this, "https://app.vanvatcorp.com/doubleclips/api/post-template", field, videoFiles, previewFiles);
@@ -383,6 +394,9 @@ public class ExportActivity extends AppCompatActivityImpl {
         runOnUiThread(() -> {
             // After rendering, set back to default
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+            exportButton.setEnabled(false);
+            exportAsTemplateButton.setEnabled(false);
         });
     }
 
@@ -417,112 +431,68 @@ public class ExportActivity extends AppCompatActivityImpl {
 
 
 
-
-
-
-
-
-
-
-
-    public static void uploadTemplateNecessityItems(Context context, String serverUrl, Map<String, String> fields, List<File> videoFiles, List<File> previewFiles) {
-
+    public static void uploadTemplateNecessityItems(Context context,
+                                                    String serverUrl,
+                                                    Map<String, String> fields,
+                                                    List<File> videoFiles,
+                                                    List<File> previewFiles) {
+        OkHttpClient client = new OkHttpClient();
         try {
-            String boundary = "===" + System.currentTimeMillis() + "===";
-            String LINE_FEED = "\r\n";
+            // Build multipart body
+            MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM);
 
-            URL url = new URL(serverUrl);
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setUseCaches(false);
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-
-            OutputStream outputStream = conn.getOutputStream();
-            PrintWriter writer = new PrintWriter(new OutputStreamWriter(outputStream, "UTF-8"), true);
-
-            // Text fields
+            // Add text fields
             for (Map.Entry<String, String> entry : fields.entrySet()) {
-                writer.append("--").append(boundary).append(LINE_FEED);
-                writer.append("Content-Disposition: form-data; name=\"").append(entry.getKey()).append("\"").append(LINE_FEED);
-                writer.append("Content-Type: text/plain; charset=UTF-8").append(LINE_FEED);
-                writer.append(LINE_FEED);
-                writer.append(entry.getValue()).append(LINE_FEED);
-                writer.flush();
+                multipartBuilder.addFormDataPart(entry.getKey(), entry.getValue());
             }
 
-            // Optional multiple files
+            // Add video files
             if (videoFiles != null) {
                 for (File file : videoFiles) {
-                    writer.append("--").append(boundary).append(LINE_FEED);
-                    writer.append("Content-Disposition: form-data; name=\"videoFiles\"; filename=\"").append(file.getName()).append("\"").append(LINE_FEED);
-                    writer.append("Content-Type: video/mp4").append(LINE_FEED);
-                    writer.append(LINE_FEED);
-                    writer.flush();
-
-                    FileInputStream inputStream = new FileInputStream(file);
-                    byte[] buffer = new byte[4096];
-                    int bytesRead;
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
-                    }
-                    outputStream.flush();
-                    inputStream.close();
-
-                    writer.append(LINE_FEED);
-                    writer.flush();
+                    RequestBody fileBody = RequestBody.create(file, MediaType.parse("video/mp4"));
+                    multipartBuilder.addFormDataPart("videoFiles", file.getName(), fileBody);
                 }
             }
 
-            // Optional multiple files
+            // Add preview files
             if (previewFiles != null) {
                 for (File file : previewFiles) {
-                    writer.append("--").append(boundary).append(LINE_FEED);
-                    writer.append("Content-Disposition: form-data; name=\"previewFiles\"; filename=\"").append(file.getName()).append("\"").append(LINE_FEED);
-                    writer.append("Content-Type: video/mp4").append(LINE_FEED);
-                    writer.append(LINE_FEED);
-                    writer.flush();
+                    RequestBody fileBody = RequestBody.create(file, MediaType.parse("video/mp4"));
+                    multipartBuilder.addFormDataPart("previewFiles", file.getName(), fileBody);
+                }
+            }
 
-                    FileInputStream inputStream = new FileInputStream(file);
-                    byte[] buffer = new byte[4096];
-                    int bytesRead;
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
+            RequestBody requestBody = multipartBuilder.build();
+
+            // Build request
+            Request request = new Request.Builder()
+                    .url(serverUrl)
+                    .post(requestBody)
+                    .build();
+
+            // Execute asynchronously
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    LoggingManager.LogExceptionToNoteOverlay(context, e);
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (response.isSuccessful()) {
+                        String responseBody = response.body().string();
+                        LoggingManager.LogToToast(context, "Server returned OK status: " + responseBody);
+                    } else {
+                        LoggingManager.LogToToast(context, "Server returned non-OK status: " + response.code());
                     }
-                    outputStream.flush();
-                    inputStream.close();
-
-                    writer.append(LINE_FEED);
-                    writer.flush();
                 }
-            }
+            });
 
-            // End of multipart
-            writer.append("--").append(boundary).append("--").append(LINE_FEED);
-            writer.close();
-
-            // Response
-            int status = conn.getResponseCode();
-            if (status == HttpsURLConnection.HTTP_OK) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                }
-                reader.close();
-                conn.disconnect();
-            } else {
-                LoggingManager.LogToNoteOverlay(context, "Server returned non-OK status: " + status);
-            }
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             LoggingManager.LogExceptionToNoteOverlay(context, e);
         }
-
     }
-
 
 
 }

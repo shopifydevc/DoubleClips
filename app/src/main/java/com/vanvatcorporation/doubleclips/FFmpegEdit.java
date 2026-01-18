@@ -227,7 +227,7 @@ public class FFmpegEdit {
         for (int i = 0; i < clips.length; i++) {
             EditingActivity.Clip clip = clips[i];
 
-            String inputPath = (isTemplateCommand && clip.getIsLockedForTemplate()) ?
+            String inputPath = (isTemplateCommand && clip.isLockedForTemplate()) ?
                     Constants.DEFAULT_TEMPLATE_CLIP_STATIC_MARK(clip.getClipName()) :
                     isTemplateCommand ? Constants.DEFAULT_TEMPLATE_CLIP_MARK(i) :
                             clip.getAbsolutePath(data);
@@ -348,6 +348,8 @@ public class FFmpegEdit {
                     // value we calculate earlier using endClipTrim. Because endClipTrim has already applied to duration, so now we
                     // can just add to it.
                     // Image is just like transparent layer, so we add the raw fillingTransitionDuration
+                    // TODO: Image is rendering fine, converting to the template, it keep the image trim style
+                    //  however Video trim is having problem, research this.
                     String trimFilter =
                             clip.type == EditingActivity.ClipType.VIDEO ?
                                     "trim=start=" + clip.startClipTrim + ":end=" + (clip.startClipTrim + clip.duration + extendMediaDuration) :
