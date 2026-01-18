@@ -466,9 +466,11 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
 
     private void exportClip() {
 
-        // Keep the screen on for rendering process
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
+        runOnUiThread(() -> {
+            // Keep the screen on for rendering process
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            exportButton.setEnabled(false);
+        });
 
         logText.post(() -> logText.setTextIsSelectable(false));
         FFmpegKit.cancel();
@@ -554,6 +556,8 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         runOnUiThread(() -> {
             // After rendering, set back to default
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+            exportButton.setEnabled(true);
         });    }
 
     private static Bitmap extractSingleThumbnail(Context context, String filePath) {
