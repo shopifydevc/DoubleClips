@@ -34,6 +34,7 @@ DoubleClips is an open-source, ready-to-use video editor with functionality simi
 - Export project.
 - Smooth transitions.
 - Keyframe editing.
+- Lots of properties (Reverse, Speed, Opacity, Temperature, Hue, Saturation, Brightness,...)
 - Sharable templates (Beta Early access.).
 - Edit raw FFmpeg command (Gen Cmd and you're free to edit whatever you want. Not for normal users as it require FFmpeg command experience).
 - Render cross-platform (By saving it as a zip file including the JSON timeline, transfer it to your PC, or other stronger devices, and use it to render the clip, you can easily render across platforms).
