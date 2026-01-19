@@ -336,11 +336,19 @@ public class FFmpegEdit {
                 case VIDEO:
                 case IMAGE:
 
+//                    String speedCmd;
+//                    if(clip.hasAnimatedProperties()) {
+//                        speedCmd = getKeyframeFFmpegExpr(clip.keyframes.keyframes, clip, 0, EditingActivity.VideoProperties.ValueType.Speed);
+//                    } else {
+//                        speedCmd = String.valueOf(clip.videoProperties.getValue(EditingActivity.VideoProperties.ValueType.Speed));
+//                    }
+
+
                     // 🖼️ Video/Image visual logic
                     // Transition extension: Add half of the duration to the transparent layer, if transition isn't exist, then add 0
                     filterComplex.append("[").append(inputIndex).append(":v]")
                             .append("trim=duration=").append(clip.duration + fillingTransitionDuration).append(",")
-                            //.append("setpts='(PTS-STARTPTS)/").append(speedExpr).append("+").append(clip.startTime).append("/TB'").append(",");
+//                            .append("setpts='(PTS-STARTPTS)/").append(speedCmd).append("+").append(clip.startTime).append("/TB'").append(transparentLabel).append(";\n");
                             .append("setpts=PTS-STARTPTS+").append(clip.startTime).append("/TB").append(transparentLabel).append(";\n");
                     inputIndex++;
 

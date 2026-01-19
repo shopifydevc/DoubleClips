@@ -282,13 +282,7 @@ public class ExportActivity extends AppCompatActivityImpl {
 
     private void exportClip(boolean exportAsTemplate) {
 
-
-        runOnUiThread(() -> {
-            // Keep the screen on for rendering process
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            exportButton.setEnabled(false);
-            exportAsTemplateButton.setEnabled(false);
-        });
+        startExportRendering();
 
         logText.post(() -> logText.setTextIsSelectable(false));
         FFmpegKit.cancel();
@@ -314,9 +308,7 @@ public class ExportActivity extends AppCompatActivityImpl {
         for (int i = 0; i < cmdAfterSplit.length; i++) {
             String cmdEach = cmdAfterSplit[i];
             runAnyCommand(this, cmdEach, "Exporting Video", (i == cmdAfterSplit.length - 1 ? () -> exportClipTo(exportAsTemplate, cmd, timeline.getAllReplacementClipCount(), videoFiles, previewFiles) : () -> {
-                    }), () -> {
-                        logText.post(() -> logText.setTextIsSelectable(true));
-                    }
+                    }), this::finishExportRendering
                     , new RunnableImpl() {
                         @Override
                         public <T> void runWithParam(T param) {
@@ -391,14 +383,36 @@ public class ExportActivity extends AppCompatActivityImpl {
 
 
 
+        finishExportRendering();
+    }
+    void startExportRendering()
+    {
+        runOnUiThread(() -> {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+            logText.setTextIsSelectable(false);
+
+            exportButton.setEnabled(false);
+            exportAsTemplateButton.setEnabled(false);
+
+        });
+    }
+    void finishExportRendering()
+    {
         runOnUiThread(() -> {
             // After rendering, set back to default
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+            logText.setTextIsSelectable(true);
 
             exportButton.setEnabled(true);
             exportAsTemplateButton.setEnabled(true);
         });
     }
+
+
+
+
 
     @Override
     public void finish() {

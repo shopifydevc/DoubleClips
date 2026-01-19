@@ -465,14 +465,7 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
 
 
     private void exportClip() {
-
-        runOnUiThread(() -> {
-            // Keep the screen on for rendering process
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            exportButton.setEnabled(false);
-        });
-
-        logText.post(() -> logText.setTextIsSelectable(false));
+        startExportRendering();
         FFmpegKit.cancel();
 
         if (commandText.getText().toString().isEmpty())
@@ -490,9 +483,7 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         for (int i = 0; i < cmdAfterSplit.length; i++) {
             String cmdEach = cmdAfterSplit[i];
             runAnyCommand(this, cmdEach, "Exporting Video", (i == cmdAfterSplit.length - 1 ? this::exportCompleted : () -> {
-                    }), () -> {
-                        logText.post(() -> logText.setTextIsSelectable(true));
-                    }
+                    }), this::finishExportRendering
                     , new RunnableImpl() {
                         @Override
                         public <T> void runWithParam(T param) {
@@ -534,6 +525,8 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
 
     void exportCompleted() {
 
+        finishExportRendering();
+
         FFmpegEdit.queue.cancelAllTask();
 
         IOHelper.deleteFilesInDir(
@@ -543,8 +536,6 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         );
 
 
-        logText.post(() -> logText.setTextIsSelectable(true));
-
         // Request permission to create a file
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -552,13 +543,31 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         intent.putExtra(Intent.EXTRA_TITLE, "export");
         filePickerLauncher.launch(Intent.createChooser(intent, "Select Export"));
 
+    }
 
+    void startExportRendering()
+    {
+        runOnUiThread(() -> {
+            // After rendering, set back to default
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+            logText.setTextIsSelectable(false);
+
+            exportButton.setEnabled(false);
+
+        });
+    }
+    void finishExportRendering()
+    {
         runOnUiThread(() -> {
             // After rendering, set back to default
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+            logText.setTextIsSelectable(true);
+
             exportButton.setEnabled(true);
-        });    }
+        });
+    }
 
     private static Bitmap extractSingleThumbnail(Context context, String filePath) {
         try {
