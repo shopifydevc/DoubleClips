@@ -340,6 +340,7 @@ public class FFmpegEdit {
                     // Transition extension: Add half of the duration to the transparent layer, if transition isn't exist, then add 0
                     filterComplex.append("[").append(inputIndex).append(":v]")
                             .append("trim=duration=").append(clip.duration + fillingTransitionDuration).append(",")
+                            //.append("setpts='(PTS-STARTPTS)/").append(speedExpr).append("+").append(clip.startTime).append("/TB'").append(",");
                             .append("setpts=PTS-STARTPTS+").append(clip.startTime).append("/TB").append(transparentLabel).append(";\n");
                     inputIndex++;
 
@@ -355,10 +356,10 @@ public class FFmpegEdit {
                                     "trim=start=" + clip.startClipTrim + ":end=" + (clip.startClipTrim + clip.duration + extendMediaDuration) :
                                     "trim=duration=" + (clip.duration + fillingTransitionDuration);
 
-
-
                     // First we declared the stream of video
-                    filterComplex.append("[").append(inputIndex).append(":v]");
+                    filterComplex.append("[").append(inputIndex).append(":v]")
+                            // Always apply the trim first and upmost.
+                            .append(trimFilter).append(",");
 
 
                     // Let simulating 4 keyframe type in opacity for example:
@@ -444,7 +445,6 @@ public class FFmpegEdit {
 
 
                     filterComplex
-                            .append(trimFilter).append(",")
                             // Transition extension: If there has freeze frames, then this line will handle it.
                             .append("tpad=stop_mode=clone:stop_duration=").append(freezeFrameDuration)
                             .append(clipLabel).append(";\n");
