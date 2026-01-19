@@ -357,8 +357,8 @@ public class FFmpegEdit {
                     // value we calculate earlier using endClipTrim. Because endClipTrim has already applied to duration, so now we
                     // can just add to it.
                     // Image is just like transparent layer, so we add the raw fillingTransitionDuration
-                    // TODO: Image is rendering fine, converting to the template, it keep the image trim style
-                    //  however Video trim is having problem, research this.
+                    // TODO: Add long click to the template clip replacement, then we can modify the trim of the replacement.
+                    //  long clip menu appear from below,
                     String trimFilter =
                             clip.type == EditingActivity.ClipType.VIDEO ?
                                     "trim=start=" + clip.startClipTrim + ":end=" + (clip.startClipTrim + clip.duration + extendMediaDuration) :
@@ -414,6 +414,7 @@ public class FFmpegEdit {
                         filterComplex.append("scale=w='").append(scaleXCmd).append("':h='").append(scaleYCmd).append("',")
                                 //.append("scale=").append(clip.width).append(":").append(clip.height).append(",")
                                 .append("rotate='").append(rotationExpr).append("':ow=rotw('").append(rotationExpr).append("'):oh=roth('").append(rotationExpr).append("')")
+                                // TODO: FillColor is not applied yet. Add FillColor to each clip as "Background Fill Color".
                                 .append(":fillcolor=0x00000000").append(",")
                                 .append("hue=h='").append(hueExpr)
                                 .append("':s='").append(saturationExpr)
@@ -497,7 +498,22 @@ public class FFmpegEdit {
                                     "~")
                             ).append("'").append(",")
                             .append("fps=").append(settings.getFrameRate())
+                            .append(clip.isReverse() ? ",reverse" : "")
                             .append(outputLabel).append(";\n");
+
+
+                    // TODO: In the future, before store the tag here, user can import preset (keyframes pack)
+                    //  and apply to the clip, keyframe pack will contains almost all the keyframe that we can
+                    //  modify in the app. The keyframe that user edit will render first, then the preset.
+                    //  so next time when I have time, and if user is apply a preset to a clip
+                    //  (for that we can check if the clip has Preset available. Preset is a class that contains
+                    //  custom keyframe for import/export) then it will appent to the render system like this
+                    //  [preset]scale...[outputLabel]
+                    //  the above outputLabel is set to the preset first, then the preset apply the keyframe edit
+                    //  just like how we apply the normal keyframe, after that we can output the outputLabel as normal
+                    //  .
+                    //  And as a side quest, make a Preset Menu that load from network and sort with 3 state in the dropdown
+                    //  Most Favorite, Newest, Most Used
 
                     tags.storeTag(clip, outputLabel);
                     break;
@@ -526,6 +542,7 @@ public class FFmpegEdit {
                             .append("atrim=start=").append(clip.startClipTrim).append(":end=").append(clip.startClipTrim + clip.duration).append(",")
                             .append("adelay=").append(delayMs).append("|").append(delayMs).append(",")
                             .append("asetpts=PTS-STARTPTS")
+                            .append(clip.isReverse() ? ",areverse" : "")
                             .append(audioLabel).append(";\n");
 
                     audioInputs.append(audioLabel);
@@ -544,6 +561,7 @@ public class FFmpegEdit {
                         // This handle the extension in silent to match the video
                         .append("apad=pad_dur=").append(freezeFrameDuration).append(",")
                         .append("asetpts=PTS-STARTPTS")
+                        .append(clip.isReverse() ? ",areverse" : "")
                         .append(audioLabel).append(";\n");
 
                 audioInputs.append(audioLabel);

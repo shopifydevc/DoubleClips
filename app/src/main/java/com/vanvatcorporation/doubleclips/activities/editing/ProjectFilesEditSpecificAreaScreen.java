@@ -2,34 +2,29 @@ package com.vanvatcorporation.doubleclips.activities.editing;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
-import android.net.Uri;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.activities.EditingActivity;
-import com.vanvatcorporation.doubleclips.activities.TemplatePreviewActivity;
 import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
-import com.vanvatcorporation.doubleclips.activities.main.TemplateAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.helper.AlgorithmHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
@@ -38,11 +33,8 @@ import com.vanvatcorporation.doubleclips.helper.ImageHelper;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -284,18 +276,109 @@ public class ProjectFilesEditSpecificAreaScreen extends BaseEditSpecificAreaScre
             holder.wholeView.setOnClickListener(v -> {
                 if(activityInstance != null)
                     if(EditingActivity.selectedTrack != null) {
-                        activityInstance.addProjectFileMediaToTrack(projectItem.fileTitle, projectItem.filePath);
+                        activityInstance.addProjectFileMediaToTrack(projectItem.getFileTitle(), projectItem.getFilePath());
                     }
                     else new AlertDialog.Builder(getContext()).setTitle("Error").setMessage("You need to pick a track first!").show();
                     else new AlertDialog.Builder(getContext()).setTitle("Error").setMessage("Tung Tung Tung Sahur! (EditingActivity instance not initialized!)").show();
             });
             holder.wholeView.setOnLongClickListener(v -> {
-                IOHelper.deleteFile(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_CLIP_DIRECTORY, projectItem.getFileTitle()));
-                IOHelper.deleteFile(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_PREVIEW_CLIP_DIRECTORY, projectItem.getFileTitle()));
-                projectFilesList.remove(position);
-                notifyItemRemoved(position);
+
+
+                {
+                    PopupMenu popup = new PopupMenu(context, v);
+                    popup.getMenuInflater().inflate(R.menu.menu_cpn_project_files_more, popup.getMenu());
+
+                    popup.setOnMenuItemClickListener(item -> {
+                        if(item.getItemId() == R.id.action_edit)
+                        {
+                            editProjectFileName(properties, projectItem);
+                            return true;
+                        }
+                        else if(item.getItemId() == R.id.action_delete)
+                        {
+                            new AlertDialog.Builder(context)
+                                    .setTitle(context.getString(R.string.alert_delete_media_confirmation_title))
+                                    .setMessage(context.getString(R.string.alert_delete_media_confirmation_description))
+
+                                    // Specifying a listener allows you to take an action before dismissing the dialog.
+                                    // The dialog is automatically dismissed when a dialog button is clicked.
+                                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                                        // Continue with delete operation
+                                        activityInstance.deleteAllClipWithName(projectItem.getFileTitle());
+
+                                        IOHelper.deleteFile(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_CLIP_DIRECTORY, projectItem.getFileTitle()));
+                                        IOHelper.deleteFile(IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_PREVIEW_CLIP_DIRECTORY, projectItem.getFileTitle()));
+                                        projectFilesList.remove(position);
+                                        notifyItemRemoved(position);
+
+                                    })
+
+                                    // A null listener allows the button to dismiss the dialog and take no further action.
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .setIconAttribute(android.R.attr.alertDialogIcon)
+                                    .show();
+                            return true;
+                        }
+                        else if(item.getItemId() == R.id.action_swap)
+                        {
+
+                            //activityInstance.renameProjectFile(projectFile.getFileTitle(), editText.getText().toString());
+                            // TODO: Swapping the clip
+                            //  add Change File (First rename the Clip name to the Imported Filename,
+                            //  second import the filename, and go through the preview process,
+                            //  then check if the filename and old file are matched,
+                            //  if old filename and new filename are the same,
+                            //  then we will not need to delete the file, else we will delete the old file)
+
+
+
+                            return true;
+                        }
+                        return false;
+                    });
+
+                    popup.show();
+                }
+
                 return true;
             });
+        }
+
+
+        private void editProjectFileName(MainAreaScreen.ProjectData projectItem, ProjectFilesData projectFile) {
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+            // Inflate your custom layout
+            LayoutInflater inflater = LayoutInflater.from(context);
+            View dialogView = inflater.inflate(R.layout.popup_edit_project_filename, null);
+            builder.setView(dialogView);
+
+            // Get references to the EditText and Buttons in your custom layout
+            EditText editText = dialogView.findViewById(R.id.directoryText);
+            Button okButton = dialogView.findViewById(R.id.okButton);
+            Button cancelButton = dialogView.findViewById(R.id.cancelButton);
+
+            // Create the AlertDialog
+            AlertDialog dialog = builder.create();
+            editText.setText(projectFile.getFileTitle());
+
+            // Set button click listeners
+            okButton.setOnClickListener(vok -> {
+                activityInstance.renameProjectFile(projectFile.getFileTitle(), editText.getText().toString());
+
+                dialog.dismiss();
+            });
+
+            cancelButton.setOnClickListener(vcan -> {
+                // Just dismiss the dialog
+                dialog.dismiss();
+            });
+
+            // Show the dialog
+            dialog.show();
+
+
         }
 
 

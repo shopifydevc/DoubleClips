@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
@@ -40,6 +41,7 @@ import com.vanvatcorporation.doubleclips.AdsHandler;
 import com.vanvatcorporation.doubleclips.FFmpegEdit;
 import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.activities.export.VideoPropertiesExportSpecificAreaScreen;
+import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.main.TemplateAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
@@ -57,6 +59,7 @@ import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -665,8 +668,49 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
                 clipChooser.launch(Intent.createChooser(intent, "Select Video #" + humanIndex));
             });
             holder.wholeView.setOnLongClickListener(v -> {
-                clipList.get(position).clipPath = "";
-                holder.clipPreview.setImageResource(R.color.colorPalette1_4);
+
+                {
+                    PopupMenu popup = new PopupMenu(context, v);
+                    popup.getMenuInflater().inflate(R.menu.menu_cpn_template_export_more, popup.getMenu());
+
+                    popup.setOnMenuItemClickListener(item -> {
+                        if(item.getItemId() == R.id.action_delete)
+                        {
+                            new AlertDialog.Builder(context)
+                                    .setTitle(context.getString(R.string.alert_delete_media_confirmation_title))
+                                    .setMessage(context.getString(R.string.alert_delete_media_confirmation_description))
+
+                                    // Specifying a listener allows you to take an action before dismissing the dialog.
+                                    // The dialog is automatically dismissed when a dialog button is clicked.
+                                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                                        // Continue with delete operation
+
+                                        IOHelper.deleteFile(clipList.get(position).clipPath);
+
+                                        clipList.get(position).clipPath = "";
+                                        holder.clipPreview.setImageResource(R.color.colorPalette1_4);
+
+
+                                    })
+
+                                    // A null listener allows the button to dismiss the dialog and take no further action.
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .setIconAttribute(android.R.attr.alertDialogIcon)
+                                    .show();
+                            return true;
+                        }
+                        else if(item.getItemId() == R.id.action_properties)
+                        {
+                            // TODO: Add Trim start, Trim end and link it with FFmpeg.
+
+                            return true;
+                        }
+                        return false;
+                    });
+
+                    popup.show();
+                }
+
                 // Remove clips
                 return true;
             });

@@ -30,7 +30,7 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
     public TextView totalDurationText;
     public EditText clipNameField, durationContent, positionXField, positionYField, rotationField, scaleXField, scaleYField, hueField;
     public IndicatorSeekBar opacitySeekbar, speedSeekbar, saturationSeekbar, brightnessSeekbar, temperatureSeekbar;
-    public CheckBox muteAudioCheckbox, lockMediaForTemplateCheckbox;
+    public CheckBox muteAudioCheckbox, lockMediaForTemplateCheckbox, reverseCheckbox;
     public LinearLayout keyframeScrollFrame;
     public Button clearKeyframeButton;
     public ArrayAdapter<EditingActivity.EasingType> easingTypeArrayAdapter;
@@ -76,6 +76,7 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
         temperatureSeekbar = findViewById(R.id.temperatureSeekbar);
         muteAudioCheckbox = findViewById(R.id.muteAudioCheckbox);
         lockMediaForTemplateCheckbox = findViewById(R.id.lockMediaForTemplateCheckbox);
+        reverseCheckbox = findViewById(R.id.reverseCheckbox);
 
         opacitySeekbar.setDecimalScale(2);
         speedSeekbar.setDecimalScale(2);

@@ -460,6 +460,53 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         addClipToTrack(selectedTrack, newClip);
     }
+    public void renameProjectFile(String oldName, String newName)
+    {
+        boolean renamed = false;
+        for (Track track : timeline.tracks) {
+            for (Clip clip : track.clips) {
+                if(oldName.equals(clip.clipName)) {
+                    clip.setClipName(newName, properties, timeline);
+                    renamed = true;
+                    break;
+                }
+            }
+            if(renamed) break;
+        }
+
+        // Fallback if no clip are available
+        if(!renamed)
+        {
+
+            String clipPath = IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_CLIP_DIRECTORY, oldName);
+            String previewClipPath = IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_PREVIEW_CLIP_DIRECTORY, oldName);
+            String clipPathNew = IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_CLIP_DIRECTORY, newName);
+            String previewClipPathNew = IOHelper.CombinePath(properties.getProjectPath(), Constants.DEFAULT_PREVIEW_CLIP_DIRECTORY, newName);
+
+            // Apply the filename change for both preview path and
+            File file = new File(clipPath);
+            File filePreview = new File(previewClipPath);
+            if(file.renameTo(new File(clipPathNew)) &&
+                    filePreview.renameTo(new File(previewClipPathNew))) {
+                // Success
+            }
+            else
+                ; // Operation failed
+        }
+    }
+    public void deleteAllClipWithName(String name)
+    {
+        for (Track track : timeline.tracks) {
+            ArrayList<Clip> deleteClip = new ArrayList<>();
+            for (Clip clip : track.clips) {
+                if(name.equals(clip.clipName))
+                    deleteClip.add(clip);
+            }
+            for (Clip clip : deleteClip) {
+                clip.deleteClip(timeline, this);
+            }
+        }
+    }
 
     void processingPreview(Clip clip, String originalClipPath, String previewClipPath)
     {
@@ -1261,7 +1308,9 @@ public class EditingActivity extends AppCompatActivityImpl {
         clipEditSpecificAreaScreen.onClose.add(() -> {
             if(selectedClip != null)
             {
-                selectedClip.setClipName(clipEditSpecificAreaScreen.clipNameField.getText().toString(), properties);
+                // Only modify if different
+                if(!selectedClip.getClipName().equals(clipEditSpecificAreaScreen.clipNameField.getText().toString()))
+                    selectedClip.setClipName(clipEditSpecificAreaScreen.clipNameField.getText().toString(), properties, timeline);
                 selectedClip.setDuration(ParserHelper.TryParse(clipEditSpecificAreaScreen.durationContent.getText().toString(), selectedClip.getDuration()));
 
                 // Apply to the keyframe if possible
@@ -1298,6 +1347,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
                 selectedClip.setMute(clipEditSpecificAreaScreen.muteAudioCheckbox.isChecked());
                 selectedClip.setLockedForTemplate(clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.isChecked());
+                selectedClip.setReverse(clipEditSpecificAreaScreen.reverseCheckbox.isChecked());
 
                 Keyframe k = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
                 if(k != null)
@@ -1332,7 +1382,8 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipEditSpecificAreaScreen.temperatureSeekbar.setProgress(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Temperature));
 
             clipEditSpecificAreaScreen.muteAudioCheckbox.setChecked(selectedClip.isMute());
-            clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.setChecked(selectedClip.isLockedForTemplate);
+            clipEditSpecificAreaScreen.lockMediaForTemplateCheckbox.setChecked(selectedClip.isLockedForTemplate());
+            clipEditSpecificAreaScreen.reverseCheckbox.setChecked(selectedClip.isReverse());
 
             Keyframe k = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
             if(k != null) {
@@ -2914,6 +2965,8 @@ public class EditingActivity extends AppCompatActivityImpl {
         public boolean isMute;    // for VIDEO type
         @Expose
         public boolean isLockedForTemplate;    // for VIDEO type
+        @Expose
+        public boolean isReverse;    // for VIDEO type
 
 
         //Not serializing
@@ -2921,7 +2974,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         public transient ImageView transitionKnotViewRef;
         public transient ImageGroupView viewRef;
         public transient LinearLayout clipPropertiesLinearLayoutGroup;
-        public transient ImageView templateLockViewRef, noSoundViewRef, muteViewRef;
+        public transient ImageView templateLockViewRef, noSoundViewRef, muteViewRef, reverseViewRef;
         public transient HorizontalScrollView timelineScrollViewRef;
         public transient TextView durationText;
 
@@ -2942,6 +2995,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             this.videoProperties = new VideoProperties();
             this.isMute = false;
+            this.isReverse = false;
         }
 
         public Clip(Clip clip) {
@@ -2960,6 +3014,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
             this.videoProperties = new VideoProperties(clip.videoProperties);
             this.isMute = clip.isMute;
+            this.isReverse = clip.isReverse;
             this.isLockedForTemplate = clip.isLockedForTemplate;
 
 
@@ -3296,6 +3351,14 @@ public class EditingActivity extends AppCompatActivityImpl {
             clipPropertiesLinearLayoutGroup.addView(muteViewRef);
             muteViewRef.setVisibility(isMute ? View.VISIBLE : View.GONE);
 
+
+            // Reverse display
+            reverseViewRef = new ImageView(activity);
+            reverseViewRef.setLayoutParams(clipPropertiesLayoutParams);
+            reverseViewRef.setImageResource(R.drawable.baseline_rotate_left_24);
+            clipPropertiesLinearLayoutGroup.addView(reverseViewRef);
+            reverseViewRef.setVisibility(isReverse ? View.VISIBLE : View.GONE);
+
             durationText = new TextView(activity);
             durationText.setBackgroundResource(R.drawable.rounded_rectangle);
             durationText.setBackgroundColor(0x88888888);
@@ -3441,6 +3504,8 @@ public class EditingActivity extends AppCompatActivityImpl {
         public String getAbsolutePath(MainAreaScreen.ProjectData properties) {
             return getAbsolutePath(properties.getProjectPath());
         }
+        // TODO: Mark the clip to NO_MEDIA if it return the non-existence pathname, maybe the file was deleted, corrupted.
+        //  If possible, consent to user to re-import the lost file and merge it with the new one.
         public String getAbsolutePath(String projectPath) {
             return IOHelper.CombinePath(projectPath, Constants.DEFAULT_CLIP_DIRECTORY, getClipName());
         }
@@ -3470,6 +3535,8 @@ public class EditingActivity extends AppCompatActivityImpl {
         public String getAbsolutePreviewPath(MainAreaScreen.ProjectData properties, String previewExtension) {
             return getAbsolutePreviewPath(properties.getProjectPath(), previewExtension);
         }
+        // TODO: Raise a Popup consent to user to regenerate Preview media if not available.
+        //  before that, check if it was VIDEO or AUDIO type, IMAGE and other don't need preview.
         public String getAbsolutePreviewPath(String projectPath, String previewExtension) {
             String path = IOHelper.CombinePath(projectPath, Constants.DEFAULT_PREVIEW_CLIP_DIRECTORY, getClipName().substring(0, getClipName().lastIndexOf('.')) + previewExtension);
             // Fallback if not available yet.
@@ -3528,18 +3595,37 @@ public class EditingActivity extends AppCompatActivityImpl {
             noSoundViewRef.setVisibility(!clipHasAudio ? View.VISIBLE : View.GONE);
         }
 
+        public boolean isReverse()
+        {
+            return isReverse;
+        }
+        public void setReverse(boolean value)
+        {
+            isReverse = value;
+            reverseViewRef.setVisibility(value ? View.VISIBLE : View.GONE);
+        }
+
+
         public String getClipName()
         {
             return clipName;
         }
-        public void setClipName(String clipName, MainAreaScreen.ProjectData data)
+        public void setClipName(String clipName, MainAreaScreen.ProjectData data, Timeline timeline)
         {
+            String oldName = this.clipName;
             // Apply the filename change for both preview path and
             File file = new File(getAbsolutePath(data));
             File filePreview = new File(getAbsolutePreviewPath(data));
             if(file.renameTo(new File(getAbsolutePath(data).replace(this.clipName, clipName))) &&
-                    filePreview.renameTo(new File(getAbsolutePreviewPath(data).replace(this.clipName, clipName))))
-                this.clipName = clipName;
+                    filePreview.renameTo(new File(getAbsolutePreviewPath(data).replace(this.clipName, clipName)))) {
+                // Apply the filename changes for the whole timeline
+                for (Track track : timeline.tracks) {
+                    for (Clip clip : track.clips) {
+                        if(oldName.equals(clip.clipName))
+                            clip.clipName = clipName;
+                    }
+                }
+            }
             else
                 ; // Operation failed
         }
