@@ -654,7 +654,7 @@ public class FFmpegEdit {
         // 🔁 Mix audio if present
         if (audioClipCount > 0) {
             filterComplex.append(audioInputs)
-                    .append("amix=inputs=").append(audioClipCount).append(":dropout_transition=0").append("[aout];\n");
+                    .append("amix=inputs=").append(audioClipCount).append(":dropout_transition=0:normalize=0").append("[aout];\n");
             audioMaps.append("-map \"[aout]\" ");
         } else {
             audioMaps.append("-an "); // 🧘 No audio at all

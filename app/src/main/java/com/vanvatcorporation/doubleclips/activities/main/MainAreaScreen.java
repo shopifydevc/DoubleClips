@@ -476,6 +476,8 @@ public class MainAreaScreen extends BaseAreaScreen {
 
                         data.savePropertiesAtProject(context);
 
+                        reloadingProject();
+
 
                         return true;
                     }
@@ -520,6 +522,7 @@ public class MainAreaScreen extends BaseAreaScreen {
             okButton.setOnClickListener(vok -> {
                 projectItem.setProjectTitle(context, editText.getText().toString(), true);
 
+                reloadingProject();
 
                 dialog.dismiss();
             });
