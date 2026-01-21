@@ -73,5 +73,21 @@
             android:layout_margin="5dp"
             app:navIcon="@drawable/baseline_commit_24"
             app:navText="Autosnap"/>
+
+        <com.vanvatcorporation.doubleclips.impl.NavigationIconLayout
+            android:id="@+id/importClipButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="5dp"
+            app:navIcon="@drawable/baseline_data_object_24"
+            app:navText="Import"/>
+
+        <com.vanvatcorporation.doubleclips.impl.NavigationIconLayout
+            android:id="@+id/exportTrackButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="5dp"
+            app:navIcon="@drawable/baseline_upload_file_24"
+            app:navText="Export"/>
     </LinearLayout>
 </HorizontalScrollView>

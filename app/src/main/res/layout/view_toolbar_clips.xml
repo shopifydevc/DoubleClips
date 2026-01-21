@@ -33,6 +33,13 @@
             app:navIcon="@drawable/baseline_content_cut_24"
             app:navText="Split"/>
         <com.vanvatcorporation.doubleclips.impl.NavigationIconLayout
+            android:id="@+id/cloneMediaButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="5dp"
+            app:navIcon="@drawable/baseline_file_copy_24"
+            app:navText="Clone"/>
+        <com.vanvatcorporation.doubleclips.impl.NavigationIconLayout
             android:id="@+id/editMediaButton"
             android:layout_width="50dp"
             android:layout_height="50dp"
@@ -67,6 +74,13 @@
             android:layout_margin="5dp"
             app:navIcon="@drawable/baseline_restore_24"
             app:navText="Restate"/>
+        <com.vanvatcorporation.doubleclips.impl.NavigationIconLayout
+            android:id="@+id/exportClipButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="5dp"
+            app:navIcon="@drawable/baseline_upload_file_24"
+            app:navText="Export"/>
 
     </LinearLayout>
 </HorizontalScrollView>

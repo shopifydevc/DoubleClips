@@ -37,6 +37,13 @@
             android:layout_margin="5dp"
             app:navIcon="@drawable/baseline_folder_24"
             app:navText="Files"/>
+        <com.vanvatcorporation.doubleclips.impl.NavigationIconLayout
+            android:id="@+id/importTrackButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="5dp"
+            app:navIcon="@drawable/baseline_data_object_24"
+            app:navText="Import"/>
 
     </LinearLayout>
 </HorizontalScrollView>

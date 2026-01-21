@@ -1736,7 +1736,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             data.setProjectSize(IOHelper.getFileSize(context, data.getProjectPath()));
 
 
-            String jsonTimeline = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create().toJson(timeline); // Save
+            String jsonTimeline = GsonHelper.createExposeOnlyGson().toJson(timeline); // Save
             String jsonProperties = new Gson().toJson(data); // Save
 
 

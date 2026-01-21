@@ -60,7 +60,7 @@ import androidx.core.content.res.ResourcesCompat;
 import com.arthenica.ffmpegkit.Log;
 import com.arthenica.ffmpegkit.Statistics;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import com.google.gson.annotations.Expose;
 
 import com.vanvatcorporation.doubleclips.FFmpegEdit;
@@ -78,6 +78,7 @@ import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
 import com.vanvatcorporation.doubleclips.helper.DateHelper;
 import com.vanvatcorporation.doubleclips.helper.EdgeScrollHelper;
+import com.vanvatcorporation.doubleclips.helper.GsonHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
@@ -344,7 +345,7 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
 
 
-        Clip newClip = new Clip(filename, currentTime + offsetTime, duration, selectedTrack.trackIndex, type, isClipHasAudio, width, height);
+        Clip newClip = new Clip(filename, currentTime + offsetTime, duration, selectedTrack.timelineIndex, type, isClipHasAudio, width, height);
 
 
         addClipToTrack(selectedTrack, newClip);
@@ -455,11 +456,144 @@ public class EditingActivity extends AppCompatActivityImpl {
         }
 
 
-        Clip newClip = new Clip(filename, currentTime, duration, selectedTrack.trackIndex, type, isClipHasAudio, width, height);
+        Clip newClip = new Clip(filename, currentTime, duration, selectedTrack.timelineIndex, type, isClipHasAudio, width, height);
 
 
         addClipToTrack(selectedTrack, newClip);
     }
+
+    // ==============       Unsorted feature          =============
+
+    Clip currentExportingClip;
+    Track currentExportingTrack;
+
+
+    private ActivityResultLauncher<Intent> clipImportLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Intent data = result.getData();
+                    // Check if multiple files are selected
+
+                    if (data.getClipData() != null) {
+                        int count = data.getClipData().getItemCount();
+                        Uri[] uris = new Uri[count];
+                        for (int i = 0; i < count; i++) {
+                            uris[i] = data.getClipData().getItemAt(i).getUri();
+                        }
+
+                        for (int i = 0; i < uris.length; i++) {
+                            try {
+                                Clip clip = GsonHelper.createStrictGson(new String[]{"clipName"}, Clip.class).fromJson(IOHelper.readFromFile(this, getContentResolver(), uris[i]), Clip.class);
+                                clip.filterNullAfterLoad();
+                                if(selectedTrack != null)
+                                    addClipToTrack(selectedTrack, clip);
+                                else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+
+                            } catch (JsonParseException e) {
+                                new AlertDialog.Builder(this).setTitle("Error").setMessage(e.getMessage()).show();
+                            }
+
+
+                        }
+                    } else if (data.getData() != null) {
+                        // Single file selected
+                        Uri fileUri = data.getData();
+                        // Process the file URI
+                        try {
+                            Clip clip = GsonHelper.createStrictGson(new String[]{"clipName"}, Clip.class).fromJson(IOHelper.readFromFile(this, getContentResolver(), fileUri), Clip.class);
+                            clip.filterNullAfterLoad();
+                            if(selectedTrack != null)
+                                addClipToTrack(selectedTrack, clip);
+                            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+
+                        } catch (JsonParseException e) {
+                            new AlertDialog.Builder(this).setTitle("Error").setMessage(e.getMessage()).show();
+                        }
+
+                    }
+
+                }
+            }
+    );
+    private ActivityResultLauncher<Intent> clipExportLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Intent data = result.getData();
+                    // Check if multiple files are selected
+                    if(currentExportingClip == null) return;
+                    IOHelper.writeToFile(
+                            this,
+                            getContentResolver(),
+                            data.getData(),
+                            GsonHelper.createExposeOnlyGson().toJson(currentExportingClip));
+                    currentExportingClip = null;
+                }
+            }
+    );
+    private ActivityResultLauncher<Intent> trackImportLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Intent data = result.getData();
+                    // Check if multiple files are selected
+
+                    if (data.getClipData() != null) {
+                        int count = data.getClipData().getItemCount();
+                        Uri[] uris = new Uri[count];
+                        for (int i = 0; i < count; i++) {
+                            uris[i] = data.getClipData().getItemAt(i).getUri();
+                        }
+
+                        for (Uri uri : uris) {
+                            try {
+                                Track track = GsonHelper.createStrictGson(new String[]{"timelineIndex"}, Track.class).fromJson(IOHelper.readFromFile(this, getContentResolver(), uri), Track.class);
+                                loadExistingTrack(track);
+
+                                timeline.addTrack(track);
+                            } catch (JsonParseException e) {
+                                new AlertDialog.Builder(this).setTitle("Error").setMessage(e.getMessage()).show();
+                            }
+
+
+
+                        }
+                    } else if (data.getData() != null) {
+                        // Single file selected
+                        Uri fileUri = data.getData();
+                        // Process the file URI
+                        try {
+                            Track track = GsonHelper.createStrictGson(new String[]{"timelineIndex"}, Track.class).fromJson(IOHelper.readFromFile(this, getContentResolver(), fileUri), Track.class);
+                            loadExistingTrack(track);
+
+                            timeline.addTrack(track);
+                        } catch (JsonParseException e) {
+                            new AlertDialog.Builder(this).setTitle("Error").setMessage(e.getMessage()).show();
+                        }
+                    }
+
+                }
+            }
+    );
+    private ActivityResultLauncher<Intent> trackExportLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Intent data = result.getData();
+                    // Check if multiple files are selected
+                    if(currentExportingTrack == null) return;
+                    IOHelper.writeToFile(
+                            this,
+                            getContentResolver(),
+                            data.getData(),
+                            GsonHelper.createExposeOnlyGson().toJson(currentExportingTrack));
+                    currentExportingTrack = null;
+                }
+            }
+    );
+
+
     public void renameProjectFile(String oldName, String newName)
     {
         boolean renamed = false;
@@ -507,6 +641,49 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
         }
     }
+    public void exportSingularClip(Clip data)
+    {
+        currentExportingClip = data;
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setType("application/json");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_TITLE, "export_clip_" + data.getClipName() + ".json");
+        clipExportLauncher.launch(Intent.createChooser(intent, "Select Export Clip Json Data File"));
+    }
+    public void importSingularClip()
+    {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("application/json");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        clipImportLauncher.launch(Intent.createChooser(intent, "Select Import Clip Json Data File"));
+    }
+
+
+    public void exportSingularTrack(Track data)
+    {
+        currentExportingTrack = data;
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setType("application/json");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_TITLE, "export_track_" + data.timelineIndex + ".json");
+        trackExportLauncher.launch(Intent.createChooser(intent, "Select Export Track Json Data File"));
+    }
+    public void importSingularTrack()
+    {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("application/json");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        trackImportLauncher.launch(Intent.createChooser(intent, "Select Import Track Json Data File"));
+    }
+
+
+    // ==============       Unsorted feature          =============
+
+
+
+
+
+
 
     void processingPreview(Clip clip, String originalClipPath, String previewClipPath)
     {
@@ -948,6 +1125,9 @@ public class EditingActivity extends AppCompatActivityImpl {
         toolbarDefault.findViewById(R.id.projectFilesViewerButton).setOnClickListener(v -> {
             projectFilesEditSpecificAreaScreen.open();
         });
+        toolbarDefault.findViewById(R.id.importTrackButton).setOnClickListener(v -> {
+            importSingularTrack();
+        });
 
 
         // ===========================       DEFAULT ZONE       ====================================
@@ -995,7 +1175,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-            Clip newClip = new Clip("TEXT", currentTime, duration, selectedTrack.trackIndex, type, false, 0, 0);
+            Clip newClip = new Clip("TEXT", currentTime, duration, selectedTrack.timelineIndex, type, false, 0, 0);
             newClip.textContent = "Simple text";
             newClip.fontSize = 30;
             addClipToTrack(selectedTrack, newClip);
@@ -1010,7 +1190,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             float duration = 3f; // fallback default if needed
             ClipType type = ClipType.EFFECT; // if effect or unknown
 
-            Clip newClip = new Clip("EFFECT", currentTime, duration, selectedTrack.trackIndex, type, false, 0, 0);
+            Clip newClip = new Clip("EFFECT", currentTime, duration, selectedTrack.timelineIndex, type, false, 0, 0);
             newClip.effect = new EffectTemplate("glitch-pulse", 1.2, 4.0);
 
             addClipToTrack(selectedTrack, newClip);
@@ -1048,6 +1228,18 @@ public class EditingActivity extends AppCompatActivityImpl {
             }
             else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
         });
+        toolbarTrack.findViewById(R.id.importClipButton).setOnClickListener(v -> {
+            if(selectedTrack != null) {
+                importSingularClip();
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+        });
+        toolbarTrack.findViewById(R.id.exportTrackButton).setOnClickListener(v -> {
+            if(selectedTrack != null) {
+                exportSingularTrack(selectedTrack);
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a track first!").show();
+        });
 
 
         // ===========================       TRACK ZONE       ====================================
@@ -1078,6 +1270,14 @@ public class EditingActivity extends AppCompatActivityImpl {
             List<Clip> affectedClips = timeline.getClipAtCurrentTime(currentTime);
             if(selectedClip != null && affectedClips.contains(selectedClip)) {
                 selectedClip.splitClip(this, timeline, currentTime);
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
+        });
+        toolbarClips.findViewById(R.id.cloneMediaButton).setOnClickListener(v -> {
+            if(selectedClip != null) {
+                Clip cloneClip = new Clip(selectedClip);
+                cloneClip.startTime = selectedClip.startTime + selectedClip.duration;
+                addClipToTrack(selectedTrack, cloneClip);
             }
             else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
         });
@@ -1135,6 +1335,12 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
+            }
+            else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
+        });
+        toolbarClips.findViewById(R.id.exportClipButton).setOnClickListener(v -> {
+            if(selectedClip != null) {
+                exportSingularClip(selectedClip);
             }
             else new AlertDialog.Builder(this).setTitle("Error").setMessage("You need to pick a clip first!").show();
         });
@@ -1611,8 +1817,19 @@ public class EditingActivity extends AppCompatActivityImpl {
         super.onResume();
     }
 
+    private void loadExistingTrack(Track track) {
+        track.viewRef = addNewTrackUi();
+        track.viewRef.trackInfo = track;
+        for (Clip clip : track.clips) {
+            clip.trackIndex = track.timelineIndex;
+            clip.filterNullAfterLoad();
+            addClipToTrackUi(track.viewRef, clip);
+        }
+    }
     private Track addNewTrack() {
-        Track trackInfo = new Track(trackCount, addNewTrackUi());
+        Track trackInfo = new Track();
+        loadExistingTrack(trackInfo);
+
         timeline.addTrack(trackInfo);
 
         return trackInfo;
@@ -2076,7 +2293,7 @@ public class EditingActivity extends AppCompatActivityImpl {
                                 float newStartTime = (finalX1 - centerOffset) / pixelsPerSecond;
                                 dragContext.clip.startTime = Math.max(0, newStartTime); // Clamp to 0
                                 timeline.tracks.get(dragContext.clip.trackIndex).removeClip(dragContext.clip);
-                                dragContext.clip.trackIndex = dragContext.currentTrack.trackIndex;
+                                dragContext.clip.trackIndex = dragContext.currentTrack.timelineIndex;
                                 timeline.tracks.get(dragContext.clip.trackIndex).addClip((dragContext.clip));
 
 
@@ -2669,11 +2886,21 @@ public class EditingActivity extends AppCompatActivityImpl {
         public float duration;
 
         public void addTrack(Track track) {
+            track.timelineIndex = tracks.size();
             tracks.add(track);
         }
 
         public void removeTrack(Track track) {
             tracks.remove(track);
+        }
+        public void reloadTrackIndex()
+        {
+            for (int i = 0; i < tracks.size(); i++) {
+                tracks.get(i).timelineIndex = i;
+                for (Clip clip : tracks.get(i).clips) {
+                    clip.trackIndex = i;
+                }
+            }
         }
 
         public List<Clip> getClipAtCurrentTime(float playheadTime) {
@@ -2725,7 +2952,7 @@ public class EditingActivity extends AppCompatActivityImpl {
             data.setProjectSize(IOHelper.getFileSize(context, data.getProjectPath()));
 
 
-            String jsonTimeline = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create().toJson(timeline); // Save
+            String jsonTimeline = GsonHelper.createExposeOnlyGson().toJson(timeline); // Save
 
 
             data.savePropertiesAtProject(context);
@@ -2747,14 +2974,10 @@ public class EditingActivity extends AppCompatActivityImpl {
         {
             if(timeline == null) return new Timeline();
             for (Track track : timeline.tracks) {
-                track.viewRef = instance.addNewTrackUi();
-                track.viewRef.trackInfo = track;
-
-                for (Clip clip : track.clips) {
-                    clip.filterNullAfterLoad();
-                    instance.addClipToTrackUi(track.viewRef, clip);
-                }
+                instance.loadExistingTrack(track);
             }
+            timeline.reloadTrackIndex();
+
 
             return timeline;
         }
@@ -2797,7 +3020,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
     public static class Track implements Serializable {
         @Expose
-        public int trackIndex;
+        public int timelineIndex;
         @Expose
         public List<Clip> clips = new ArrayList<>();
 
@@ -2806,12 +3029,14 @@ public class EditingActivity extends AppCompatActivityImpl {
 
 
 
-        public Track(int trackIndex, TrackFrameLayout viewRef) {
-            this.trackIndex = trackIndex;
+        public Track(TrackFrameLayout viewRef) {
             this.viewRef = viewRef;
+        }
+        public Track() {
         }
 
         public void addClip(Clip clip) {
+            clip.trackIndex = timelineIndex;
             clips.add(clip);
         }
 
@@ -2869,17 +3094,17 @@ public class EditingActivity extends AppCompatActivityImpl {
         public void delete(Timeline timeline, ViewGroup trackContainer, ViewGroup trackInfo, EditingActivity activity) {
             activity.deselectingTrack();
 
-            timeline.removeTrack(timeline.tracks.get(trackIndex));
+            timeline.removeTrack(timeline.tracks.get(timelineIndex));
 
             // Lower the higher indexes track by 1 to fill up the remove one.
             // When removed, trackIndex element become the next element
             List<Track> tracks = timeline.tracks;
-            for (int i = trackIndex; i < tracks.size(); i++) {
+            for (int i = timelineIndex; i < tracks.size(); i++) {
                 Track higherTrack = tracks.get(i);
-                higherTrack.trackIndex--;
+                higherTrack.timelineIndex--;
                 // Change trackIndex for Clip as well
                 for (Clip clip : higherTrack.clips) {
-                    clip.trackIndex = higherTrack.trackIndex;
+                    clip.trackIndex = higherTrack.timelineIndex;
                 }
             }
 

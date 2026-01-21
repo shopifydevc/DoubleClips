@@ -11,6 +11,7 @@
     <string name="advanced">Advanced</string>
     <string name="log">Log</string>
     <string name="clips">Clips</string>
+    <string name="motion_blur">Motion Blur</string>
     <string name="properties">Properties</string>
     <string name="keyframe">Keyframe</string>
     <string name="create">Create</string>
