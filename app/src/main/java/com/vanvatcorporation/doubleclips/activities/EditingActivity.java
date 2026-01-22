@@ -82,6 +82,7 @@ import com.vanvatcorporation.doubleclips.helper.GsonHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
+import com.vanvatcorporation.doubleclips.helper.MimeHelper;
 import com.vanvatcorporation.doubleclips.helper.ParserHelper;
 import com.vanvatcorporation.doubleclips.helper.StringFormatHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
@@ -269,16 +270,14 @@ public class EditingActivity extends AppCompatActivityImpl {
         IOHelper.writeToFileAsRaw(this, clipPath, IOHelper.readFromFileAsRaw(this, getContentResolver(), uri));
 
         float duration = 3f; // fallback default if needed
-        String mimeType = getContentResolver().getType(uri);
-
-        if(mimeType == null) return offsetTime;
+        MimeHelper.MimeType mimeType = MimeHelper.getMimeTypeFromUri(this, uri);
 
 
         ClipType type;
 
-        if (mimeType.startsWith("audio/")) type = ClipType.AUDIO;
-        else if (mimeType.startsWith("image/")) type = ClipType.IMAGE;
-        else if (mimeType.startsWith("video/")) type = ClipType.VIDEO;
+        if (mimeType.isAudio()) type = ClipType.AUDIO;
+        else if (mimeType.isImage()) type = ClipType.IMAGE;
+        else if (mimeType.isVideo()) type = ClipType.VIDEO;
         else type = ClipType.EFFECT; // if effect or unknown
 
 
@@ -380,16 +379,16 @@ public class EditingActivity extends AppCompatActivityImpl {
         if(selectedTrack == null) return;
         float duration = 3f; // fallback default if needed
 
-        String mimeType = URLConnection.guessContentTypeFromName(filename);
+        MimeHelper.MimeType mimeType = MimeHelper.getMimeTypeFromPath(filepath);
 
         if(mimeType == null) return;
 
 
         ClipType type;
 
-        if (mimeType.startsWith("audio/")) type = ClipType.AUDIO;
-        else if (mimeType.startsWith("image/")) type = ClipType.IMAGE;
-        else if (mimeType.startsWith("video/")) type = ClipType.VIDEO;
+        if (mimeType.isAudio()) type = ClipType.AUDIO;
+        else if (mimeType.isImage()) type = ClipType.IMAGE;
+        else if (mimeType.isVideo()) type = ClipType.VIDEO;
         else type = ClipType.EFFECT; // if effect or unknown
 
 
@@ -1517,7 +1516,8 @@ public class EditingActivity extends AppCompatActivityImpl {
                 // Only modify if different
                 if(!selectedClip.getClipName().equals(clipEditSpecificAreaScreen.clipNameField.getText().toString()))
                     selectedClip.setClipName(clipEditSpecificAreaScreen.clipNameField.getText().toString(), properties, timeline);
-                selectedClip.setDuration(ParserHelper.TryParse(clipEditSpecificAreaScreen.durationContent.getText().toString(), selectedClip.getDuration()));
+                selectedClip.setStartClipTrim(ParserHelper.TryParse(clipEditSpecificAreaScreen.startTrimField.getText().toString(), selectedClip.getStartClipTrim()));
+                selectedClip.setEndClipTrim(ParserHelper.TryParse(clipEditSpecificAreaScreen.endTrimField.getText().toString(), selectedClip.getEndClipTrim()));
 
                 // Apply to the keyframe if possible
                 Keyframe selectedKeyframe = selectedClip.keyframes.getKeyframeAtTime(selectedClip, currentTime);
@@ -1572,8 +1572,10 @@ public class EditingActivity extends AppCompatActivityImpl {
         });
         clipEditSpecificAreaScreen.onOpen.add(() -> {
             clipEditSpecificAreaScreen.totalDurationText.setText(String.valueOf(selectedClip.originalDuration));
+            clipEditSpecificAreaScreen.durationText.setText(String.valueOf(selectedClip.duration));
             clipEditSpecificAreaScreen.clipNameField.setText(String.valueOf(selectedClip.getClipName()));
-            clipEditSpecificAreaScreen.durationContent.setText(String.valueOf(selectedClip.duration));
+            clipEditSpecificAreaScreen.startTrimField.setText(String.valueOf(selectedClip.startClipTrim));
+            clipEditSpecificAreaScreen.endTrimField.setText(String.valueOf(selectedClip.endClipTrim));
             clipEditSpecificAreaScreen.positionXField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.PosX)));
             clipEditSpecificAreaScreen.positionYField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.PosY)));
             clipEditSpecificAreaScreen.rotationField.setText(String.valueOf(selectedClip.keyframes.getValueAtTime(selectedClip, currentTime, VideoProperties.ValueType.Rot)));
@@ -3866,6 +3868,25 @@ public class EditingActivity extends AppCompatActivityImpl {
                 durationText.setText(StringFormatHelper.smartRound(duration, 2, true) + "s");
         }
 
+        public float getStartClipTrim()
+        {
+            return startClipTrim;
+        }
+        public void setStartClipTrim(float value)
+        {
+            startClipTrim = value;
+            setDuration(originalDuration - endClipTrim - startClipTrim);
+        }
+        public float getEndClipTrim()
+        {
+            return endClipTrim;
+        }
+        public void setEndClipTrim(float value)
+        {
+            endClipTrim = value;
+            setDuration(originalDuration - endClipTrim - startClipTrim);
+        }
+
     }
 
 
@@ -4545,6 +4566,7 @@ frameRate = 60;
         private float scaleX = 1, scaleY = 1;
         private float rot = 0;
         private float posX = 0, posY = 0;
+        private float opacity = 1;
 
 
         private float scaleMatrixX = 1, scaleMatrixY = 1;
@@ -4605,6 +4627,7 @@ frameRate = 60;
                                     scaleX = (EditingActivity.renderToPreviewConversionScalingX(clip.videoProperties.getValue(VideoProperties.ValueType.ScaleX), settings.videoWidth));
                                     scaleY = (EditingActivity.renderToPreviewConversionScalingY(clip.videoProperties.getValue(VideoProperties.ValueType.ScaleY), settings.videoHeight));
                                     rot = (clip.videoProperties.getValue(VideoProperties.ValueType.Rot));
+                                    opacity = clip.videoProperties.getValue(VideoProperties.ValueType.Opacity);
 
 
                                     applyTransformation();
@@ -4713,6 +4736,7 @@ frameRate = 60;
                                 scaleX = (EditingActivity.renderToPreviewConversionScalingX(clip.videoProperties.getValue(VideoProperties.ValueType.ScaleX), settings.videoWidth));
                                 scaleY = (EditingActivity.renderToPreviewConversionScalingY(clip.videoProperties.getValue(VideoProperties.ValueType.ScaleY), settings.videoHeight));
                                 rot = (clip.videoProperties.getValue(VideoProperties.ValueType.Rot));
+                                opacity = clip.videoProperties.getValue(VideoProperties.ValueType.Opacity);
 
                                 applyTransformation();
                                 applyPostTransformation();
@@ -4872,12 +4896,14 @@ frameRate = 60;
                     float rotation = clip.keyframes.getValueAtTime(clip, playheadTime, VideoProperties.ValueType.Rot);
                     float sx = clip.keyframes.getValueAtTime(clip, playheadTime, VideoProperties.ValueType.ScaleX);
                     float sy = clip.keyframes.getValueAtTime(clip, playheadTime, VideoProperties.ValueType.ScaleY);
+                    float op = clip.keyframes.getValueAtTime(clip, playheadTime, VideoProperties.ValueType.Opacity);
 
                     posX = x == -1 ? posX : x;
                     posY = y == -1 ? posY : y;
                     rot = rotation == -1 ? rot : rotation;
                     scaleX = sx == -1 ? scaleX : sx;
                     scaleY = sy == -1 ? scaleY : sy;
+                    opacity = opacity < 0 ? op : opacity;
 
                     applyPostTransformation();
                     //applyPostMatrixTransformation();
@@ -5093,6 +5119,7 @@ frameRate = 60;
             matrix.postTranslate(posMatrixX, posMatrixY);
 
             textureView.setTransform(matrix);
+            textureView.setAlpha(opacity);
             textureView.invalidate();
         }
         private void applyPostTransformation() {
@@ -5114,6 +5141,7 @@ frameRate = 60;
                 textureView.setScaleX(scaleX);
                 textureView.setScaleY(scaleY);
                 textureView.setRotation(rot);
+                textureView.setAlpha(opacity);
             });
         }
         private void applyPostMatrixTransformation() {

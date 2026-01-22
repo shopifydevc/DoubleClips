@@ -43,10 +43,13 @@ import com.vanvatcorporation.doubleclips.R;
 import com.vanvatcorporation.doubleclips.activities.export.VideoPropertiesExportSpecificAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.main.MainAreaScreen;
 import com.vanvatcorporation.doubleclips.activities.main.TemplateAreaScreen;
+import com.vanvatcorporation.doubleclips.activities.template.TemplateExportPropertiesAreaScreen;
 import com.vanvatcorporation.doubleclips.constants.Constants;
+import com.vanvatcorporation.doubleclips.helper.FileHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
+import com.vanvatcorporation.doubleclips.helper.MimeHelper;
 import com.vanvatcorporation.doubleclips.helper.ParserHelper;
 import com.vanvatcorporation.doubleclips.helper.WebHelper;
 import com.vanvatcorporation.doubleclips.impl.AppCompatActivityImpl;
@@ -77,6 +80,8 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
     public RecyclerView clipReplacementRecyclerView;
     public ClipReplacementAdapter clipReplacementAdapter;
 
+    ClipReplacementData selectedClipReplacement;
+
     int currentlyChosenClipIndex = -1;
 
     private ActivityResultLauncher<Intent> clipChooser = registerForActivityResult(
@@ -106,7 +111,7 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(() -> {
             for (Uri uri : uris) {
-                String mimeType = getContentResolver().getType(uri);
+                MimeHelper.MimeType mimeType = MimeHelper.getMimeTypeFromUri(this, uri);
 
                 if (currentlyChosenClipIndex == -1) return;
                 // Discard the rest of leftover clip when done arranging
@@ -114,7 +119,7 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
 
                 String clipPath = IOHelper.CombinePath(IOHelper.getPersistentDataPath(this),
                         Constants.DEFAULT_TEMPLATE_CLIP_TEMP_DIRECTORY,
-                        currentlyChosenClipIndex + (mimeType.startsWith("video/")  ? ".mp4" : ".png"));
+                        currentlyChosenClipIndex + (mimeType.isVideo()  ? ".mp4" : ".png"));
 
                 IOHelper.writeToFileAsRaw(this, clipPath,
                         IOHelper.readFromFileAsRaw(this, getContentResolver(), uri)
@@ -124,10 +129,10 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
 
 
 
-                clipReplacementList.get(currentlyChosenClipIndex).type = mimeType.startsWith("video/") ? EditingActivity.ClipType.VIDEO : EditingActivity.ClipType.IMAGE;
+                clipReplacementList.get(currentlyChosenClipIndex).type = mimeType.isVideo() ? EditingActivity.ClipType.VIDEO : EditingActivity.ClipType.IMAGE;
 
                 clipReplacementList.get(currentlyChosenClipIndex).clipThumbnail =
-                        mimeType.startsWith("video/") ?
+                        mimeType.isVideo() ?
                                 extractSingleThumbnail(this, clipPath) :
                                 IOImageHelper.LoadFileAsPNGImage(this, clipPath, 8)
                 ;
@@ -176,6 +181,7 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
 
 
     private VideoPropertiesExportSpecificAreaScreen videoPropertiesExportSpecificAreaScreen;
+    private TemplateExportPropertiesAreaScreen templateExportPropertiesAreaScreen;
 
     RelativeLayout modifyZone;
 
@@ -274,6 +280,9 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         clipReplacementAdapter.notifyDataSetChanged();
 
         downloadNecessaryResources(data.getTemplateLocation(), data.getTemplateAdditionalResourcesName());
+
+
+        setupSpecificEdit();
     }
 
     @Override
@@ -302,6 +311,12 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         videoPropertiesExportSpecificAreaScreen = (VideoPropertiesExportSpecificAreaScreen) LayoutInflater.from(this).inflate(R.layout.view_export_specific_video_properties, null);
         modifyZone.addView(videoPropertiesExportSpecificAreaScreen);
         // ===========================       VIDEO PROPERTIES ZONE       ====================================
+
+
+        // ===========================       CLIP REPLACEMENT PROPERTIES ZONE       ====================================
+        templateExportPropertiesAreaScreen = (TemplateExportPropertiesAreaScreen) LayoutInflater.from(this).inflate(R.layout.view_template_export_properties, null);
+        modifyZone.addView(templateExportPropertiesAreaScreen);
+        // ===========================       CLIP REPLACEMENT PROPERTIES ZONE       ====================================
 
 
         // ===========================       VIDEO PROPERTIES ZONE       ====================================
@@ -344,6 +359,28 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
 
 
         // ===========================       VIDEO PROPERTIES ZONE       ====================================
+
+
+        // ===========================       CLIP REPLACEMENT PROPERTIES ZONE       ====================================
+        templateExportPropertiesAreaScreen.onClose.add(() -> {
+            if(selectedClipReplacement != null)
+            {
+                selectedClipReplacement.startClipTrim = templateExportPropertiesAreaScreen.trimRangeSlider.getValues().get(0);
+                selectedClipReplacement.endClipTrim = templateExportPropertiesAreaScreen.trimRangeSlider.getValues().get(1);
+            }
+        });
+        templateExportPropertiesAreaScreen.onOpen.add(() -> {
+            int clipIndex = clipReplacementList.indexOf(selectedClipReplacement);
+            templateExportPropertiesAreaScreen.titleText.setText("Clip " + (clipIndex + 1));
+            templateExportPropertiesAreaScreen.dataInfoText.setText(MimeHelper.getMimeTypeFromPath(selectedClipReplacement.clipPath).getFullName());
+            templateExportPropertiesAreaScreen.previewImage.setImageBitmap(selectedClipReplacement.clipThumbnail);
+            templateExportPropertiesAreaScreen.trimRangeSlider.setEnabled(data.getFfmpegCommand().contains(Constants.DEFAULT_TEMPLATE_TRIM_MARK(clipIndex)));
+
+            templateExportPropertiesAreaScreen.trimRangeSlider.setValues(selectedClipReplacement.startClipTrim, selectedClipReplacement.endClipTrim);
+
+        });
+
+        // ===========================       CLIP REPLACEMENT PROPERTIES ZONE       ====================================
 
 
     }
@@ -610,6 +647,7 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
         EditingActivity.ClipType type;
         public String clipPath;
         public Bitmap clipThumbnail;
+        public float startClipTrim, endClipTrim, duration;
 
         public ClipReplacementData(EditingActivity.ClipType type, String clipPath, Bitmap clipThumbnail) {
             this.type = type;
@@ -701,6 +739,8 @@ public class TemplateExportActivity extends AppCompatActivityImpl {
                         }
                         else if(item.getItemId() == R.id.action_properties)
                         {
+                            selectedClipReplacement = clipList.get(position);
+                            templateExportPropertiesAreaScreen.open();
                             // TODO: Add Trim start, Trim end and link it with FFmpeg.
 
                             return true;

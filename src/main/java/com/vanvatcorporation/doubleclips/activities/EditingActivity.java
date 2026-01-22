@@ -254,7 +254,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         if(mimeType == null) return;
 
-        if(mimeType.startsWith("video/") || mimeType.startsWith("audio/"))
+        if(mimeType.isVideo() || mimeType.startsWith("audio/"))
             try {
                 MediaExtractor extractor = new MediaExtractor();
                 extractor.setDataSource(clipPath);
@@ -284,7 +284,7 @@ public class EditingActivity extends AppCompatActivityImpl {
 
         if (mimeType.startsWith("audio/")) type = ClipType.AUDIO;
         else if (mimeType.startsWith("image/")) type = ClipType.IMAGE;
-        else if (mimeType.startsWith("video/")) type = ClipType.VIDEO;
+        else if (mimeType.isVideo()) type = ClipType.VIDEO;
         else type = ClipType.EFFECT; // if effect or unknown
 
         System.err.println(type);

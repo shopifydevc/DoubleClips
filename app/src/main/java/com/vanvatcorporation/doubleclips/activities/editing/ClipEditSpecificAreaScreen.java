@@ -27,8 +27,8 @@ import com.warkiz.widget.IndicatorSeekBar;
 
 public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
 
-    public TextView totalDurationText;
-    public EditText clipNameField, durationContent, positionXField, positionYField, rotationField, scaleXField, scaleYField, hueField;
+    public TextView durationText, totalDurationText;
+    public EditText clipNameField, startTrimField, endTrimField, positionXField, positionYField, rotationField, scaleXField, scaleYField, hueField;
     public IndicatorSeekBar opacitySeekbar, speedSeekbar, saturationSeekbar, brightnessSeekbar, temperatureSeekbar;
     public CheckBox muteAudioCheckbox, lockMediaForTemplateCheckbox, reverseCheckbox;
     public LinearLayout keyframeScrollFrame;
@@ -59,8 +59,10 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
         super.init();
 
         totalDurationText = findViewById(R.id.totalDurationText);
+        durationText = findViewById(R.id.durationCText);
+        startTrimField = findViewById(R.id.startTrimContent);
+        endTrimField = findViewById(R.id.endTrimContent);
         clipNameField = findViewById(R.id.clipNameField);
-        durationContent = findViewById(R.id.durationContent);
         keyframeScrollFrame = findViewById(R.id.keyframeScrollFrame);
         clearKeyframeButton = findViewById(R.id.clearKeyframeButton);
         positionXField = findViewById(R.id.positionXField);
@@ -104,7 +106,8 @@ public class ClipEditSpecificAreaScreen extends BaseEditSpecificAreaScreen {
         // Clear focus after edit
         onClose.add(() -> {
             clipNameField.clearFocus();
-            durationContent.clearFocus();
+            startTrimField.clearFocus();
+            endTrimField.clearFocus();
             positionXField.clearFocus();
             positionYField.clearFocus();
             rotationField.clearFocus();

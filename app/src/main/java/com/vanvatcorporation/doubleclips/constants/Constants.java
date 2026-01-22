@@ -38,6 +38,9 @@ public class Constants {
     public static String DEFAULT_TEMPLATE_CLIP_MARK(int index) {
         return "<editable-video-" + index + ">";
     }
+    public static String DEFAULT_TEMPLATE_TRIM_MARK(int index) {
+        return "<editable-video-trim-" + index + ">";
+    }
 
     public static String DEFAULT_PROJECT_DIRECTORY(Context context) {
         return IOHelper.CombinePath(IOHelper.getPersistentDataPath(context), "projects");

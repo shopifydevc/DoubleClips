@@ -30,6 +30,7 @@ import com.vanvatcorporation.doubleclips.helper.AlgorithmHelper;
 import com.vanvatcorporation.doubleclips.helper.IOHelper;
 import com.vanvatcorporation.doubleclips.helper.IOImageHelper;
 import com.vanvatcorporation.doubleclips.helper.ImageHelper;
+import com.vanvatcorporation.doubleclips.helper.MimeHelper;
 import com.vanvatcorporation.doubleclips.manager.LoggingManager;
 
 import java.io.File;
@@ -129,16 +130,16 @@ public class ProjectFilesEditSpecificAreaScreen extends BaseEditSpecificAreaScre
 
                 Bitmap previewBitmap;
 
-                String mimeType = URLConnection.guessContentTypeFromName(child);
+                MimeHelper.MimeType mimeType = MimeHelper.getMimeTypeFromPath(childPath);
 
 
-                if (mimeType.startsWith("audio/")) {
+                if (mimeType.isAudio()) {
                     previewBitmap = ImageHelper.createBitmapFromDrawable( ResourcesCompat.getDrawable(getResources(), R.drawable.baseline_audio_file_24, null));
                 }
-                else if (mimeType.startsWith("image/")) {
+                else if (mimeType.isImage()) {
                     previewBitmap = IOImageHelper.LoadFileAsPNGImage(getContext(), childPath, Constants.SAMPLE_SIZE_PREVIEW_CLIP);
                 }
-                else if (mimeType.startsWith("video/")) {
+                else if (mimeType.isVideo()) {
                     try {
                         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                         retriever.setDataSource(childPath);

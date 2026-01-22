@@ -79,8 +79,8 @@
                     android:text="Duration"
                     android:textSize="18sp" />
 
-                <EditText
-                    android:id="@+id/durationContent"
+                <TextView
+                    android:id="@+id/durationCText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
@@ -109,6 +109,54 @@
                     android:text="-"
                     android:textSize="18sp" />
 
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/startTrimText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="Start trim: "
+                    android:textSize="18sp" />
+
+                <EditText
+                    android:id="@+id/startTrimContent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="15dp"
+                    android:background="@null"
+                    android:hint="1"
+                    android:textSize="18sp" />
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/endTrimText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:text="End trim: "
+                    android:textSize="18sp" />
+
+                <EditText
+                    android:id="@+id/endTrimContent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="15dp"
+                    android:background="@null"
+                    android:hint="1"
+                    android:textSize="18sp" />
 
             </LinearLayout>
             <com.vanvatcorporation.doubleclips.impl.SectionView
