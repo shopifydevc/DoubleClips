@@ -36,6 +36,7 @@ I’m pausing the development of this project due to a backlog of homework and s
 - Export project.
 - Smooth transitions.
 - Keyframe editing.
+- Properties Importing/Exporting (Keyframe, Clip, Track info, export as JSON)
 - Lots of properties (Reverse, Speed, Opacity, Temperature, Hue, Saturation, Brightness,...)
 - Sharable templates (Beta Early access.).
 - Edit raw FFmpeg command (Gen Cmd and you're free to edit whatever you want. Not for normal users as it require FFmpeg command experience).
