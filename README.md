@@ -65,6 +65,17 @@ I’m pausing the development of this project due to a backlog of homework and s
 
 And that's actually it! High-end devices render quickly, low-end devices render slowly, but the functionality remains the same!
 
+## Contributing
+
+We’re excited for contributions! While we’re busy developing and refactoring certain parts, there are still plenty of great ways to help out. 
+
+~~Check out our Contributing Guide for setup steps, dev guidelines, and full focus area details.~~
+
+Quick start: 
+ - Fork the repo, clone it locally.
+ - ~~Follow CONTRIBUTING.md~~
+ - Create a feature branch, and open a PR.
+
 
 ## Donate
 
